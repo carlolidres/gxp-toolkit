@@ -1,7 +1,7 @@
 import { mockUsers } from '../data/mockAuth'
 import type { AuthUser, LoginCredentials } from '../types/auth'
 
-const SESSION_KEY = 'northstar-template-user'
+const SESSION_KEY = 'gxp-toolkit-user'
 
 export const authService = {
   async login(credentials: LoginCredentials): Promise<AuthUser> {

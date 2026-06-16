@@ -13,6 +13,20 @@ export const processSpecifications: ProcessSpecification[] = [
 
 const assayValues = [99.4, 100.2, 99.8, 101.1, 100.5, 98.9, 99.7, 100.4, 101.3, 100.8, 102.1, 101.6]
 
+export const assayCorrelationLabels = ['Assay', 'Weight', 'pH', 'Visc', 'Hard', 'Fill', 'Temp']
+
+/** Mock 7×7 correlation matrix for heat map gallery demos. */
+export function buildMockCorrelationMatrix(): number[][] {
+  const size = assayCorrelationLabels.length
+  return Array.from({ length: size }, (_, row) =>
+    Array.from({ length: size }, (_, col) => {
+      if (row === col) return 1
+      const distance = Math.abs(row - col)
+      return Math.max(-0.35, 0.92 - distance * 0.22 + (row % 2 ? 0.05 : -0.03))
+    }),
+  )
+}
+
 export const initialProcessPoints: ProcessPoint[] = assayValues.map((value, index) => ({
   id: `p-${index + 1}`,
   parameter: 'Assay',

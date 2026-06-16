@@ -1,0 +1,288 @@
+/* Adapted from reference/src/styles/project-form.css */
+
+.page-header-compact {
+  margin-bottom: 8px;
+}
+
+.project-panel {
+  --project-sticky-header-height: 88px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: visible;
+}
+
+.project-sticky-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 56px;
+  z-index: 13;
+}
+
+.project-sticky-header-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.project-sticky-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.project-header-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--teal);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.project-sticky-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-sticky-header p {
+  margin: 2px 0 0;
+  color: var(--app-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.project-header-client-na {
+  color: var(--muted);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.project-form-body {
+  padding: 16px;
+}
+
+.project-header-section {
+  margin-bottom: 12px;
+  scroll-margin-top: calc(56px + var(--project-sticky-header-height) + 12px);
+}
+
+.project-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 16px 12px;
+  align-items: start;
+}
+
+.project-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 -16px 12px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  overflow-x: auto;
+  position: sticky;
+  top: calc(56px + var(--project-sticky-header-height) - 1px);
+  z-index: 12;
+  box-shadow: var(--shadow);
+  scroll-margin-top: calc(56px + var(--project-sticky-header-height));
+}
+
+.project-tab {
+  min-width: 108px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.project-tab-icon {
+  display: inline-flex;
+}
+
+.project-tab-active {
+  border-color: currentColor;
+  box-shadow: inset 0 -3px currentColor;
+}
+
+.project-tab-am { color: #0b6f71; background: #edf8f6; }
+.project-tab-pp { color: #285b9c; background: #eff5fc; }
+.project-tab-tsd { color: #8a5a12; background: #fff7e8; }
+.project-tab-val { color: #6842a6; background: #f5f0fb; }
+.project-tab-qc { color: #26734d; background: #eef8f1; }
+
+.project-tab-layer {
+  --layer-accent: #0f8b8d;
+  --layer-border: #b9d9d3;
+  --layer-summary: #eaf6f3;
+  padding: 2px 4px 4px;
+  border-left: 4px solid var(--layer-accent);
+  border-radius: 10px;
+}
+
+.project-tab-layer-am {
+  --layer-accent: #0f8b8d;
+  --layer-border: #b9d9d3;
+  --layer-summary: #eaf6f3;
+}
+
+.project-tab-layer-pp {
+  --layer-accent: #3d6fa8;
+  --layer-border: #bed0e5;
+  --layer-summary: #edf4fb;
+}
+
+.project-tab-layer-tsd {
+  --layer-accent: #a36c18;
+  --layer-border: #e6d1aa;
+  --layer-summary: #fff6e5;
+}
+
+.project-tab-layer-val {
+  --layer-accent: #7651ad;
+  --layer-border: #d4c4e8;
+  --layer-summary: #f3eef9;
+}
+
+.project-tab-layer-qc {
+  --layer-accent: #39805b;
+  --layer-border: #bddbc9;
+  --layer-summary: #edf7f0;
+}
+
+.hierarchy-panel {
+  border: 1px solid var(--layer-border);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.hierarchy-panel.depth-1 {
+  margin-top: 10px;
+  margin-left: 12px;
+}
+
+.hierarchy-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--layer-summary);
+  border-bottom: 1px solid var(--layer-border);
+}
+
+.hierarchy-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--app-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+}
+
+.hierarchy-chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.hierarchy-toggle[aria-expanded='false'] .hierarchy-chevron {
+  transform: rotate(45deg);
+}
+
+.hierarchy-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hierarchy-add-btn {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 0.72rem;
+}
+
+.hierarchy-body {
+  padding: 12px;
+}
+
+[data-theme='dark'] .project-tab-am { color: #4ec5cb; background: #1a3335; }
+[data-theme='dark'] .project-tab-pp { color: #7eb0e8; background: #1a2840; }
+[data-theme='dark'] .project-tab-tsd { color: #e0b35c; background: #332a18; }
+[data-theme='dark'] .project-tab-val { color: #a88bd4; background: #2a2240; }
+[data-theme='dark'] .project-tab-qc { color: #6ecf9a; background: #1a3328; }
+
+[data-theme='dark'] .project-tab-layer-am {
+  --layer-accent: #4ec5cb;
+  --layer-border: #2a4a4a;
+  --layer-summary: #1a2e2e;
+}
+
+[data-theme='dark'] .project-tab-layer-pp {
+  --layer-accent: #6ba3e8;
+  --layer-border: #2a3d55;
+  --layer-summary: #1a2840;
+}
+
+[data-theme='dark'] .project-tab-layer-tsd {
+  --layer-accent: #e0b35c;
+  --layer-border: #4a3a22;
+  --layer-summary: #2a2418;
+}
+
+[data-theme='dark'] .project-tab-layer-val {
+  --layer-accent: #a88bd4;
+  --layer-border: #3d3350;
+  --layer-summary: #2a2240;
+}
+
+[data-theme='dark'] .project-tab-layer-qc {
+  --layer-accent: #6ecf9a;
+  --layer-border: #2a4a38;
+  --layer-summary: #1a3328;
+}
+
+@media (max-width: 800px) {
+  .project-sticky-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .project-sticky-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

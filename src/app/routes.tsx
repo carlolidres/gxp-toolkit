@@ -6,6 +6,7 @@ import { LoadingState } from '../components/feedback/FeedbackStates'
 import { AppShell } from '../components/layout/AppShell'
 import { LoginPage } from '../pages/LoginPage'
 
+const MultiTabFormsPage = lazy(() => import('../pages/MultiTabFormsPage').then((module) => ({ default: module.MultiTabFormsPage })))
 const ComponentsShowcasePage = lazy(() => import('../pages/ComponentsShowcasePage').then((module) => ({ default: module.ComponentsShowcasePage })))
 const ContinuousProcessVerificationPage = lazy(() => import('../pages/ContinuousProcessVerificationPage').then((module) => ({ default: module.ContinuousProcessVerificationPage })))
 const DashboardPage = lazy(() => import('../pages/DashboardPage').then((module) => ({ default: module.DashboardPage })))
@@ -21,5 +22,5 @@ function SecuredPage({ children, adminOnly = false }: { children: ReactNode; adm
 }
 
 export function AppRoutes() {
-  return <Routes><Route path="/login" element={<LoginPage />} /><Route path="/" element={<SecuredPage><DashboardPage /></SecuredPage>} /><Route path="/components" element={<SecuredPage><ComponentsShowcasePage /></SecuredPage>} /><Route path="/statistics" element={<SecuredPage><StatisticsDashboardPage /></SecuredPage>} /><Route path="/cpv" element={<SecuredPage><ContinuousProcessVerificationPage /></SecuredPage>} /><Route path="/documents" element={<SecuredPage><DocumentManagementPage /></SecuredPage>} /><Route path="/routing" element={<SecuredPage><DocumentRoutingPage /></SecuredPage>} /><Route path="/signatures" element={<SecuredPage><ESignaturePage /></SecuredPage>} /><Route path="/settings" element={<SecuredPage adminOnly><SettingsPage /></SecuredPage>} /><Route path="*" element={<SecuredPage><NotFoundPage /></SecuredPage>} /></Routes>
+  return <Routes><Route path="/login" element={<LoginPage />} /><Route path="/" element={<SecuredPage><DashboardPage /></SecuredPage>} /><Route path="/components" element={<SecuredPage><ComponentsShowcasePage /></SecuredPage>} /><Route path="/multiforms" element={<SecuredPage><MultiTabFormsPage /></SecuredPage>} /><Route path="/statistics" element={<SecuredPage><StatisticsDashboardPage /></SecuredPage>} /><Route path="/cpv" element={<SecuredPage><ContinuousProcessVerificationPage /></SecuredPage>} /><Route path="/documents" element={<SecuredPage><DocumentManagementPage /></SecuredPage>} /><Route path="/routing" element={<SecuredPage><DocumentRoutingPage /></SecuredPage>} /><Route path="/signatures" element={<SecuredPage><ESignaturePage /></SecuredPage>} /><Route path="/settings" element={<SecuredPage adminOnly><SettingsPage /></SecuredPage>} /><Route path="*" element={<SecuredPage><NotFoundPage /></SecuredPage>} /></Routes>
 }

@@ -1,5 +1,5 @@
 {
-  "name": "quality-systems-react-template",
+  "name": "gxp-toolkit",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -8,27 +8,37 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "graphify:check": "graphify check-update .",
+    "graphify:update": "graphify update .",
+    "graphify:benchmark": "graphify benchmark graphify-out/graph.json",
+    "db:map": "node scripts/generate-sqlite-map.mjs",
+    "db:init": "node scripts/db-init.mjs",
+    "db:update": "node scripts/db-update.mjs",
+    "db:reset": "node scripts/db-reset.mjs",
+    "verify:schema": "node scripts/verify-schema-sync.mjs",
+    "verify:env": "node scripts/verify-env.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2",
-    "recharts": "^2.15.3"
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
+    "@types/node": "^25.9.3",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
-    "@vitejs/plugin-react": "^4.5.2",
+    "@vitejs/plugin-react": "^5.2.0",
     "eslint": "^9.28.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.2.0",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.34.0",
-    "vite": "^6.3.5",
-    "vitest": "^3.2.3"
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
   }
 }
-

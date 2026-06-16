@@ -98,6 +98,46 @@ export function calculateSummary(
   }
 }
 
+export function linearRegression(points: Array<{ x: number; y: number }>): { slope: number; intercept: number; rSquared: number } {
+  if (points.length < 2) return { slope: 0, intercept: 0, rSquared: 0 }
+  const n = points.length
+  const sumX = points.reduce((sum, point) => sum + point.x, 0)
+  const sumY = points.reduce((sum, point) => sum + point.y, 0)
+  const sumXY = points.reduce((sum, point) => sum + point.x * point.y, 0)
+  const sumXX = points.reduce((sum, point) => sum + point.x * point.x, 0)
+  const denominator = n * sumXX - sumX * sumX
+  const slope = denominator ? (n * sumXY - sumX * sumY) / denominator : 0
+  const intercept = (sumY - slope * sumX) / n
+  const meanY = sumY / n
+  const ssTot = points.reduce((sum, point) => sum + (point.y - meanY) ** 2, 0)
+  const ssRes = points.reduce((sum, point) => sum + (point.y - (slope * point.x + intercept)) ** 2, 0)
+  const rSquared = ssTot ? 1 - ssRes / ssTot : 0
+  return { slope, intercept, rSquared }
+}
+
+export function subgroupMeans(values: number[], size: number): Array<{ label: string; value: number }> {
+  const groups: number[][] = []
+  for (let index = 0; index < values.length; index += size) {
+    const group = values.slice(index, index + size)
+    if (group.length === size) groups.push(group)
+  }
+  return groups.map((group, index) => ({
+    label: `S${index + 1}`,
+    value: mean(group),
+  }))
+}
+
+export function subgroupRanges(values: number[], size: number): Array<{ label: string; value: number }> {
+  const groups: number[][] = []
+  for (let index = 0; index < values.length; index += size) {
+    const group = values.slice(index, index + size)
+    if (group.length === size) groups.push(group)
+  }
+  return groups.map((group, index) => ({
+    label: `S${index + 1}`,
+    value: maximum(group) - minimum(group),
+  }))
+}
 export function buildStatisticalAlerts(
   values: number[],
   specification: ProcessSpecification,

@@ -1,78 +1,269 @@
-# Northstar Vite + React Template
+# GxP Toolkit
 
-Northstar is a reusable Vite, React, and TypeScript starter for operational dashboards, quality systems, continuous process verification, controlled documents, approval workflows, and e-signature simulations.
+GxP Toolkit is a reusable Vite + React + TypeScript starter for quality-systems and GxP-oriented web applications. It includes reusable UI patterns, mock authentication, SQLite schema mapping, Supabase-ready service interfaces, GitHub Pages deployment, and AI-agent workflow documentation.
 
-The app uses mock data only. Its service interfaces are intentionally small so projects can later connect to Supabase, REST APIs, local JSON, or third-party providers without rewriting page components.
+The UI uses **custom CSS + Recharts** (not Ant Design at runtime). Ant Design links in `REFERENCE_LINKS.md` are external study references only.
 
-## Run the project
+The application uses mock data and small service interfaces so copied projects can adopt Supabase, REST APIs, local JSON, or other providers without rewriting every page component.
+
+Workflow for AI-assisted development:
+
+```txt
+Codex first → Cursor second → Verification
+```
+
+## What This Template Is For
+
+This repository is a reusable starter, not a finished business application.
+
+It provides:
+
+* Vite + React + TypeScript + custom CSS + Recharts
+* SQLite schema reference with generated `sqlite-out/` map (`npm run db:map`)
+* Graphify codebase map (`npm run graphify:update`)
+* Reusable layouts, dashboards, forms, tables, charts, and feedback patterns
+* Mock authentication, protected routes, and role examples
+* Supabase-ready frontend integration patterns
+* GitHub Pages deployment direction
+* Structured AI-agent workflow in `agent-workflow/`
+
+## Start
+
+```bash
+git clone <repository-url> my-new-project
+cd my-new-project
+npm install
+cp .env.example .env.local        # Unix/macOS — or: copy .env.example .env.local (Windows)
+npm run dev
+```
+
+You may also copy this folder manually without Git if you prefer.
+
+**Environment:** `.env.example` is the committed template (no secrets). Copy it to `.env.local` for local values — `.env.local` is gitignored. Supabase vars are optional until backend integration; the app runs with mock data without them.
+
+Use any password on the sample login page. Select `Admin`, `Manager`, `Editor`, or `Viewer` to exercise mock role behavior.
+
+## Common Commands
 
 ```bash
 npm install
 npm run dev
+npm run build
+npm run lint
+npm run test
 ```
 
-Use any password on the login page. Select `Admin`, `Manager`, `Editor`, or `Viewer` to exercise mock role behavior.
-
-## Commands
+Additional scripts when available:
 
 ```bash
-npm run dev
-npm run test
-npm run lint
-npm run build
 npm run preview
+npm run graphify:check
+npm run graphify:update
+npm run db:map
+npm run verify:schema
+npm run db:init
+npm run db:update
 ```
+
+If a command is unavailable, document that in `agent-workflow/HANDOFF.md`.
 
 ## Structure
 
-```text
-src/
-  app/                  Routing and app composition
-  components/           Reusable UI grouped by capability
-  data/                 Typed mock datasets
-  hooks/                Auth, filters, pagination, and statistics hooks
-  pages/                Working example pages
-  services/             Replaceable mock adapters
-  styles/               Global design tokens and responsive styles
-  types/                Shared domain types
-  utils/                Statistics, dates, export, and status helpers
+```txt
+/
+├── AGENTS.md
+├── README.md
+├── agent-workflow/
+│   ├── AGENTS.md
+│   ├── DOX.md
+│   ├── HANDOFF.md
+│   ├── PLAN.md
+│   ├── REFERENCE_LINKS.md
+│   └── agent-history/
+├── .cursor/rules/graphify.mdc
+├── public/
+├── docs/
+└── src/
+    ├── app/
+    ├── components/
+    ├── data/
+    ├── hooks/
+    ├── pages/
+    ├── services/
+    ├── styles/
+    ├── types/
+    └── utils/
 ```
 
-## Reusable components
+## How to Use This Template for a New Project
 
-- App shell, sidebar, top bar, profile menu, breadcrumbs, and responsive navigation
-- Mock auth provider, login, logout, protected route, and role-restricted route
-- KPI, summary, status, activity, notification, and quick-action components
-- Generic data table, search, pagination, form controls, modal, confirm dialog, toast, and state feedback
-- CSV and spreadsheet-compatible exports
-- Line, bar, donut, scatter, histogram, bell curve, box plot, Pareto, run, and control charts
-- Statistical summaries, capability calculations, trend detection, and alert panels
-- Document upload, metadata, preview, lifecycle dates, statuses, controlled-copy indicator, and version history
-- Sequential/parallel approval stepper, assignments, queues, decisions, reminders, and approval matrix
-- Signature request, placeholders, consent, status tracking, certificate, preview, and completion feedback
+1. Clone or copy this repository into a new folder.
+2. Rename the project folder if needed.
+3. Run `npm install` and `npm run dev` to confirm the app starts.
+4. Update template-specific values (see checklist below).
+4. Update **`baseline-.md` only** with your project definition (see checklist below).
+6. Update `agent-workflow/HANDOFF.md` and `agent-workflow/PLAN.md`.
+7. Ask Codex or Cursor to read `agent-workflow/AGENTS.md` before making changes.
 
-The control chart primitive provides the basis for I-MR, X-bar/R, and X-bar/S presentations. Supply subgroup-derived centerlines and limits to reuse the same component for those chart families.
+Keep the minimal root `AGENTS.md` at the project root. It redirects agents to `agent-workflow/AGENTS.md`.
 
-## Copy components into another project
+Child `AGENTS.md` files may be added only for durable subtrees with their own rules, for example:
 
-Copy the component folder plus its referenced types and utilities. Components use plain CSS class names and standard React props; copy the applicable rules from `src/styles/globals.css` or map the classes to another design system.
+```txt
+/new-project-root/src/components/AGENTS.md
+/new-project-root/src/features/AGENTS.md
+/new-project-root/supabase/AGENTS.md
+```
 
-## Add mock data
+## What to Change When Adapting the Template
 
-Add typed records in `src/data/`. Keep domain interfaces in `src/types/`, and expose data through a service when a page should be independent of its source.
+Replace template-specific values:
 
-## Connect a backend later
+* Project name
+* App title
+* Package name in `package.json`
+* GitHub repository name
+* Vite base path
+* Supabase project URL
+* Supabase anon key
+* Environment variables
+* App routes
+* Sidebar menu items
+* Dashboard content
+* Form fields
+* Table columns
+* User roles
+* Branding, colors, logo, and icons
+* README project description
+* Baseline project definition in **`baseline-.md`**
 
-- **Supabase:** implement service interfaces with the Supabase client, move auth to Supabase Auth, and enforce authorization with Row Level Security.
-- **REST API:** replace service methods with `fetch`, validate responses, and keep loading/error state at page boundaries.
-- **Local JSON:** import JSON from `src/data/` or serve it from `public/`.
-- **E-signature:** map signature requests and recipients to a provider SDK. Process provider webhooks on a trusted backend and store certificate/audit references, not secrets, in the browser.
+## How to Tailor This Template to Your Project
 
-Do not place privileged keys in Vite client variables. Static frontends can only hold public configuration.
+Before coding, define:
 
-## Notes
+* What the new project is
+* Who will use it
+* What user roles are needed
+* What pages are needed
+* What forms are needed
+* What database tables are needed
+* What dashboard metrics are needed
+* What workflows need approval, status tracking, or audit trail
+* What data should be stored in Supabase
+* What features should stay frontend-only
+* What should be removed from the template
 
-- CSV export opens through browser download APIs.
-- Uploads, workflow actions, notifications, and signatures update or acknowledge mock state only.
-- The statistical utilities have focused Vitest coverage in `src/utils/statistics.test.ts`.
+Recommended first prompt after copying:
 
+```txt
+Read and execute agent-workflow/AGENTS.md. This folder was copied from a reusable starter/template project. Update the project documentation, agent-workflow files, HANDOFF baseline, PLAN.md, and README.md so they match this new project. Preserve the Codex-first, Cursor-second, and Graphify workflow.
+```
+
+## AI-Agent Workflow
+
+Codex, Cursor, and future agents must read:
+
+```text
+agent-workflow/AGENTS.md
+↓
+agent-workflow/DOX.md
+↓
+agent-workflow/HANDOFF.md
+↓
+agent-workflow/PLAN.md
+```
+
+Purpose of each file:
+
+| File | Purpose |
+|------|---------|
+| `agent-workflow/AGENTS.md` | Main instruction file for AI agents |
+| `agent-workflow/DOX.md` | Documentation and workflow rules |
+| `agent-workflow/HANDOFF.md` | Current status, verification, known issues, and next steps |
+| `agent-workflow/PLAN.md` | Active implementation plan |
+| `agent-workflow/REFERENCE_LINKS.md` | External references only |
+| `baseline-.md` | Project owner baseline — what to build |
+| `agent-workflow/agent-history/version-0-baseline.md` | Template-invariant workflow rules |
+
+Codex plans and implements, runs available verification, then updates `agent-workflow/HANDOFF.md`.
+
+Cursor reads the same files plus `.cursor/rules/graphify.mdc`, performs Graphify-assisted or manual dependency mapping, reviews integration and regressions, runs final verification, then updates `agent-workflow/HANDOFF.md`.
+
+## How to Update the Baseline for a New Project
+
+When the template is copied into a real project, update:
+
+```text
+baseline-.md
+```
+
+The baseline should include the new project’s:
+
+* Project name
+* Objective
+* Business rules
+* Tech stack
+* User roles
+* Database design
+* Main workflows
+* Pages and modules
+* Security rules
+* Deployment target
+* Definition of done
+
+## Recommended Adaptation Workflow
+
+```text
+1. Copy the template.
+2. Rename the project.
+3. Update package.json.
+4. Update README.md.
+5. Update baseline-.md.
+6. Update agent-workflow/PLAN.md.
+7. Ask Codex or Cursor to read agent-workflow/AGENTS.md.
+8. Replace sample pages, routes, forms, tables, and dashboard widgets.
+9. Configure Supabase only if the project needs backend/database/auth.
+10. Run build, lint, and test verification.
+11. Update agent-workflow/HANDOFF.md.
+12. Commit the customized starter project.
+```
+
+## What Not to Do
+
+* Do not commit `.env`, `.env.local`, or `.env.*.local` — commit `.env.example` only.
+* Do not hardcode secrets.
+* Do not expose Supabase service role keys in frontend code or `VITE_*` variables.
+* Do not store CI/CD secrets in the repository — use GitHub Actions repository secrets.
+* Do not treat `dist/`, `node_modules/`, or Graphify output as source files.
+* Do not bulk-copy external repositories listed in `agent-workflow/REFERENCE_LINKS.md`.
+* Do not add business-specific logic to the reusable baseline unless intentionally converting the template into a real project.
+
+## Reusable Components
+
+* App shell, navigation, breadcrumbs, profile menu, and responsive layout
+* Mock authentication, protected routes, and role examples
+* Dashboard cards, tables, search, filters, pagination, forms, modals, toasts, and state feedback
+* Statistical summaries and multiple chart types
+* Document lifecycle, routing, approvals, and e-signature simulations
+* Typed mock data, replaceable services, export helpers, and focused utility tests
+
+These are reference implementations, not production security or compliance controls.
+
+## Graphify
+
+Install and confirm Graphify when dependency mapping is needed:
+
+```powershell
+py -m pip install --upgrade --user graphifyy
+py -m pip show graphifyy
+```
+
+Graphify output is a navigation aid. Verify behavior in source before editing or making correctness claims. Never report Graphify as executed unless its command completed successfully. If Graphify is unavailable, use direct search and manual dependency tracing.
+
+## Backend and Security Notes
+
+* Implement service interfaces for the chosen backend.
+* Enforce authorization on a trusted server or with database policies such as Supabase Row Level Security.
+* Process provider webhooks on a trusted backend.
+* Never place privileged keys in Vite client variables.
+* Treat uploads, notifications, workflow actions, and signatures in this template as mock behavior.
