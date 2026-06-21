@@ -1,34 +1,30 @@
 # Current Handoff
 
-Last Updated: `2026-06-21 21:10 Asia/Taipei`
-Version: `v4`
-Branch: `N/A`
-Commit: `N/A`
-Deployment: `N/A`
+Last Updated: `2026-06-21 21:30 Asia/Taipei`
+Version: `v5`
+Branch: `main -> master deployment`
+Commit: `pending final deployment commit`
+Deployment: `GitHub Pages workflow prepared for master`
 
 ## Current Status
 
-CSV/database readiness review and migration/deployment prep completed. Supabase migration prep is now aligned with `reference/supabase/migrations`; the ten listed VRMS CSV exports are represented in the app bundle by row count; audit field alignment was repaired from the audit CSV; local seed generator and GitHub Pages workflow are prepared but not applied/deployed.
+Git repository repair, commit preparation, remote push, and GitHub Pages deployment alignment are in progress. The first push to `main` built successfully in GitHub Actions, but the Pages deploy job was blocked because the `github-pages` environment only allows deployments from `master`. The workflow now triggers on both `main` and `master`, and remote `master` history has been merged locally without replacing it.
 
 ## Recently Completed
 
-- Copied the reference GxP Toolkit/VRMS React app into active `src/`
-- Added root `package.json`, `package-lock.json`, `index.html`, `vite.config.ts`, TypeScript configs, and `.gitignore`
-- Scoped Vitest to active `src` tests
-- Updated `AGENTS.md` standard commands, `CODEMAP.md`, `PLAN.md`, and created `agent-history/version-2-handoff.md`
-- Runtime-reviewed login, dashboard, routing, database, audit, registry, and admin/user-management pages in mock mode
-- Verified all ten VRMS CSV files against `src/data/vrmsProductionData.json`
-- Repaired audit event `routingTracker`, `docTracer`, and `details` alignment from `VRMS - AuditTrail.csv`
-- Added Supabase migration prep, seed-generation script, CSV verifier, and GitHub Pages workflow
-- Updated `DATA_MAP.md`, `PLAN.md`, and created `agent-history/version-3-handoff.md`
-- Replaced the consolidated active Supabase migration with the eight-file reference migration sequence from `reference/supabase/migrations`
-- Updated `DATA_MAP.md`, `PLAN.md`, `HANDOFF.md`, `supabase/README.md`, and created `agent-history/version-4-handoff.md`
+- Initialized the local Git repository on `main` and added `origin` at `https://github.com/carlolidres/gxp-toolkit.git`
+- Committed and pushed the prepared GxP Toolkit app to `origin/main`
+- Confirmed GitHub Actions build on `main` passed install, test, build, and artifact upload
+- Identified the Pages environment branch policy: only `master` may deploy to `github-pages`
+- Updated `.github/workflows/deploy-pages.yml` to run on `main` and `master`
+- Fetched and merged existing `origin/master` history using `--allow-unrelated-histories`
+- Removed accidentally staged broad `reference/` material from the unpushed merge commit; tracked reference material is limited to VRMS CSV inputs and reference Supabase migrations
 
 ## Active Work
 
-- Objective: `Review CSV/SQLite readiness and prepare Supabase migration plus GitHub Pages deployment`
-- Progress: `COMPLETE`
-- Remaining: `Do not apply migration/deploy until baseline/task plan are approved and Git is repaired`
+- Objective: `Commit, push, and deploy the prepared GxP Toolkit to GitHub Pages`
+- Progress: `READY_TO_PUSH_MASTER`
+- Remaining: `Push final local deployment commit to origin/master and confirm Pages workflow result`
 
 ## Minimal Read Set for the Next Agent
 
@@ -36,44 +32,42 @@ List no more than five task-specific files; omit standard startup files.
 
 | Path | Reason |
 |---|---|
-| `agent-workflow/PLAN.md` | Completed migration/deployment prep scope, verification, risks, and GxP gate note |
+| `.github/workflows/deploy-pages.yml` | GitHub Pages workflow, now enabled for `main` and `master` |
+| `agent-history/version-5-handoff.md` | Deployment branch and verification checkpoint |
+| `agent-workflow/PLAN.md` | Migration/deployment prep scope, verification, and GxP gate note |
 | `agent-workflow/DATA_MAP.md` | Current CSV, Supabase, and migration map |
-| `supabase/migrations/` | Reference Supabase migration sequence copied from `reference/supabase/migrations` |
-| `scripts/verify-vrms-csv-bundle.mjs` | Repeatable CSV/app bundle verification |
-| `.github/workflows/deploy-pages.yml` | GitHub Pages deployment workflow prep |
+| `supabase/migrations/` | Active Supabase migration sequence copied from reference migrations |
 
 ## Known Issues
 
 | Severity | Issue | Impact | Next action |
 |---|---|---|---|
 | MEDIUM | Baseline and approved task plan remain template-like/incomplete | Production GxP release lacks formal owner-approved requirements evidence | Project owner should approve/fill baseline and task plan before regulated production use |
-| MEDIUM | Reference Supabase migrations and seed were prepared but not applied | Live Supabase behavior is not yet verified | Apply only after backup, approval, and environment confirmation |
+| MEDIUM | Live Supabase migration/seed was performed by project owner, not by this agent | Agent cannot independently confirm live database state without authorized Supabase access | Verify live Supabase tables, RLS, and seed counts in the target project |
 | LOW | `npm run build` reports a Vite chunk-size warning for the main bundle | Build passes, but first-load bundle may be large | Consider route-level code splitting/manual chunks after functional acceptance |
-| LOW | Git commands report this folder is not a repository despite a `.git` directory | No diff/status/commit traceability could be recorded | Repair or reinitialize Git before commit/release work |
+| LOW | Repository default branch and Pages deployment policy are `master`, while local prep began on `main` | Pushes to `main` build but cannot deploy to Pages | Push final deployment commit to `master` or change the Pages environment policy/default branch in GitHub |
 
 ## Decisions and Simplifications
 
-- Decision: `Promote the provided reference implementation instead of rebuilding UI/business logic from screenshots.`
-- Decision: `Keep Supabase configuration in Vite env and allow placeholder/mock mode; no secrets added.`
-- Decision: `Prepare Supabase migration/deployment artifacts without applying them because the baseline/task plan are not approved.`
+- Decision: `Preserve existing remote master history instead of force-pushing over it.`
+- Decision: `Deploy through the existing github-pages environment branch policy by enabling the workflow for master.`
 - Decision: `Keep generated VRMS seed SQL gitignored; regenerate locally with npm run supabase:seed:vrms.`
-- `ponytail:` `Reference-source promotion plus minimal Vite scaffold is the smallest runnable app build.`
+- Decision: `Do not read or expose .env.local contents.`
+- `ponytail:` `Use the existing Pages workflow path and one branch-policy fix instead of introducing another deploy mechanism.`
 
 ## Verification
 
 | Check | Status | Result |
 |---|---|---|
-| Install | `PASSED` | `npm install` completed, 0 vulnerabilities |
+| Install | `PASSED` | `npm install` completed earlier, 0 vulnerabilities |
 | Lint | `N/A` | `No lint script configured` |
-| Type-check | `PASSED` | `npm run type-check` |
+| Type-check | `PASSED` | Covered by `npm run build` via `tsc -b` |
 | Tests/self-check | `PASSED` | `npm run test` — 4 files, 16 tests passed |
 | Build | `PASSED` | `npm run build`; Vite chunk-size warning only |
 | CSV/app data check | `PASSED` | `npm run verify:vrms-csv`; all 10 CSV row counts match and audit fields aligned |
-| Supabase seed generation | `PASSED` | `npm run supabase:seed:vrms`; generated ignored local `supabase/seed.vrms.generated.sql` |
+| Supabase seed generation | `PASSED` | `npm run supabase:seed:vrms` completed earlier; generated ignored local `supabase/seed.vrms.generated.sql` |
 | Migration reference alignment | `PASSED` | Active `supabase/migrations` contains the eight SQL files from `reference/supabase/migrations` |
-| Smoke/manual | `PASSED` | Supabase-mode login page loaded at `http://127.0.0.1:4173/#/login` with no browser console errors |
-| Mock browser flow | `PASSED` | Mock-mode login at `http://127.0.0.1:4174/#/login`; dashboard/routing/database/audit/registry/admin rendered with no browser console errors |
-| Deployment | `N/A` | `Not requested` |
+| Deployment | `IN_PROGRESS` | `main` workflow build passed but deploy blocked by master-only Pages branch policy; workflow patched for master |
 
 ## SQLite Sync
 
@@ -86,18 +80,8 @@ List no more than five task-specific files; omit standard startup files.
 
 ## Next Action
 
-`Project owner to approve/fill the baseline and migration plan, repair Git repository recognition, then apply Supabase migration/seed and run the GitHub Pages workflow from the repo after setting VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY secrets.`
+`Commit this handoff update, push the final deployment commit to origin/master, then confirm the GitHub Pages workflow succeeds and publishes https://carlolidres.github.io/gxp-toolkit/.`
 
-Historical evidence: `agent-history/version-4-handoff.md`
+Historical evidence: `agent-history/version-5-handoff.md`
 
 Keep this file concise. Do not copy full logs, diffs, generated maps, or historical narratives here.
-
-Next is prepare for supabase migration and github page deployment to my repo https://github.com/carlolidres/gxp-toolkit.
-
-## Reviewer Feedback
-
-- Reviewers: `carlolidres`
-- Comments: `Requested reference to reference/supabase/migrations`
-`Done migrating supabase sql to my project`
-`Done also setting up my env.local`
-`Done with my repo, git commit, git push, and deploy now`
