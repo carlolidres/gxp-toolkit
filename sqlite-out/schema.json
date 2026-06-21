@@ -1,0 +1,736 @@
+{
+  "meta": {
+    "project": "gxp-toolkit",
+    "source": "database/sqlite/schema.sql",
+    "generatedAt": "2026-06-20T11:27:57.764Z",
+    "schemaVersion": 3,
+    "tableCount": 6,
+    "edgeCount": 1,
+    "indexCount": 6
+  },
+  "nodes": [
+    {
+      "id": "schema_migrations",
+      "type": "table",
+      "columnCount": 3,
+      "primaryKeys": [
+        "version"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "version",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "applied_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "(datetime('now'))",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    {
+      "id": "profiles",
+      "type": "table",
+      "columnCount": 7,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "email"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "email",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "display_name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "role",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'user'",
+          "check": "role IN ('user', 'admin', 'manager', 'editor', 'viewer')",
+          "references": null
+        },
+        {
+          "name": "active",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": "active IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "(datetime('now'))",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "(datetime('now'))",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "profiles",
+          "expression": "role IN ('user', 'admin', 'manager', 'editor', 'viewer')",
+          "columns": [
+            "role"
+          ]
+        },
+        {
+          "table": "profiles",
+          "expression": "active IN (0, 1)",
+          "columns": [
+            "active"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "user_menu_permissions",
+      "type": "table",
+      "columnCount": 4,
+      "primaryKeys": [],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "menu_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "permissions",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'{}'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "(datetime('now'))",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_user_menu_permissions_user",
+          "unique": false,
+          "table": "user_menu_permissions",
+          "columns": [
+            "user_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "routing_documents",
+      "type": "table",
+      "columnCount": 25,
+      "primaryKeys": [
+        "routing_tracker"
+      ],
+      "uniqueColumns": [
+        "doc_tracer"
+      ],
+      "columns": [
+        {
+          "name": "routing_tracker",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "doc_tracer",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "equipment_product",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "category",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "il_tag",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "sent_routing_to",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "email",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "date_sent",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "report_protocol",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "batch_no",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "client_name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "department",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "prepared_by",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "date_prepared",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "checked_by",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "date_checked",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "target_completion_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "remarks",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "signatories",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'[]'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "total_routing_duration",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "routing_completed_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "(datetime('now'))",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "(datetime('now'))",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_routing_documents_status",
+          "unique": false,
+          "table": "routing_documents",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "idx_routing_documents_doc_tracer",
+          "unique": false,
+          "table": "routing_documents",
+          "columns": [
+            "doc_tracer"
+          ]
+        },
+        {
+          "name": "idx_routing_documents_updated_at",
+          "unique": false,
+          "table": "routing_documents",
+          "columns": [
+            "updated_at"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "registry_values",
+      "type": "table",
+      "columnCount": 4,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "registry_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "value",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "(datetime('now'))",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_registry_values_type",
+          "unique": false,
+          "table": "registry_values",
+          "columns": [
+            "registry_type"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audit_events",
+      "type": "table",
+      "columnCount": 8,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "event_timestamp",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "user_email",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "action",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "routing_tracker",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "doc_tracer",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "details",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "(datetime('now'))",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_audit_events_timestamp",
+          "unique": false,
+          "table": "audit_events",
+          "columns": [
+            "event_timestamp"
+          ]
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "user_menu_permissions.user_id->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "user_menu_permissions",
+        "column": "user_id"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    }
+  ],
+  "indexes": [
+    {
+      "name": "idx_user_menu_permissions_user",
+      "unique": false,
+      "table": "user_menu_permissions",
+      "columns": [
+        "user_id"
+      ]
+    },
+    {
+      "name": "idx_routing_documents_status",
+      "unique": false,
+      "table": "routing_documents",
+      "columns": [
+        "status"
+      ]
+    },
+    {
+      "name": "idx_routing_documents_doc_tracer",
+      "unique": false,
+      "table": "routing_documents",
+      "columns": [
+        "doc_tracer"
+      ]
+    },
+    {
+      "name": "idx_routing_documents_updated_at",
+      "unique": false,
+      "table": "routing_documents",
+      "columns": [
+        "updated_at"
+      ]
+    },
+    {
+      "name": "idx_registry_values_type",
+      "unique": false,
+      "table": "registry_values",
+      "columns": [
+        "registry_type"
+      ]
+    },
+    {
+      "name": "idx_audit_events_timestamp",
+      "unique": false,
+      "table": "audit_events",
+      "columns": [
+        "event_timestamp"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+import { useState } from 'react'
+
+import { SignatureCertificate, SignatureFieldPlaceholder, SignatureRequestForm, SignatureStatusTracker } from '../components/e-signature/SignatureComponents'
+import { Modal } from '../components/feedback/Modal'
+import { useToast } from '../components/feedback/ToastProvider'
+import { mockSignatures } from '../data/mockDocuments'
+
+export function ESignaturePage() {
+  const [showConfirm, setShowConfirm] = useState(false)
+  const { notify } = useToast()
+  return <div className="page"><div className="page-header"><div><span className="eyebrow">Electronic records</span><h1>E-signature workspace</h1><p>Simulate signature requests now and preserve clean integration points for a provider later.</p></div><button className="button secondary" onClick={() => notify('Signed copy download simulated')}>Download signed copy</button></div><div className="signature-layout"><section className="panel"><div className="panel-heading"><div><span className="eyebrow">POL-012 · Version 3.0</span><h2>Prepare signature package</h2></div></div><div className="signed-preview"><div className="preview-toolbar"><span>Page 8 of 8</span><span>Fields are draggable in a provider integration</span></div><div className="signature-document"><h2>Electronic Records Policy</h2><p>Approval signatures</p><div className="signature-fields-row"><SignatureFieldPlaceholder /><SignatureFieldPlaceholder type="initial" /><SignatureFieldPlaceholder type="date" /></div><div className="document-lines">{Array.from({ length: 7 }, (_, index) => <span style={{ width: `${92 - index * 5}%` }} key={index} />)}</div></div></div></section><aside className="panel"><div className="panel-heading"><h2>Request signature</h2></div><SignatureRequestForm onSubmit={() => setShowConfirm(true)} /></aside></div><div className="two-column"><section className="panel"><div className="panel-heading"><h2>Signature status</h2><span className="status-badge warning">Partially signed</span></div><SignatureStatusTracker requests={mockSignatures} /></section><section className="panel"><div className="panel-heading"><h2>Certificate and audit trail</h2></div><SignatureCertificate requests={mockSignatures} /></section></div><Modal isOpen={showConfirm} title="Confirm signature request" onClose={() => setShowConfirm(false)} footer={<><button className="button secondary" onClick={() => setShowConfirm(false)}>Cancel</button><button className="button primary" onClick={() => { setShowConfirm(false); notify('Signature request sent in mock mode') }}>Confirm and send</button></>}><p>The recipient will receive a simulated request. No external provider or email service is connected.</p></Modal></div>
+}
+

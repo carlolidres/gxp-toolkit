@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GxP Toolkit — SQLite Schema Map</title>
+  <style>
+    :root { --bg: #0f1419; --card: #1a2332; --text: #e7ecf3; --muted: #8b9cb3; --accent: #4da3ff; --pk: #ffd166; --fk: #06d6a0; --uk: #c77dff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+    header { padding: 1.5rem 2rem; border-bottom: 1px solid #2a3548; }
+    header h1 { margin: 0 0 .25rem; font-size: 1.4rem; }
+    header p { margin: 0; color: var(--muted); font-size: .9rem; }
+    main { padding: 1.5rem 2rem 3rem; display: grid; gap: 1.25rem; }
+    .meta { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: .5rem; }
+    .meta span { background: var(--card); padding: .35rem .75rem; border-radius: 999px; font-size: .85rem; }
+    .relationships { background: var(--card); border-radius: 12px; padding: 1rem 1.25rem; }
+    .relationships h2 { margin-top: 0; font-size: 1rem; }
+    .relationships ul { margin: 0; padding-left: 1.2rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .table-card { background: var(--card); border-radius: 12px; padding: 1rem; border: 1px solid #2a3548; }
+    .table-card h2 { margin: 0 0 .75rem; font-size: 1.05rem; color: var(--accent); }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    th, td { text-align: left; padding: .35rem .25rem; border-bottom: 1px solid #2a3548; vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    .badge { display: inline-block; font-size: .65rem; padding: .1rem .35rem; border-radius: 4px; margin-right: .2rem; font-weight: 700; }
+    .pk { background: #4a3f00; color: var(--pk); }
+    .fk { background: #0a3d2e; color: var(--fk); }
+    .uk { background: #2e1a4a; color: var(--uk); }
+    .nn { background: #2a3548; color: var(--muted); }
+    svg { width: 100%; max-width: 900px; height: auto; background: var(--card); border-radius: 12px; border: 1px solid #2a3548; }
+    .diagram-wrap { overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>GxP Toolkit — SQLite Schema Map</h1>
+    <p>Generated from database/sqlite/schema.sql · 2026-06-20T11:27:57.764Z</p>
+  </header>
+  <main>
+    <div class="meta">
+      <span>Schema v3</span>
+      <span>6 tables</span>
+      <span>1 foreign keys</span>
+      <span>6 indexes</span>
+    </div>
+    <section class="relationships">
+      <h2>Foreign Key Relationships</h2>
+      <ul><li><code>user_menu_permissions.user_id</code> → <code>profiles.id</code> <em>(ON DELETE CASCADE)</em></li></ul>
+    </section>
+    <div class="diagram-wrap"><svg viewBox="0 0 580 260" xmlns="http://www.w3.org/2000/svg"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#4da3ff"/></marker></defs><line x1="470" y1="60" x2="290" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/><g><rect x="40" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">schema_migrations</text></g>
+<g><rect x="220" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="290" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">profiles</text></g>
+<g><rect x="400" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="470" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">user_menu_permissions</text></g>
+<g><rect x="40" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">routing_documents</text></g>
+<g><rect x="220" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="290" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">registry_values</text></g>
+<g><rect x="400" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="470" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">audit_events</text></g></svg></div>
+    <div class="grid"><section class="table-card" id="table-schema_migrations"><h2>schema_migrations</h2><table><thead><tr><th>Column</th><th>Type</th><th>Flags</th></tr></thead><tbody><tr><td><code>version</code></td><td>INTEGER</td><td><span class="badge pk">PK</span></td></tr><tr><td><code>description</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>applied_at</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr></tbody></table></section>
+<section class="table-card" id="table-profiles"><h2>profiles</h2><table><thead><tr><th>Column</th><th>Type</th><th>Flags</th></tr></thead><tbody><tr><td><code>id</code></td><td>TEXT</td><td><span class="badge pk">PK</span></td></tr><tr><td><code>email</code></td><td>TEXT</td><td><span class="badge uk">UK</span> <span class="badge nn">NOT NULL</span></td></tr><tr><td><code>display_name</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>role</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>active</code></td><td>INTEGER</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>created_at</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>updated_at</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr></tbody></table></section>
+<section class="table-card" id="table-user_menu_permissions"><h2>user_menu_permissions</h2><table><thead><tr><th>Column</th><th>Type</th><th>Flags</th></tr></thead><tbody><tr><td><code>user_id</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>menu_id</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>permissions</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>updated_at</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr></tbody></table></section>
+<section class="table-card" id="table-routing_documents"><h2>routing_documents</h2><table><thead><tr><th>Column</th><th>Type</th><th>Flags</th></tr></thead><tbody><tr><td><code>routing_tracker</code></td><td>TEXT</td><td><span class="badge pk">PK</span></td></tr><tr><td><code>doc_tracer</code></td><td>TEXT</td><td><span class="badge uk">UK</span> <span class="badge nn">NOT NULL</span></td></tr><tr><td><code>equipment_product</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>category</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>il_tag</code></td><td>TEXT</td><td></td></tr><tr><td><code>status</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>sent_routing_to</code></td><td>TEXT</td><td></td></tr><tr><td><code>email</code></td><td>TEXT</td><td></td></tr><tr><td><code>date_sent</code></td><td>TEXT</td><td></td></tr><tr><td><code>report_protocol</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>batch_no</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>client_name</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>department</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>prepared_by</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>date_prepared</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>checked_by</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>date_checked</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>target_completion_date</code></td><td>TEXT</td><td></td></tr><tr><td><code>remarks</code></td><td>TEXT</td><td></td></tr><tr><td><code>signatories</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>total_routing_duration</code></td><td>TEXT</td><td></td></tr><tr><td><code>routing_completed_at</code></td><td>TEXT</td><td></td></tr><tr><td><code>created_at</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>updated_at</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>updated_by</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr></tbody></table></section>
+<section class="table-card" id="table-registry_values"><h2>registry_values</h2><table><thead><tr><th>Column</th><th>Type</th><th>Flags</th></tr></thead><tbody><tr><td><code>id</code></td><td>TEXT</td><td><span class="badge pk">PK</span></td></tr><tr><td><code>registry_type</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>value</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>created_at</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr></tbody></table></section>
+<section class="table-card" id="table-audit_events"><h2>audit_events</h2><table><thead><tr><th>Column</th><th>Type</th><th>Flags</th></tr></thead><tbody><tr><td><code>id</code></td><td>TEXT</td><td><span class="badge pk">PK</span></td></tr><tr><td><code>event_timestamp</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>user_email</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>action</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>routing_tracker</code></td><td>TEXT</td><td></td></tr><tr><td><code>doc_tracer</code></td><td>TEXT</td><td></td></tr><tr><td><code>details</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>created_at</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr></tbody></table></section></div>
+  </main>
+</body>
+</html>
