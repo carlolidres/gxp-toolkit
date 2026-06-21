@@ -22,7 +22,7 @@ Included:
 - Initialized local Git history and pushed the prepared app to `origin/main`.
 - Confirmed the first GitHub Actions build on `main` passed before deployment.
 - Identified GitHub Pages deploy failure cause: `github-pages` environment only permits `master`.
-- Updated `.github/workflows/deploy-pages.yml` to trigger on both `main` and `master`.
+- Updated `.github/workflows/deploy-pages.yml` to trigger on `master`, matching the Pages environment branch policy.
 - Merged existing remote `master` history locally with unrelated histories allowed.
 - Kept broad local `reference/` folders untracked; only VRMS CSV inputs and reference Supabase migrations remain tracked.
 - Pushed final deployment state to `origin/master`.
@@ -40,7 +40,7 @@ Not included:
 
 | Path | Change |
 |---|---|
-| `.github/workflows/deploy-pages.yml` | Added `master` to push trigger branches |
+| `.github/workflows/deploy-pages.yml` | Set push trigger to the Pages-allowed `master` branch |
 | `.github/workflows/deploy-github-pages.yml` | Removed older duplicate Pages workflow from prior master history |
 | `agent-workflow/HANDOFF.md` | Updated current deployment status and next action |
 | `agent-history/version-5-handoff.md` | Added this deployment checkpoint |

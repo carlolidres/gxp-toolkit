@@ -16,7 +16,7 @@ Git repository repair, commit preparation, remote push, and GitHub Pages deploym
 - Committed and pushed the prepared GxP Toolkit app to `origin/main`
 - Confirmed GitHub Actions build on `main` passed install, test, build, and artifact upload
 - Identified the Pages environment branch policy: only `master` may deploy to `github-pages`
-- Updated `.github/workflows/deploy-pages.yml` to run on `main` and `master`
+- Updated `.github/workflows/deploy-pages.yml` to run on `master`, matching the Pages environment branch policy
 - Fetched and merged existing `origin/master` history using `--allow-unrelated-histories`
 - Removed accidentally staged broad `reference/` material from the unpushed merge commit; tracked reference material is limited to VRMS CSV inputs and reference Supabase migrations
 - Pushed final deployment state to `origin/master`
@@ -53,7 +53,7 @@ List no more than five task-specific files; omit standard startup files.
 ## Decisions and Simplifications
 
 - Decision: `Preserve existing remote master history instead of force-pushing over it.`
-- Decision: `Deploy through the existing github-pages environment branch policy by enabling the workflow for master.`
+- Decision: `Deploy through the existing github-pages environment branch policy by keeping the workflow on master.`
 - Decision: `Keep generated VRMS seed SQL gitignored; regenerate locally with npm run supabase:seed:vrms.`
 - Decision: `Do not read or expose .env.local contents.`
 - `ponytail:` `Use the existing Pages workflow path and one branch-policy fix instead of introducing another deploy mechanism.`
