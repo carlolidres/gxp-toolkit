@@ -1,14 +1,14 @@
 # Current Handoff
 
-Last Updated: `2026-06-21 21:30 Asia/Taipei`
-Version: `v5`
+Last Updated: `2026-06-21 21:57 Asia/Taipei`
+Version: `v6`
 Branch: `master`
-Commit: `beefd16a4a7c26fa07299e9ab841983cbc0798fb`
+Commit: `NOT_COMMITTED; last deployed commit e304552`
 Deployment: `SUCCESS; https://carlolidres.github.io/gxp-toolkit/ returned HTTP 200`
 
 ## Current Status
 
-Git repository repair, commit preparation, remote push, and GitHub Pages deployment are complete. The first push to `main` built successfully in GitHub Actions, but the Pages deploy job was blocked because the `github-pages` environment only allows deployments from `master`. The workflow was updated to trigger on `master`, existing remote `master` history was preserved, and the deployed site returned HTTP 200.
+GitHub Pages deployment is live, but reviewer feedback shows Supabase Auth returns `401 Unauthorized` across password, signup, and OAuth callback flows. The app now maps Supabase/Auth 401s to a clear deployment-secret message. After user approval, GitHub Actions `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` secrets were updated from `.env.local` without printing values. Redeploy is next.
 
 ## Recently Completed
 
@@ -22,12 +22,15 @@ Git repository repair, commit preparation, remote push, and GitHub Pages deploym
 - Pushed final deployment state to `origin/master`
 - Confirmed both triggered Pages runs completed successfully, then removed the older duplicate workflow so future pushes use one deploy workflow
 - Verified `https://carlolidres.github.io/gxp-toolkit/` returned `HTTP 200` with title `GxP Toolkit`
+- Sanitized reviewer feedback in this handoff to remove a pasted password and long console stack traces
+- Added a focused auth-message guard/test for Supabase Auth `401 Unauthorized` deployment-secret failures
+- Updated GitHub Actions Supabase secret names from `.env.local` after explicit approval; values were not printed
 
 ## Active Work
 
-- Objective: `Commit, push, and deploy the prepared GxP Toolkit to GitHub Pages`
-- Progress: `COMPLETE`
-- Remaining: `None for this request`
+- Objective: `Fix Supabase Auth 401 feedback from deployed GitHub Pages app`
+- Progress: `READY_TO_REDEPLOY`
+- Remaining: `Commit, push to master, confirm GitHub Pages workflow, then retest live auth`
 
 ## Minimal Read Set for the Next Agent
 
@@ -35,8 +38,8 @@ List no more than five task-specific files; omit standard startup files.
 
 | Path | Reason |
 |---|---|
-| `.github/workflows/deploy-pages.yml` | GitHub Pages workflow, now enabled for `main` and `master` |
-| `agent-history/version-5-handoff.md` | Deployment branch and verification checkpoint |
+| `.github/workflows/deploy-pages.yml` | GitHub Pages workflow, enabled for the Pages-allowed `master` branch |
+| `agent-history/version-6-handoff.md` | Auth feedback and deployment-secret checkpoint |
 | `agent-workflow/PLAN.md` | Migration/deployment prep scope, verification, and GxP gate note |
 | `agent-workflow/DATA_MAP.md` | Current CSV, Supabase, and migration map |
 | `supabase/migrations/` | Active Supabase migration sequence copied from reference migrations |
@@ -47,6 +50,7 @@ List no more than five task-specific files; omit standard startup files.
 |---|---|---|---|
 | MEDIUM | Baseline and approved task plan remain template-like/incomplete | Production GxP release lacks formal owner-approved requirements evidence | Project owner should approve/fill baseline and task plan before regulated production use |
 | MEDIUM | Live Supabase migration/seed was performed by project owner, not by this agent | Agent cannot independently confirm live database state without authorized Supabase access | Verify live Supabase tables, RLS, and seed counts in the target project |
+| MEDIUM | Supabase Auth on the deployed site returns 401 for password, signup, and OAuth token exchange | Existing deployment was built before GitHub Supabase secrets were refreshed | Redeploy from `master`, then retest live auth |
 | LOW | `npm run build` reports a Vite chunk-size warning for the main bundle | Build passes, but first-load bundle may be large | Consider route-level code splitting/manual chunks after functional acceptance |
 | LOW | Repository default branch and Pages deployment policy are `master`, while local prep began on `main` | Pushes to `main` build but cannot deploy to Pages | Continue deploying from `master` or change the Pages environment policy/default branch in GitHub |
 
@@ -65,7 +69,7 @@ List no more than five task-specific files; omit standard startup files.
 | Install | `PASSED` | `npm install` completed earlier, 0 vulnerabilities |
 | Lint | `N/A` | `No lint script configured` |
 | Type-check | `PASSED` | Covered by `npm run build` via `tsc -b` |
-| Tests/self-check | `PASSED` | `npm run test` — 4 files, 16 tests passed |
+| Tests/self-check | `PASSED` | `npm run test` — 5 files, 17 tests passed |
 | Build | `PASSED` | `npm run build`; Vite chunk-size warning only |
 | CSV/app data check | `PASSED` | `npm run verify:vrms-csv`; all 10 CSV row counts match and audit fields aligned |
 | Supabase seed generation | `PASSED` | `npm run supabase:seed:vrms` completed earlier; generated ignored local `supabase/seed.vrms.generated.sql` |
@@ -85,6 +89,14 @@ List no more than five task-specific files; omit standard startup files.
 
 `Monitor the live Supabase-backed app behavior and remove/adjust the Pages branch policy only if you want main to become the deployment branch.`
 
-Historical evidence: `agent-history/version-5-handoff.md`
+V6 auth follow-up: `Redeploy from master and retest live Supabase Auth.`
+
+Historical evidence: `agent-history/version-6-handoff.md`
 
 Keep this file concise. Do not copy full logs, diffs, generated maps, or historical narratives here.
+
+## Feedback
+
+Sanitized reviewer feedback: deployed Supabase Auth returns `401 Unauthorized` for Google OAuth token exchange, email/password sign-in, email signup, and OAuth signup. A browser-extension log line (`writer.min.js`, Ginger Widget) is unrelated to the app.
+
+Initial diagnosis: because multiple Supabase Auth endpoints fail with 401, the likely root cause was a missing, invalid, or mismatched public anon key in GitHub Actions secrets for the deployed build. After explicit approval, this agent updated the GitHub Actions secret names from `.env.local` without printing values.

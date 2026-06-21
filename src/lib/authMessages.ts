@@ -11,6 +11,8 @@ export function getAuthErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) return normalizeAuthMessage(error.message)
   if (typeof error === 'string' && error.trim()) return normalizeAuthMessage(error)
   if (error && typeof error === 'object') {
+    const maybeStatus = 'status' in error ? Number((error as { status?: unknown }).status) : NaN
+    if (maybeStatus === 401) return normalizeAuthMessage('unauthorized')
     const maybeMessage = 'message' in error ? String((error as { message?: unknown }).message ?? '') : ''
     if (maybeMessage.trim()) return normalizeAuthMessage(maybeMessage)
     const maybeDescription = 'error_description' in error
@@ -29,6 +31,14 @@ export function normalizeAuthMessage(message: string): string {
   }
   if (lower.includes('provider is not enabled') || lower.includes('provider not enabled')) {
     return 'This provider is not enabled in Supabase yet. Enable it in the Supabase authentication provider settings and confirm the redirect URL allow-list.'
+  }
+  if (
+    lower === 'unauthorized' ||
+    lower.includes('401') ||
+    lower.includes('invalid api key') ||
+    lower.includes('invalid authorization')
+  ) {
+    return 'Supabase rejected the public anon key for this deployment. Update the GitHub Actions VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY secrets from the same Supabase project, then redeploy.'
   }
   if (lower.includes('cancel')) return 'Authentication was cancelled. You can try again when ready.'
   return text
@@ -75,4 +85,3 @@ export function consumeOAuthStatus(): OAuthStatus | null {
     return null
   }
 }
-
