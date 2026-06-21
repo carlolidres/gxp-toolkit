@@ -8,7 +8,7 @@ agent-history/version-0-baseline.md
 
 Version: `v5`
 Date: `2026-06-21`
-Status: `IN_PROGRESS`
+Status: `COMPLETE`
 Prepared By: `Codex`
 
 ## Objective
@@ -25,6 +25,9 @@ Included:
 - Updated `.github/workflows/deploy-pages.yml` to trigger on both `main` and `master`.
 - Merged existing remote `master` history locally with unrelated histories allowed.
 - Kept broad local `reference/` folders untracked; only VRMS CSV inputs and reference Supabase migrations remain tracked.
+- Pushed final deployment state to `origin/master`.
+- Confirmed GitHub Pages workflow success and live HTTP 200 response.
+- Removed the older duplicate Pages workflow from the prior `master` history so future pushes use one deploy path.
 
 Not included:
 
@@ -38,6 +41,7 @@ Not included:
 | Path | Change |
 |---|---|
 | `.github/workflows/deploy-pages.yml` | Added `master` to push trigger branches |
+| `.github/workflows/deploy-github-pages.yml` | Removed older duplicate Pages workflow from prior master history |
 | `agent-workflow/HANDOFF.md` | Updated current deployment status and next action |
 | `agent-history/version-5-handoff.md` | Added this deployment checkpoint |
 
@@ -75,6 +79,8 @@ Details:
 | Build | `npm run build` | `PASSED; chunk-size warning only` |
 | GitHub Actions build | Run `27905763256` on `main` | `PASSED build job; deploy job blocked by branch policy` |
 | Deployment branch policy | `gh api repos/carlolidres/gxp-toolkit/environments/github-pages/deployment-branch-policies` | `Only master is allowed` |
+| GitHub Pages deploy | Runs `27905936641` and `27905936637` on `master` | `PASSED` |
+| Live site | `Invoke-WebRequest https://carlolidres.github.io/gxp-toolkit/` | `PASSED; HTTP 200; title GxP Toolkit` |
 
 ## Results
 
@@ -83,11 +89,12 @@ Implemented:
 - Initial deployment commit reached GitHub on `main`.
 - Pages workflow was corrected so the default/deploy branch `master` can run it.
 - Existing `master` history was preserved in the local deployment branch.
+- Final deployment reached GitHub Pages successfully.
+- Duplicate older workflow was removed after confirming both deployment runs succeeded.
 
 Not completed yet:
 
-- Final push to `origin/master`.
-- Final GitHub Pages deployment confirmation.
+- Independent live Supabase table/RLS/seed verification.
 
 ## Known Issues and Risks
 
@@ -96,29 +103,30 @@ Not completed yet:
 | MEDIUM | Baseline and approved task plan remain incomplete/template-like | Production GxP readiness cannot be claimed | Project owner should approve/fill baseline and regulated migration plan |
 | MEDIUM | Agent did not independently verify live Supabase database state | Live DB may differ from prepared migrations/seed | Run live Supabase verification with approved access |
 | LOW | Build emits Vite chunk-size warning | App still builds, but initial bundle may be heavy | Consider code-splitting after acceptance |
-| LOW | Pages environment only permits `master` | `main` push can build but cannot deploy | Push final deployment commit to `master` or update GitHub Pages policy |
+| LOW | Pages environment only permits `master` | `main` push can build but cannot deploy | Continue deploying from `master` or update GitHub Pages policy/default branch |
 
 ## Git Traceability
 
 - Initial app commit: `d4fa989b3feef8481c9a4cb769d6f7703fd3faab`
 - Workflow branch fix commit: `be42117`
 - Local merge/history commit: `2480967`
-- Final deployment commit: `pending`
+- Final deployment commit: `beefd16a4a7c26fa07299e9ab841983cbc0798fb`
 - Pull request: `N/A`
 
 ## Deployment
 
 - Environment: `GitHub Pages`
-- Status: `PENDING_FINAL_MASTER_PUSH`
+- Status: `DEPLOYED`
 - Production URL: `https://carlolidres.github.io/gxp-toolkit/`
 - First failed run: `https://github.com/carlolidres/gxp-toolkit/actions/runs/27905763256`
+- Successful run: `https://github.com/carlolidres/gxp-toolkit/actions/runs/27905936637`
 - Rollback reference: `Revert final deployment commit or redeploy previous successful master commit ca455bc`
 
 ## Next Steps
 
-1. Commit this v5 handoff update.
-2. Push final deployment state to `origin/master`.
-3. Confirm the GitHub Pages workflow succeeds.
+1. Verify live Supabase-backed workflows with approved project access.
+2. Decide whether `master` remains the deployment branch or whether GitHub branch policy/default branch should move to `main`.
+3. Consider route-level code splitting to address the Vite chunk-size warning.
 
 ## Current Handoff Update
 

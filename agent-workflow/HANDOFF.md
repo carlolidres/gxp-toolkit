@@ -2,13 +2,13 @@
 
 Last Updated: `2026-06-21 21:30 Asia/Taipei`
 Version: `v5`
-Branch: `main -> master deployment`
-Commit: `pending final deployment commit`
-Deployment: `GitHub Pages workflow prepared for master`
+Branch: `master`
+Commit: `beefd16a4a7c26fa07299e9ab841983cbc0798fb`
+Deployment: `SUCCESS; https://carlolidres.github.io/gxp-toolkit/ returned HTTP 200`
 
 ## Current Status
 
-Git repository repair, commit preparation, remote push, and GitHub Pages deployment alignment are in progress. The first push to `main` built successfully in GitHub Actions, but the Pages deploy job was blocked because the `github-pages` environment only allows deployments from `master`. The workflow now triggers on both `main` and `master`, and remote `master` history has been merged locally without replacing it.
+Git repository repair, commit preparation, remote push, and GitHub Pages deployment are complete. The first push to `main` built successfully in GitHub Actions, but the Pages deploy job was blocked because the `github-pages` environment only allows deployments from `master`. The workflow was updated to trigger on `master`, existing remote `master` history was preserved, and the deployed site returned HTTP 200.
 
 ## Recently Completed
 
@@ -19,12 +19,15 @@ Git repository repair, commit preparation, remote push, and GitHub Pages deploym
 - Updated `.github/workflows/deploy-pages.yml` to run on `main` and `master`
 - Fetched and merged existing `origin/master` history using `--allow-unrelated-histories`
 - Removed accidentally staged broad `reference/` material from the unpushed merge commit; tracked reference material is limited to VRMS CSV inputs and reference Supabase migrations
+- Pushed final deployment state to `origin/master`
+- Confirmed both triggered Pages runs completed successfully, then removed the older duplicate workflow so future pushes use one deploy workflow
+- Verified `https://carlolidres.github.io/gxp-toolkit/` returned `HTTP 200` with title `GxP Toolkit`
 
 ## Active Work
 
 - Objective: `Commit, push, and deploy the prepared GxP Toolkit to GitHub Pages`
-- Progress: `READY_TO_PUSH_MASTER`
-- Remaining: `Push final local deployment commit to origin/master and confirm Pages workflow result`
+- Progress: `COMPLETE`
+- Remaining: `None for this request`
 
 ## Minimal Read Set for the Next Agent
 
@@ -45,7 +48,7 @@ List no more than five task-specific files; omit standard startup files.
 | MEDIUM | Baseline and approved task plan remain template-like/incomplete | Production GxP release lacks formal owner-approved requirements evidence | Project owner should approve/fill baseline and task plan before regulated production use |
 | MEDIUM | Live Supabase migration/seed was performed by project owner, not by this agent | Agent cannot independently confirm live database state without authorized Supabase access | Verify live Supabase tables, RLS, and seed counts in the target project |
 | LOW | `npm run build` reports a Vite chunk-size warning for the main bundle | Build passes, but first-load bundle may be large | Consider route-level code splitting/manual chunks after functional acceptance |
-| LOW | Repository default branch and Pages deployment policy are `master`, while local prep began on `main` | Pushes to `main` build but cannot deploy to Pages | Push final deployment commit to `master` or change the Pages environment policy/default branch in GitHub |
+| LOW | Repository default branch and Pages deployment policy are `master`, while local prep began on `main` | Pushes to `main` build but cannot deploy to Pages | Continue deploying from `master` or change the Pages environment policy/default branch in GitHub |
 
 ## Decisions and Simplifications
 
@@ -67,7 +70,7 @@ List no more than five task-specific files; omit standard startup files.
 | CSV/app data check | `PASSED` | `npm run verify:vrms-csv`; all 10 CSV row counts match and audit fields aligned |
 | Supabase seed generation | `PASSED` | `npm run supabase:seed:vrms` completed earlier; generated ignored local `supabase/seed.vrms.generated.sql` |
 | Migration reference alignment | `PASSED` | Active `supabase/migrations` contains the eight SQL files from `reference/supabase/migrations` |
-| Deployment | `IN_PROGRESS` | `main` workflow build passed but deploy blocked by master-only Pages branch policy; workflow patched for master |
+| Deployment | `PASSED` | `master` Pages workflow deployed successfully; live URL returned HTTP 200 |
 
 ## SQLite Sync
 
@@ -80,7 +83,7 @@ List no more than five task-specific files; omit standard startup files.
 
 ## Next Action
 
-`Commit this handoff update, push the final deployment commit to origin/master, then confirm the GitHub Pages workflow succeeds and publishes https://carlolidres.github.io/gxp-toolkit/.`
+`Monitor the live Supabase-backed app behavior and remove/adjust the Pages branch policy only if you want main to become the deployment branch.`
 
 Historical evidence: `agent-history/version-5-handoff.md`
 
