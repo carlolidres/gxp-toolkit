@@ -1,0 +1,63 @@
+---
+description: Graphify-assisted dependency and integration review for Cursor
+alwaysApply: true
+---
+
+# Cursor Graphify Review
+
+Follow the repository workflow in this order:
+
+```txt
+agent-workflow/AGENTS.md → DOX.md → HANDOFF.md → PLAN.md → baseline-.md → this rule → project-workflow.mdc
+```
+
+Then use map layers:
+
+```txt
+graphify-out/ (codebase) → sqlite-out/ (schema) → database/sqlite/ (SQL source)
+```
+
+Graphify is the **primary codebase map for agents**. Source code is the **correctness authority**. Verify Graphify results before editing.
+
+## Setup
+
+```powershell
+py -m pip install --upgrade --user graphifyy
+py -m pip show graphifyy
+```
+
+Never state that Graphify was installed or executed unless the command completed successfully.
+
+## Review Workflow
+
+1. Inspect `package.json` for Graphify and schema scripts.
+2. Confirm `graphify-out/graph.json` is current (`npm run graphify:check`).
+3. When touching data models, read `sqlite-out/SCHEMA_REPORT.md` and run `npm run verify:schema`.
+4. Run `npm run graphify:update` only when a structural refresh is required.
+5. Use bounded queries for exact files, symbols, dependencies, and affected path.
+6. Verify every important Graphify result against source code.
+7. Review imports, routes, hooks, services, types, data mocks, tests, and configuration.
+8. Run final verification commands.
+9. Update `agent-workflow/HANDOFF.md`.
+
+## Bounded Commands
+
+```powershell
+graphify query "<specific question>" --budget 800
+graphify explain "<exact symbol or node>"
+graphify path "<exact node A>" "<exact node B>"
+graphify affected "<exact symbol>" --depth 2
+```
+
+## Verification
+
+```powershell
+npm run build
+npm run lint
+npm run test
+npm run verify:schema
+npm run db:map
+npm run verify:supabase
+```
+
+Report missing scripts as `Command unavailable.`

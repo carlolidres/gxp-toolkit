@@ -1,0 +1,83 @@
+---
+description: GxP Toolkit agent workflow — reading order, baseline, schema maps, and constraints
+alwaysApply: true
+---
+
+# GxP Toolkit Project Workflow
+
+## Reading order (before editing)
+
+```txt
+AGENTS.md (root)
+→ agent-workflow/AGENTS.md → DOX.md → HANDOFF.md → PLAN.md
+→ baseline-.md (project definition — owner updates this)
+→ .cursor/rules/ (this file + graphify.mdc)
+→ graphify-out/ (codebase map)
+→ sqlite-out/ (schema map)
+→ database/sqlite/ (editable SQL source)
+```
+
+## Baseline ownership (avoid duplicate/conflicting docs)
+
+| File | Who updates | Purpose |
+|------|-------------|---------|
+| **`baseline-.md`** | **Project owner only** | What to build: name, goals, roles, pages, schema intent, deployment |
+| `agent-workflow/HANDOFF.md` | Agents after each session | Current status, verification, next steps |
+| `agent-workflow/PLAN.md` | Agents during active work | Temporary task plan |
+| `agent-workflow/agent-history/version-0-baseline.md` | Do not edit on copy | Template-invariant workflow rules (read only) |
+
+**Rule:** When adapting this template, update **`baseline-.md` only** for project-specific definition. Do not duplicate project goals into `version-0-baseline.md`.
+
+## Map layers
+
+| Layer | Location | Role |
+|-------|----------|------|
+| Codebase map | `graphify-out/` | Primary architecture map for code — verify against source |
+| Schema map | `sqlite-out/` | Primary schema/relationship map — regenerate with `npm run db:map` |
+| Schema source | `database/sqlite/*.sql` | Editable SQL — update when types/mocks/services change |
+
+Do not edit `graphify-out/` or `sqlite-out/` by hand.
+
+## Schema change checklist (prevents mock/SQL drift)
+
+When changing `src/types/`, `src/data/`, or `src/services/`:
+
+1. Update `database/sqlite/schema.sql` and `seed.sql` if needed.
+2. Run `npm run db:map`.
+3. Run `npm run verify:schema`.
+4. Run `npm run db:update` when sqlite3 CLI is available.
+
+## Responsibilities
+
+- **Codex:** Plan, implement, verify, update HANDOFF.md.
+- **Cursor:** Graphify + sqlite map review, dependency tracing, integration review, final verification, update HANDOFF.md.
+
+## Forbidden
+
+- Do not edit `dist/`, `graphify-out/`, `sqlite-out/`, or `node_modules/` as source.
+- Do not commit `.env`, `.env.local`, or `.env.*.local` — `.env.example` is the committed reference.
+- Do not expose secrets or Supabase service role keys in frontend code or `VITE_*` variables.
+- Do not store CI/CD secrets in the repo — use GitHub Actions repository secrets (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
+- Do not claim Graphify or db:map ran unless commands completed successfully.
+
+## Environment and secrets
+
+| File | In Git? | Purpose |
+|------|---------|---------|
+| `.env.example` | Yes | Documented `VITE_*` placeholders |
+| `.env.local` | No | Local dev — copy from `.env.example` |
+
+When adding Supabase, record env-related changes in `HANDOFF.md`. Roll back bad env edits by restoring `.env.local` from `.env.example` and reverting committed changes to `.env.example` via Git.
+
+## Verification (run what exists)
+
+```powershell
+npm run build
+npm run lint
+npm run test
+npm run verify:schema
+npm run graphify:check
+npm run db:map
+```
+
+Report missing scripts as `Command unavailable.`

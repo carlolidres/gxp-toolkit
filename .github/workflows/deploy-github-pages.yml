@@ -1,0 +1,66 @@
+# Deploy static site to GitHub Pages on push to master.
+#
+# Optional build-time secrets (Settings → Secrets and variables → Actions):
+#   VITE_SUPABASE_URL       — Supabase project URL (public; embedded in client bundle)
+#   VITE_SUPABASE_ANON_KEY  — Supabase anon key (public; embedded in client bundle)
+#
+# Leave secrets unset for mock-only template builds. Never add the Supabase service role key.
+# Only VITE_* variables are exposed to the frontend build.
+
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_APP_ENV: production
+          VITE_BASE_PATH: /gxp-toolkit/
+          VITE_GITHUB_PAGES: 'true'
+        run: npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
