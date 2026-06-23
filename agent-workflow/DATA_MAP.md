@@ -15,8 +15,12 @@ This is a concise human map. It does not replace executable SQL.
 | `database/sqlite/schema.sql` | Placeholder SQLite schema template | Edit only if SQLite becomes an active target |
 | `database/sqlite/seed.sql` | Placeholder SQLite seed template | Do not put regulated/production data here |
 | `sqlite-out/` | Generated schema map used for fast navigation | Never edit manually |
+| `workflow-app/database/schema.sql` | Local workflow app SQLite schema for approval records, versions, comments, approvals, audit events, and baseline snapshots | Edit only with the workflow app source |
+| `workflow-app/data/` | Local generated workflow app database/runtime data | Gitignored; do not commit |
 
 Current status: SQLite is not yet modeled for VRMS. `schema.sql`, `seed.sql`, and `sqlite-out/SCHEMA_REPORT.md` are placeholders.
+
+Workflow app status: `workflow-app/` uses its own local SQLite store for approval workflow tracking. It is not the VRMS application schema and is not deployed with the Vite app.
 
 ## Supabase Sources
 
@@ -149,6 +153,7 @@ Key rules:
 ## Data Integrity Rules
 
 - Use Supabase migrations for schema changes.
+- Keep workflow app SQLite data local; commit only `workflow-app/database/schema.sql` and source changes.
 - Validate `Doc Tracer #` uniqueness and immutable `Routing Tracker #`.
 - Preserve audit event ordering and content from the CSV source.
 - Do not expose service-role keys to the browser.

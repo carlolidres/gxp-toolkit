@@ -23,6 +23,7 @@ export function UserManagementPage() {
   const [draftPermissions, setDraftPermissions] = useState<UserPermissions>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [resettingPassword, setResettingPassword] = useState(false)
 
   const selectedUser = useMemo(
     () => users.find((item) => item.id === selectedId) ?? null,
@@ -99,6 +100,19 @@ export function UserManagementPage() {
     setDraftRole(selectedUser.role)
     setDraftActive(selectedUser.active)
     setDraftPermissions(structuredClone(selectedUser.permissions))
+  }
+
+  async function handleResetUserPassword() {
+    if (!selectedUser) return
+    setResettingPassword(true)
+    try {
+      await userManagementService.resetUserPassword(selectedUser.id)
+      notify(`Password reset to the default temporary password for ${selectedUser.email}.`)
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Failed to reset user password.')
+    } finally {
+      setResettingPassword(false)
+    }
   }
 
   if (loading) {
@@ -184,6 +198,17 @@ export function UserManagementPage() {
                       <span>{draftActive ? 'Active' : 'Inactive'}</span>
                     </label>
                   </div>
+                  <div className="user-mgmt-reset-password">
+                      <label>Password reset</label>
+                      <button
+                        type="button"
+                        className="vrms-btn-secondary"
+                        disabled={resettingPassword}
+                        onClick={() => void handleResetUserPassword()}
+                      >
+                        {resettingPassword ? 'Resetting…' : 'Reset to default password'}
+                      </button>
+                    </div>
                 </div>
                 {draftRole === 'Admin' ? (
                   <p className="user-mgmt-note">

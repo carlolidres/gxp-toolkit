@@ -11,7 +11,10 @@
     "type-check": "tsc -b",
     "repair:vrms-audit": "node scripts/repair-vrms-audit-bundle.mjs",
     "verify:vrms-csv": "node scripts/verify-vrms-csv-bundle.mjs",
-    "supabase:seed:vrms": "node scripts/generate-vrms-supabase-seed.mjs"
+    "supabase:seed:vrms": "node scripts/generate-vrms-supabase-seed.mjs",
+    "workflow:dev": "python workflow-app/server.py",
+    "workflow:validate": "python workflow-app/scripts/validate_schema.py",
+    "workflow:smoke": "python workflow-app/scripts/smoke_test.py"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",

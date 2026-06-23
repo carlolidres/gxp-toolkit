@@ -8,6 +8,7 @@ export interface UserManagementService {
   listUsers(): Promise<ManagedUser[]>
   getPermissions(userId: string, role: UserRole): Promise<UserPermissions>
   updateUser(userId: string, input: UpdateManagedUserInput): Promise<ManagedUser>
+  resetUserPassword(userId: string): Promise<void>
 }
 
 function createUserManagementService(): UserManagementService {

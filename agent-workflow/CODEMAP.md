@@ -90,6 +90,16 @@ Do not duplicate database schema details here. Database work belongs in `DATA_MA
 | `tsconfig*.json` | TypeScript project settings |
 | `package.json` | npm scripts and dependencies |
 
+## Local Workflow Utility
+
+| Path | Responsibility |
+|---|---|
+| `workflow-app/server.py` | Python stdlib HTTP server, workflow API, SQLite store, baseline snapshot writer |
+| `workflow-app/database/schema.sql` | Workflow app SQLite tables, indexes, immutability/audit triggers |
+| `workflow-app/static/` | Static local workflow UI |
+| `workflow-app/scripts/validate_schema.py` | In-memory workflow schema validation check |
+| `workflow-app/scripts/smoke_test.py` | End-to-end local workflow smoke check using temporary runtime data |
+
 ## Tests
 
 | Path | Responsibility |
@@ -116,5 +126,6 @@ Do not duplicate database schema details here. Database work belongs in `DATA_MA
 - Permission checks must not be treated as UI-only for production Supabase paths.
 - Supabase service-role keys must never enter Vite/browser code.
 - VRMS routing tracker generation and signatory status behavior live in `src/utils/vrmsLogic.ts` and service layers; preserve audit/data-integrity behavior.
+- `workflow-app/` is a local approval utility; do not treat `workflow-app/data/` or `project-files/` as production app data.
 - Generated `dist/`, dependency folders, screenshots, and reference archives are not source-of-truth implementation paths.
 - Update this map only when important implementation paths are added, moved, renamed, or become regular agent entry points.

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Local Workflow App</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <aside class="sidebar">
+      <h1>Workflow</h1>
+      <button class="nav active" data-view="dashboard">Dashboard</button>
+      <button class="nav" data-view="baseline">Project Baseline</button>
+      <button class="nav" data-view="planning">Planning</button>
+      <button class="nav" data-view="execution">Execution</button>
+      <button class="nav" data-view="review">Review</button>
+      <button class="nav" data-view="deployment">Deployment</button>
+      <button class="nav" data-view="maintenance">Maintenance</button>
+      <button class="nav" data-view="comments">Comments</button>
+      <button class="nav" data-view="history">Version History</button>
+      <button class="nav" data-view="audit">Audit Trail</button>
+    </aside>
+    <main>
+      <header>
+        <div>
+          <p class="eyebrow">Local-first approval interface</p>
+          <h2 id="viewTitle">Dashboard</h2>
+        </div>
+        <label>
+          Submitter
+          <input id="submitter" autocomplete="name">
+        </label>
+      </header>
+      <section id="message" class="message" hidden></section>
+      <section id="dashboardView" class="view"></section>
+      <section id="stageView" class="view" hidden>
+        <div class="toolbar">
+          <select id="recordSelect"></select>
+          <button id="newRecord">New record</button>
+          <button id="submitReview">Submit for review</button>
+          <button id="approveRecord">Approve</button>
+          <button id="needsRevision">Needs revision</button>
+          <button id="rejectRecord">Reject</button>
+          <button id="completeRecord">Complete</button>
+          <button id="deployRecord">Deploy</button>
+        </div>
+        <form id="recordForm">
+          <label>
+            Title
+            <input id="recordTitle" required>
+          </label>
+          <div id="dynamicFields" class="fields"></div>
+          <button type="submit">Save version</button>
+        </form>
+      </section>
+      <section id="commentsView" class="view" hidden>
+        <form id="commentForm">
+          <label>
+            Record
+            <select id="commentRecord"></select>
+          </label>
+          <label>
+            Type
+            <select id="commentType">
+              <option>Comment</option>
+              <option>Revision Request</option>
+              <option>Decision Note</option>
+              <option>Bug</option>
+              <option>Maintenance</option>
+            </select>
+          </label>
+          <label>
+            Comment
+            <textarea id="commentBody" required></textarea>
+          </label>
+          <button type="submit">Add comment</button>
+        </form>
+        <div id="commentsList"></div>
+      </section>
+      <section id="historyView" class="view" hidden>
+        <div class="toolbar">
+          <select id="historyRecord"></select>
+          <button id="refreshHistory">Refresh</button>
+        </div>
+        <div id="historyList"></div>
+        <h3>Approved baseline snapshots</h3>
+        <div id="baselineSnapshots"></div>
+      </section>
+      <section id="auditView" class="view" hidden>
+        <div id="auditList"></div>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

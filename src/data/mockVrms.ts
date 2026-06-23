@@ -81,6 +81,11 @@ export function buildVrmsDashboard(documents: RoutingDocument[]): VrmsDashboardM
       if (item.Status === 'Signed') {
         stats.signed++
         stats.completed++
+        const duration = parseDurationMinutes(item['Duration pending/signing time'])
+        if (duration >= 0) {
+          stats.durationMinutes += duration
+          stats.durationSamples++
+        }
       } else {
         stats.pending++
       }
@@ -88,6 +93,7 @@ export function buildVrmsDashboard(documents: RoutingDocument[]): VrmsDashboardM
   })
 
   const routingDocs = documents.filter((doc) => doc.status === 'Routing')
+  const recentDocs = [...documents].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
   const aging = routingDocs
     .map((doc) => daysBetween(doc.dateSent, today))
     .filter((days) => days >= 0)
@@ -106,7 +112,9 @@ export function buildVrmsDashboard(documents: RoutingDocument[]): VrmsDashboardM
       .map((item) => ({
         name: item.name,
         signed: item.signed,
-        avgDuration: 'N/A',
+        avgDuration: item.durationSamples
+          ? humanDuration(Math.round(item.durationMinutes / item.durationSamples))
+          : 'N/A',
         avgDurationMinutes: item.durationSamples
           ? Math.round(item.durationMinutes / item.durationSamples)
           : -1,
@@ -114,12 +122,10 @@ export function buildVrmsDashboard(documents: RoutingDocument[]): VrmsDashboardM
         completed: item.completed,
       }))
       .sort((a, b) => b.signed - a.signed || a.name.localeCompare(b.name)),
-    recent: [...documents]
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .slice(0, 8),
-    active: [...routingDocs]
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .slice(0, 12),
+    recentTotal: recentDocs.length,
+    activeTotal: routingDocs.length,
+    recent: recentDocs,
+    active: [...routingDocs].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
   }
 }
 
@@ -139,4 +145,33 @@ function daysBetween(start: string, end: Date): number {
   const startDate = new Date(start)
   if (Number.isNaN(startDate.getTime())) return -1
   return Math.floor((end.getTime() - startDate.getTime()) / 86_400_000)
+}
+
+function parseDurationMinutes(value: string): number {
+  const text = value.trim().toLowerCase()
+  if (!text) return -1
+
+  const matches = [...text.matchAll(/(\d+)\s*(days?|hrs?|hours?|mins?|minutes?)/g)]
+  if (!matches.length) return -1
+
+  return matches.reduce((total, match) => {
+    const amount = Number(match[1])
+    const unit = match[2]
+    if (unit.startsWith('day')) return total + amount * 1440
+    if (unit.startsWith('hr') || unit.startsWith('hour')) return total + amount * 60
+    return total + amount
+  }, 0)
+}
+
+function humanDuration(minutes: number): string {
+  let remaining = Math.max(0, Number(minutes) || 0)
+  const days = Math.floor(remaining / 1440)
+  remaining -= days * 1440
+  const hours = Math.floor(remaining / 60)
+  remaining -= hours * 60
+  const parts: string[] = []
+  if (days) parts.push(`${days} ${days === 1 ? 'day' : 'days'}`)
+  if (hours) parts.push(`${hours} ${hours === 1 ? 'hr' : 'hrs'}`)
+  if (remaining || !parts.length) parts.push(`${remaining} ${remaining === 1 ? 'min' : 'mins'}`)
+  return parts.slice(0, 2).join(' ')
 }

@@ -9,6 +9,11 @@ import { VrmsDataTable } from '../../components/vrms/VrmsDataTable'
 import type { RoutingDocument } from '../../types/vrms'
 import { getStatusKey } from '../../utils/vrmsLogic'
 
+const DATABASE_TABLE_COLUMNS = VRMS_DATABASE_COLUMNS.slice(0, 8) as unknown as Array<{
+  key: keyof RoutingDocument
+  label: string
+}>
+
 function escapeCsv(value: string): string {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {
     return `"${value.replace(/"/g, '""')}"`
@@ -92,7 +97,7 @@ export function VrmsDatabasePage() {
 
   return (
     <VrmsPage title="Database" description={`${appData?.documents.length ?? 0} routing records`}>
-      <section className="vrms-panel">
+      <section className="vrms-panel vrms-database-panel">
         <div className="vrms-toolbar">
           <div>
             <label>Global search</label>
@@ -148,7 +153,7 @@ export function VrmsDatabasePage() {
 
         <VrmsDataTable
           rows={filtered}
-          columns={VRMS_DATABASE_COLUMNS as unknown as Array<{ key: keyof RoutingDocument; label: string }>}
+          columns={DATABASE_TABLE_COLUMNS}
           onTrackerClick={(tracker) => navigate(`/routing?tracker=${encodeURIComponent(tracker)}`)}
         />
       </section>

@@ -41,6 +41,24 @@ export function normalizeAuthMessage(message: string): string {
     return 'Supabase rejected the public anon key for this deployment. Update the GitHub Actions VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY secrets from the same Supabase project, then redeploy.'
   }
   if (lower.includes('cancel')) return 'Authentication was cancelled. You can try again when ready.'
+  if (lower.includes('invalid login credentials') || lower.includes('invalid email or password')) {
+    return 'Email or password is incorrect. Use Forgot password to request a reset, or sign in with Google or Microsoft if you registered that way.'
+  }
+  if (lower.includes('email not confirmed')) {
+    return 'Confirm your email address before signing in. Check your inbox for the Supabase confirmation link.'
+  }
+  if (lower.includes('password should be at least') || lower.includes('weak password')) {
+    return 'Choose a stronger password that meets the Supabase password policy (usually at least 8 characters).'
+  }
+  if (lower.includes('user already registered')) {
+    return 'An account already exists for this email. Sign in instead, or use Forgot password if you need access.'
+  }
+  if (lower.includes('database error saving new user') || lower.includes('500')) {
+    return 'Registration failed while creating your profile record. Ask an administrator to verify the Supabase profile trigger and migrations, then try again.'
+  }
+  if (lower.includes('422') || lower.includes('unprocessable')) {
+    return 'Registration input was rejected. Check the email format, password policy, and whether the email is already registered.'
+  }
   return text
 }
 

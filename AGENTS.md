@@ -86,6 +86,8 @@ Do not load all SQL files and all generated maps together unless a full schema r
 - Approved task plans: `plans/`
 - Editable SQLite SQL: `database/sqlite/`
 - Generated SQLite maps: `sqlite-out/`
+- Local workflow app: `workflow-app/`
+- Workflow runtime data: `workflow-app/data/`, `project-files/`
 - Reusable templates: `project-templates/`
 
 ---
@@ -103,6 +105,8 @@ Test:              npm run test
 Build:             npm run build
 Verify:            npm run verify:vrms-csv && npm run test && npm run build
 SQLite map sync:   [SQLITE_MAP_COMMAND]
+Workflow app:      npm run workflow:dev
+Workflow checks:   npm run workflow:validate && npm run workflow:smoke
 Deploy:            GitHub Actions workflow `.github/workflows/deploy-pages.yml`
 ```
 

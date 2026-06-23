@@ -249,7 +249,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               type="button"
               className="topbar-profile-chip"
               aria-label="Account settings"
-              onClick={() => navigate('/')}
+              onClick={() => { closeMobileNav(); navigate('/account') }}
             >
               <span className="topbar-profile-avatar">{user?.initials}</span>
               <span className="topbar-profile-text">

@@ -95,6 +95,8 @@ export interface VrmsDashboardMetrics {
   avgAging: number
   statusCounts: Record<string, number>
   kpi: VrmsSignatoryKpi[]
+  recentTotal: number
+  activeTotal: number
   recent: RoutingDocument[]
   active: RoutingDocument[]
 }

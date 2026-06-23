@@ -168,4 +168,16 @@ export const supabaseUserManagementService = {
     const rows = await loadPermissionRows(profileId)
     return toManagedUser(updatedProfile, rowsToUserPermissions(rows))
   },
+
+  async resetUserPassword(profileId: string): Promise<void> {
+    const client = requireClient()
+    const { data, error } = await client.functions.invoke('admin-reset-password', {
+      body: { profileId },
+    })
+
+    if (error) throw new Error(error.message)
+    if (data && typeof data === 'object' && 'error' in data && data.error) {
+      throw new Error(String(data.error))
+    }
+  },
 }

@@ -46,6 +46,7 @@ export function mapSessionToAuthUser(input: {
   role?: VrmsProfileRole | string
   profileId?: string
   active?: boolean
+  mustChangePassword?: boolean
 }): AuthUser {
   const name = input.displayName?.trim() || input.email.split('@')[0]
   return {
@@ -56,5 +57,6 @@ export function mapSessionToAuthUser(input: {
     role: mapVrmsRoleToUserRole(input.role),
     initials: initialsFromName(name, input.email),
     active: input.active ?? true,
+    mustChangePassword: input.mustChangePassword ?? false,
   }
 }

@@ -1,0 +1,185 @@
+:root {
+  color-scheme: light;
+  font-family: Arial, Helvetica, sans-serif;
+  --border: #d7dde8;
+  --ink: #172033;
+  --muted: #63708a;
+  --panel: #f7f9fc;
+  --accent: #1f6feb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  border-right: 1px solid var(--border);
+  padding: 18px;
+  background: var(--panel);
+}
+
+.sidebar h1 {
+  font-size: 22px;
+  margin: 0 0 18px;
+}
+
+.nav {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  display: block;
+  margin-bottom: 6px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.nav.active,
+.nav:hover {
+  background: #e7eefc;
+}
+
+main {
+  padding: 24px;
+  min-width: 0;
+}
+
+header,
+.toolbar {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+header h2 {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+input,
+select,
+textarea,
+button {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  padding: 9px 10px;
+}
+
+textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+button {
+  background: #ffffff;
+  cursor: pointer;
+}
+
+button[type="submit"],
+#approveRecord,
+#deployRecord {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.message {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+}
+
+.cards {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.card,
+form,
+.list-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.card strong {
+  display: block;
+  font-size: 26px;
+  margin-top: 4px;
+}
+
+form,
+.fields {
+  display: grid;
+  gap: 12px;
+}
+
+.toolbar {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.toolbar select {
+  min-width: 260px;
+}
+
+.list-item {
+  margin-bottom: 10px;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+pre {
+  background: var(--panel);
+  border-radius: 6px;
+  overflow: auto;
+  padding: 10px;
+}
+
+@media (max-width: 780px) {
+  body {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  header {
+    align-items: stretch;
+    display: grid;
+  }
+}

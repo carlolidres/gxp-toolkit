@@ -10,6 +10,7 @@ export function ProtectedRoute({ children, roles }: { children: ReactNode; roles
   if (!authReady) return <p className="auth-loading">Restoring session…</p>
   if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location }} />
   if (user?.active === false) return <Navigate to="/login" replace />
+  if (user?.mustChangePassword) return <Navigate to="/reset-password" replace state={{ from: location }} />
   if (roles && !hasRole(roles)) return <Navigate to="/" replace />
   return children
 }

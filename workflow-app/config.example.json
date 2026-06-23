@@ -1,0 +1,9 @@
+{
+  "host": "127.0.0.1",
+  "port": 8765,
+  "database_path": "data/workflow.sqlite3",
+  "project_files_path": "../project-files",
+  "baseline_path": "../agent-history/version-0-baseline.md",
+  "history_path": "../agent-history",
+  "default_submitter": "Project Owner"
+}

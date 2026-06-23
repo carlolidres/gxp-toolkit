@@ -5,4 +5,10 @@ dist/
 .env.*.local
 *.tsbuildinfo
 npm-debug.log*
+__pycache__/
+*.pyc
 supabase/seed.vrms.generated.sql
+workflow-app/config.json
+workflow-app/data/
+project-files/
+agent-history/baseline-backups/

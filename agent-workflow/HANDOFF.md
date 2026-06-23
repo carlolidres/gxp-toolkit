@@ -1,102 +1,78 @@
 # Current Handoff
 
-Last Updated: `2026-06-21 21:57 Asia/Taipei`
-Version: `v6`
-Branch: `master`
-Commit: `NOT_COMMITTED; last deployed commit e304552`
-Deployment: `SUCCESS; https://carlolidres.github.io/gxp-toolkit/ returned HTTP 200`
+Last Updated: `2026-06-23 21:45 Asia/Taipei`
+Version: `v14`
+Branch: `main` / `master`
+Commit: `b084c47`
+Deployment: `IN_PROGRESS`
 
 ## Current Status
 
-GitHub Pages deployment is live, but reviewer feedback shows Supabase Auth returns `401 Unauthorized` across password, signup, and OAuth callback flows. The app now maps Supabase/Auth 401s to a clear deployment-secret message. After user approval, GitHub Actions `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` secrets were updated from `.env.local` without printing values. Redeploy is next.
+Admin default-password reset implemented: User Management resets accounts to `iLoveJesus` via Edge Function, login page shows the temporary password when required, and users must set a new password before accessing the app. Prior VRMS dashboard and auth/profile fixes remain in place.
 
 ## Recently Completed
 
-- Initialized the local Git repository on `main` and added `origin` at `https://github.com/carlolidres/gxp-toolkit.git`
-- Committed and pushed the prepared GxP Toolkit app to `origin/main`
-- Confirmed GitHub Actions build on `main` passed install, test, build, and artifact upload
-- Identified the Pages environment branch policy: only `master` may deploy to `github-pages`
-- Updated `.github/workflows/deploy-pages.yml` to run on `master`, matching the Pages environment branch policy
-- Fetched and merged existing `origin/master` history using `--allow-unrelated-histories`
-- Removed accidentally staged broad `reference/` material from the unpushed merge commit; tracked reference material is limited to VRMS CSV inputs and reference Supabase migrations
-- Pushed final deployment state to `origin/master`
-- Confirmed both triggered Pages runs completed successfully, then removed the older duplicate workflow so future pushes use one deploy workflow
-- Verified `https://carlolidres.github.io/gxp-toolkit/` returned `HTTP 200` with title `GxP Toolkit`
-- Sanitized reviewer feedback in this handoff to remove a pasted password and long console stack traces
-- Added a focused auth-message guard/test for Supabase Auth `401 Unauthorized` deployment-secret failures
-- Updated GitHub Actions Supabase secret names from `.env.local` after explicit approval; values were not printed
+- Fixed migration `20260623200000_admin_default_password_reset.sql`: `DROP FUNCTION` before profile RPCs (Postgres 42P13)
+- Added Edge Function `supabase/functions/admin-reset-password` (service-role password set + session invalidation)
+- Replaced **Send reset email** with **Reset to default password** on User Management
+- Login page shows temporary password hint when `check_temporary_password_required` is true
+- Protected routes redirect to `/reset-password` until the user chooses a new password
+- Added auth mapping tests for `mustChangePassword` and default password constant
 
 ## Active Work
 
-- Objective: `Fix Supabase Auth 401 feedback from deployed GitHub Pages app`
-- Progress: `READY_TO_REDEPLOY`
-- Remaining: `Commit, push to master, confirm GitHub Pages workflow, then retest live auth`
+- Objective: `Admin default-password reset flow`
+- Progress: `COMMITTED — Supabase migration + Edge Function deploy in progress`
+- Remaining: Owner browser retest with Supabase backend
 
-## Minimal Read Set for the Next Agent
+## Next Action
 
-List no more than five task-specific files; omit standard startup files.
-
-| Path | Reason |
-|---|---|
-| `.github/workflows/deploy-pages.yml` | GitHub Pages workflow, enabled for the Pages-allowed `master` branch |
-| `agent-history/version-6-handoff.md` | Auth feedback and deployment-secret checkpoint |
-| `agent-workflow/PLAN.md` | Migration/deployment prep scope, verification, and GxP gate note |
-| `agent-workflow/DATA_MAP.md` | Current CSV, Supabase, and migration map |
-| `supabase/migrations/` | Active Supabase migration sequence copied from reference migrations |
-
-## Known Issues
-
-| Severity | Issue | Impact | Next action |
-|---|---|---|---|
-| MEDIUM | Baseline and approved task plan remain template-like/incomplete | Production GxP release lacks formal owner-approved requirements evidence | Project owner should approve/fill baseline and task plan before regulated production use |
-| MEDIUM | Live Supabase migration/seed was performed by project owner, not by this agent | Agent cannot independently confirm live database state without authorized Supabase access | Verify live Supabase tables, RLS, and seed counts in the target project |
-| MEDIUM | Supabase Auth on the deployed site returns 401 for password, signup, and OAuth token exchange | Existing deployment was built before GitHub Supabase secrets were refreshed | Redeploy from `master`, then retest live auth |
-| LOW | `npm run build` reports a Vite chunk-size warning for the main bundle | Build passes, but first-load bundle may be large | Consider route-level code splitting/manual chunks after functional acceptance |
-| LOW | Repository default branch and Pages deployment policy are `master`, while local prep began on `main` | Pushes to `main` build but cannot deploy to Pages | Continue deploying from `master` or change the Pages environment policy/default branch in GitHub |
-
-## Decisions and Simplifications
-
-- Decision: `Preserve existing remote master history instead of force-pushing over it.`
-- Decision: `Deploy through the existing github-pages environment branch policy by keeping the workflow on master.`
-- Decision: `Keep generated VRMS seed SQL gitignored; regenerate locally with npm run supabase:seed:vrms.`
-- Decision: `Do not read or expose .env.local contents.`
-- `ponytail:` `Use the existing Pages workflow path and one branch-policy fix instead of introducing another deploy mechanism.`
+1. Apply migration `20260623200000_admin_default_password_reset.sql` to the live Supabase project.
+2. Deploy Edge Function: `supabase functions deploy admin-reset-password`
+3. Set secret: `supabase secrets set DEFAULT_RESET_PASSWORD=iLoveJesus`
+4. Retest `/admin/users` reset → `/login` hint → sign-in → forced password change → app access.
 
 ## Verification
 
 | Check | Status | Result |
 |---|---|---|
-| Install | `PASSED` | `npm install` completed earlier, 0 vulnerabilities |
-| Lint | `N/A` | `No lint script configured` |
-| Type-check | `PASSED` | Covered by `npm run build` via `tsc -b` |
-| Tests/self-check | `PASSED` | `npm run test` — 5 files, 17 tests passed |
-| Build | `PASSED` | `npm run build`; Vite chunk-size warning only |
-| CSV/app data check | `PASSED` | `npm run verify:vrms-csv`; all 10 CSV row counts match and audit fields aligned |
-| Supabase seed generation | `PASSED` | `npm run supabase:seed:vrms` completed earlier; generated ignored local `supabase/seed.vrms.generated.sql` |
-| Migration reference alignment | `PASSED` | Active `supabase/migrations` contains the eight SQL files from `reference/supabase/migrations` |
-| Deployment | `PASSED` | `master` Pages workflow deployed successfully; live URL returned HTTP 200 |
+| Tests | `PASSED` | 29 tests |
+| Type-check / build | `PASSED` | chunk-size warning only |
+| Live migration | `NOT_RUN` | Fixed 42P13 — re-apply updated migration SQL |
+| Edge Function deploy | `NOT_RUN` | Awaiting owner deploy |
+| Browser retest | `NOT_RUN` | Requires Supabase backend |
 
-## SQLite Sync
 
-- Editable SQL changed: `NONE`
-- Migration: `NONE`
-- Generated map: `NOT_REQUIRED`
-- Map command/result: `N/A`
-- Applied to: `NONE`
-- Rollback: `N/A`
+## Recently Completed
 
-## Next Action
+- Fixed VRMS dashboard greeting: `VrmsDashboardPage` now calls `formatDashboardGreeting` instead of static "Good morning"
+- Enhanced `src/lib/greeting.ts` to derive hour from `Intl.DateTimeFormat().resolvedOptions().timeZone` (browser-local IANA zone)
+- Added timezone-specific unit test (`Asia/Taipei` vs `UTC`)
+- Fixed VRMS dashboard panel balance: distribution and Individual KPI cards now stretch to the same bounded desktop height, with KPI table overflow contained inside the card
+- Restored polished KPI name treatment with circular initials avatars and a sticky table header
+- Fixed Individual KPI average duration: `buildVrmsDashboard` now parses `Duration pending/signing time` from signed signatory rows, averages samples by person, and formats the display duration
+- Added a focused dashboard KPI test covering average-duration calculation and `N/A` fallback when no signed-duration samples exist
+- Fixed lower dashboard document preview cards: recently updated and active routing cards now use compact 3-column preview tables, header icons/actions, contained vertical scrolling, footer counts, and view-all actions
+- Fixed responsive dashboard proportions: top dashboard panels and lower document cards now use equal 50:50 columns on wide content areas, with overflow-safe table layouts
+- Fixed database reference mismatch: visible database table now matches the expected 8-column view, toolbar fields adapt across widths, and the overdue control renders as a switch instead of a raw checkbox
 
-`Monitor the live Supabase-backed app behavior and remove/adjust the Pages branch policy only if you want main to become the deployment branch.`
+## Root Causes (workflow-app bugs)
 
-V6 auth follow-up: `Redeploy from master and retest live Supabase Auth.`
+| Issue | Root cause |
+|---|---|
+| Login prefilled email | Hardcoded `defaultValue` in `LoginPage.tsx` |
+| `get_own_profile` 400 | STABLE function performing writes + duplicate RETURN QUERY; seed profile missing `auth_user_id` broke admin RLS |
+| Account profile save | Update filtered only `auth_user_id`; seed profile had null link |
+| Admin menu / user list | `is_vrms_admin()` required `auth_user_id = auth.uid()`; owner seed row was unlinked |
+| Dashboard greeting | Static "Good morning" on `VrmsDashboardPage` (`/dashboard` route); sample `DashboardPage` was fixed earlier but not VRMS |
+| Dashboard card imbalance | KPI table content expanded the whole card; previous donut-height syncing did not constrain table overflow, so both cards could become visually uneven or oversized |
+| Dashboard average duration | `buildVrmsDashboard` initialized duration counters but never added signatory duration samples; `avgDuration` was hardcoded to `N/A` |
+| Dashboard document cards | Lower dashboard panels reused the generic wide VRMS data table and lacked preview-card header/footer structure, causing horizontal scroll and clipped content |
+| Dashboard/database responsiveness | Wide layouts used uneven column ratios or generic table widths, so sidebar expansion changed proportions and caused avoidable horizontal overflow |
+| OAuth | Removed unused Google/Microsoft sign-in paths per owner request |
 
-Historical evidence: `agent-history/version-6-handoff.md`
+| Browser retest (prior) | `PARTIAL` | Mock-mode layout verified; Supabase retest pending |
 
-Keep this file concise. Do not copy full logs, diffs, generated maps, or historical narratives here.
+## Feedback Source
 
-## Feedback
-
-Sanitized reviewer feedback: deployed Supabase Auth returns `401 Unauthorized` for Google OAuth token exchange, email/password sign-in, email signup, and OAuth signup. A browser-extension log line (`writer.min.js`, Ginger Widget) is unrelated to the app.
-
-Initial diagnosis: because multiple Supabase Auth endpoints fail with 401, the likely root cause was a missing, invalid, or mismatched public anon key in GitHub Actions secrets for the deployed build. After explicit approval, this agent updated the GitHub Actions secret names from `.env.local` without printing values.
+Workflow-app record: `Resolve Authentication, Password Reset, User Registration, Profile Editing, and Administration Menu Issues` — comments/bugs dated 2026-06-22–2026-06-23.

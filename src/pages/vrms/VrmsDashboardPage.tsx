@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { CSSProperties, SVGProps } from 'react'
+import type { SVGProps } from 'react'
 
 import { VrmsPage } from '../../components/vrms/VrmsPage'
 import { useAuth } from '../../hooks/useAuth'
@@ -9,6 +9,7 @@ import { VRMS_DASHBOARD_CARD_TONES } from '../../lib/vrmsStatus'
 import { VRMS_RECENT_COLUMNS } from '../../lib/vrmsFormConfig'
 import type { RoutingDocument } from '../../types/vrms'
 import { VrmsDataTable } from '../../components/vrms/VrmsDataTable'
+import { formatDashboardGreeting } from '../../lib/greeting'
 import { getVrmsStatusStyle } from '../../lib/vrmsStatus'
 
 const dashboardCards = [
@@ -38,9 +39,23 @@ const recentColumns = VRMS_RECENT_COLUMNS.map((key) => ({
               : 'Status',
 })) as Array<{ key: keyof RoutingDocument; label: string }>
 
+const dashboardPreviewColumns = recentColumns.slice(0, 3)
+
+const kpiAvatarTones = ['blue', 'green', 'purple', 'orange', 'blue', 'teal', 'purple', 'red'] as const
+
 function greetingName(name?: string): string {
   if (!name) return 'there'
   return name.split(' ')[0]
+}
+
+function initials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 }
 
 function CardIcon({ name, ...props }: { name: string } & SVGProps<SVGSVGElement>) {
@@ -78,6 +93,18 @@ function CardIcon({ name, ...props }: { name: string } & SVGProps<SVGSVGElement>
   if (name === 'clock') {
     return <svg {...shared}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
   }
+  if (name === 'share') {
+    return <svg {...shared}><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 10.6 6.8-4.2" /><path d="m8.6 13.4 6.8 4.2" /></svg>
+  }
+  if (name === 'refresh') {
+    return <svg {...shared}><path d="M20 11a8 8 0 0 0-14.9-4" /><path d="M5 3v4h4" /><path d="M4 13a8 8 0 0 0 14.9 4" /><path d="M19 21v-4h-4" /></svg>
+  }
+  if (name === 'more') {
+    return <svg {...shared}><circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" /></svg>
+  }
+  if (name === 'chevron') {
+    return <svg {...shared}><path d="m9 18 6-6-6-6" /></svg>
+  }
   return <svg {...shared}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><path d="M9 13h6" /><path d="M9 17h4" /></svg>
 }
 
@@ -85,16 +112,13 @@ function statusDatabasePath(status: string): string {
   return `/database?status=${encodeURIComponent(status)}`
 }
 
-function BrokenStatusDonut({
+function StatusDonut({
   statusCounts,
   onStatusClick,
-  onLayoutHeightChange,
 }: {
   statusCounts: Record<string, number>
   onStatusClick: (status: string) => void
-  onLayoutHeightChange?: (height: number) => void
 }) {
-  const layoutRef = useRef<HTMLDivElement | null>(null)
   const entries = Object.entries(statusCounts).filter(([, count]) => count > 0)
   const total = entries.reduce((sum, [, count]) => sum + count, 0)
   const radius = 72
@@ -102,54 +126,41 @@ function BrokenStatusDonut({
   const gap = entries.length > 1 ? 5 : 0
   let offset = 0
 
-  useEffect(() => {
-    const node = layoutRef.current
-    if (!node || !onLayoutHeightChange) return
-    const handleHeightChange: (height: number) => void = onLayoutHeightChange
-
-    function updateHeight() {
-      if (node) handleHeightChange(Math.ceil(node.getBoundingClientRect().height))
-    }
-
-    updateHeight()
-    const observer = new ResizeObserver(updateHeight)
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [onLayoutHeightChange, entries.length, total])
-
   if (!total) {
     return <div className="vrms-donut-empty">No status data</div>
   }
 
   return (
-    <div className="vrms-donut-layout" ref={layoutRef}>
-      <svg className="vrms-donut" viewBox="0 0 180 180" role="img" aria-label="Documents by status">
-        <circle className="vrms-donut-track" cx="90" cy="90" r={radius} />
-        {entries.map(([status, count]) => {
-          const style = getVrmsStatusStyle(status)
-          const length = Math.max(0, (count / total) * circumference - gap)
-          const dashOffset = -offset
-          offset += length + gap
-          return (
-            <circle
-              key={status}
-              className="vrms-donut-segment"
-              cx="90"
-              cy="90"
-              r={radius}
-              stroke={style.color}
-              strokeDasharray={`${length} ${circumference - length}`}
-              strokeDashoffset={dashOffset}
-              onClick={() => onStatusClick(status)}
-            >
-              <title>{`${status}: ${count}`}</title>
-            </circle>
-          )
-        })}
-      </svg>
-      <div className="vrms-donut-center">
-        <strong>{total}</strong>
-        <span>records</span>
+    <div className="vrms-donut-layout">
+      <div className="vrms-donut-chart">
+        <svg className="vrms-donut" viewBox="0 0 180 180" role="img" aria-label="Documents by status">
+          <circle className="vrms-donut-track" cx="90" cy="90" r={radius} />
+          {entries.map(([status, count]) => {
+            const style = getVrmsStatusStyle(status)
+            const length = Math.max(0, (count / total) * circumference - gap)
+            const dashOffset = -offset
+            offset += length + gap
+            return (
+              <circle
+                key={status}
+                className="vrms-donut-segment"
+                cx="90"
+                cy="90"
+                r={radius}
+                stroke={style.color}
+                strokeDasharray={`${length} ${circumference - length}`}
+                strokeDashoffset={dashOffset}
+                onClick={() => onStatusClick(status)}
+              >
+                <title>{`${status}: ${count}`}</title>
+              </circle>
+            )
+          })}
+        </svg>
+        <div className="vrms-donut-center">
+          <strong>{total}</strong>
+          <span>records</span>
+        </div>
       </div>
       <div className="vrms-donut-legend">
         {entries.map(([status, count]) => {
@@ -167,11 +178,100 @@ function BrokenStatusDonut({
   )
 }
 
+function DashboardDocumentCard({
+  title,
+  icon,
+  rows,
+  total,
+  actionLabel,
+  actionPath,
+  onTrackerClick,
+}: {
+  title: string
+  icon: 'clock' | 'share'
+  rows: RoutingDocument[]
+  total: number
+  actionLabel: string
+  actionPath: string
+  onTrackerClick: (tracker: string) => void
+}) {
+  const navigate = useNavigate()
+  const visibleCount = Math.min(10, total)
+
+  return (
+    <section className="vrms-panel vrms-dashboard-doc-card">
+      <div className="vrms-dashboard-doc-header">
+        <div className="vrms-dashboard-doc-title">
+          <span className="vrms-dashboard-doc-icon">
+            <CardIcon name={icon} />
+          </span>
+          <h2>{title}</h2>
+        </div>
+        <div className="vrms-dashboard-doc-actions" aria-label={`${title} actions`}>
+          <button type="button" aria-label={`Refresh ${title}`}>
+            <CardIcon name="refresh" />
+          </button>
+          <button type="button" aria-label={`${title} options`}>
+            <CardIcon name="more" />
+          </button>
+        </div>
+      </div>
+      <div className="vrms-dashboard-doc-table">
+        <VrmsDataTable
+          rows={rows}
+          columns={dashboardPreviewColumns}
+          onTrackerClick={onTrackerClick}
+        />
+      </div>
+      <div className="vrms-dashboard-doc-footer">
+        <span className="vrms-dashboard-doc-count">
+          <CardIcon name="document" />
+          {visibleCount} of {total} documents
+        </span>
+        <button type="button" onClick={() => navigate(actionPath)}>
+          {actionLabel}
+          <CardIcon name="chevron" />
+        </button>
+      </div>
+    </section>
+  )
+}
+
 export function VrmsDashboardPage() {
   const { appData, loading } = useVrmsApp()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [donutLayoutHeight, setDonutLayoutHeight] = useState(0)
+  const distributionRef = useRef<HTMLElement>(null)
+  const [kpiPanelHeight, setKpiPanelHeight] = useState<number | undefined>()
+  const dashboard = appData?.dashboard
+
+  useLayoutEffect(() => {
+    const distributionPanel = distributionRef.current
+    if (!distributionPanel || !dashboard) {
+      setKpiPanelHeight(undefined)
+      return
+    }
+
+    const desktopQuery = window.matchMedia('(min-width: 1100px)')
+
+    const syncKpiHeight = () => {
+      if (!desktopQuery.matches) {
+        setKpiPanelHeight(undefined)
+        return
+      }
+      setKpiPanelHeight(Math.round(distributionPanel.getBoundingClientRect().height))
+    }
+
+    syncKpiHeight()
+    const observer = new ResizeObserver(syncKpiHeight)
+    observer.observe(distributionPanel)
+    desktopQuery.addEventListener('change', syncKpiHeight)
+
+    return () => {
+      observer.disconnect()
+      desktopQuery.removeEventListener('change', syncKpiHeight)
+    }
+  }, [dashboard])
 
   if (loading && !appData) {
     return (
@@ -181,7 +281,6 @@ export function VrmsDashboardPage() {
     )
   }
 
-  const dashboard = appData?.dashboard
   if (!dashboard) {
     return (
       <div className="page">
@@ -190,10 +289,12 @@ export function VrmsDashboardPage() {
     )
   }
 
+  const greeting = formatDashboardGreeting(greetingName(user?.name))
+
   return (
     <VrmsPage
       eyebrow="Validation routing workspace"
-      title={`Good morning, ${greetingName(user?.name)}`}
+      title={greeting}
       description="Monitor routing status, signatories, and document throughput from one adaptable shell."
     >
       <div className="vrms-cards">
@@ -218,25 +319,24 @@ export function VrmsDashboardPage() {
         })}
       </div>
 
-      <div
-        className="dashboard-grid vrms-dashboard-panels"
-        style={donutLayoutHeight ? ({ '--vrms-donut-layout-height': `${donutLayoutHeight}px` } as CSSProperties) : undefined}
-      >
-        <section className="panel vrms-dashboard-panel vrms-dashboard-distribution">
+      <div className="dashboard-grid vrms-dashboard-panels">
+        <section ref={distributionRef} className="panel vrms-dashboard-panel vrms-dashboard-distribution">
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Distribution</span>
               <h2>Documents by status</h2>
             </div>
           </div>
-          <BrokenStatusDonut
+          <StatusDonut
             statusCounts={dashboard.statusCounts}
             onStatusClick={(status) => navigate(statusDatabasePath(status))}
-            onLayoutHeightChange={setDonutLayoutHeight}
           />
         </section>
 
-        <section className="panel vrms-dashboard-panel vrms-dashboard-kpi">
+        <section
+          className="panel vrms-dashboard-panel vrms-dashboard-kpi"
+          style={kpiPanelHeight ? { height: kpiPanelHeight } : undefined}
+        >
           <div className="panel-heading">
             <h2>Individual KPI</h2>
           </div>
@@ -251,9 +351,16 @@ export function VrmsDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {dashboard.kpi.map((row) => (
+                {dashboard.kpi.map((row, index) => (
                   <tr key={row.name} className="vrms-clickable-row" onClick={() => navigate(`/database?search=${encodeURIComponent(row.name)}`)}>
-                    <td>{row.name}</td>
+                    <td>
+                      <span className="vrms-kpi-name">
+                        <span className={`vrms-kpi-avatar tone-${kpiAvatarTones[index % kpiAvatarTones.length]}`}>
+                          {initials(row.name)}
+                        </span>
+                        {row.name}
+                      </span>
+                    </td>
                     <td>{row.signed}</td>
                     <td>{row.avgDuration}</td>
                     <td>{row.pending}</td>
@@ -266,22 +373,24 @@ export function VrmsDashboardPage() {
       </div>
 
       <div className="vrms-grid2">
-        <section className="vrms-panel">
-          <h2>Recently updated documents</h2>
-          <VrmsDataTable
-            rows={dashboard.recent}
-            columns={recentColumns}
-            onTrackerClick={(tracker) => navigate(`/routing?tracker=${encodeURIComponent(tracker)}`)}
-          />
-        </section>
-        <section className="vrms-panel">
-          <h2>Active routing documents</h2>
-          <VrmsDataTable
-            rows={dashboard.active}
-            columns={recentColumns}
-            onTrackerClick={(tracker) => navigate(`/routing?tracker=${encodeURIComponent(tracker)}`)}
-          />
-        </section>
+        <DashboardDocumentCard
+          title="Recently updated documents"
+          icon="clock"
+          rows={dashboard.recent}
+          total={dashboard.recentTotal}
+          actionLabel="View all updated"
+          actionPath="/database"
+          onTrackerClick={(tracker) => navigate(`/routing?tracker=${encodeURIComponent(tracker)}`)}
+        />
+        <DashboardDocumentCard
+          title="Active routing documents"
+          icon="share"
+          rows={dashboard.active}
+          total={dashboard.activeTotal}
+          actionLabel="View all routing"
+          actionPath="/database?status=Routing"
+          onTrackerClick={(tracker) => navigate(`/routing?tracker=${encodeURIComponent(tracker)}`)}
+        />
       </div>
     </VrmsPage>
   )

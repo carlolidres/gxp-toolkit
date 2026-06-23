@@ -49,11 +49,14 @@ Consolidate existing GxP systems, tools, modules, data registries, routing workf
 | Current status | `agent-workflow/HANDOFF.md` |
 | Active work | `agent-workflow/PLAN.md` |
 | Approved requirements | `agent-history/version-0-baseline.md` |
+| Local approval workflow | `workflow-app/` |
 | Editable SQLite schema | `database/sqlite/` |
 | Generated schema map | `sqlite-out/` |
 | Human data map | `agent-workflow/DATA_MAP.md` |
 | Deployment | `[DEPLOYMENT_WORKFLOW_PATH]` |
 
 `database/sqlite/` is authoritative. `sqlite-out/` is generated and read-only.
+
+`workflow-app/` is a local Python/SQLite approval workflow utility. Its committed files are source code and schema; `workflow-app/data/`, `workflow-app/config.json`, `project-files/`, and `agent-history/baseline-backups/` are local runtime output.
 
 Keep this file limited to stable identity, stack, priorities, and constraints. Put implementation, schema, task, and history details in their dedicated files.

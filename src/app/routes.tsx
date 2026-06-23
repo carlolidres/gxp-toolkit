@@ -9,6 +9,8 @@ import { VrmsAppProvider } from '../context/VrmsAppContext'
 import { AppShell } from '../components/layout/AppShell'
 import { LoginPage } from '../pages/LoginPage'
 import { SignUpPage } from '../pages/SignUpPage'
+import { ResetPasswordPage } from '../pages/ResetPasswordPage'
+import { AccountSettingsPage } from '../pages/AccountSettingsPage'
 import { VrmsDashboardPage } from '../pages/vrms/VrmsDashboardPage'
 import { VrmsRoutingPage } from '../pages/vrms/VrmsRoutingPage'
 import { VrmsDatabasePage } from '../pages/vrms/VrmsDatabasePage'
@@ -39,6 +41,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route
         path="/"
@@ -98,6 +101,7 @@ export function AppRoutes() {
             </MenuPermissionRoute>
           }
         />
+        <Route path="account" element={<AccountSettingsPage />} />
       </Route>
 
       <Route path="/samples/components" element={<SamplePage><ComponentsShowcasePage /></SamplePage>} />

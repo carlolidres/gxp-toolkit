@@ -9,6 +9,8 @@ export interface AuthUser {
   role: UserRole
   initials: string
   active?: boolean
+  /** Set when an admin reset the account to the default temporary password */
+  mustChangePassword?: boolean
 }
 
 export interface LoginCredentials {

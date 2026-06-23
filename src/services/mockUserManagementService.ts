@@ -5,6 +5,7 @@ import {
   seedMockUserPermissions,
 } from '../data/mockUserPermissions'
 import { normalizeUserPermissions } from '../lib/permissions'
+import { setMockMustChangePassword } from './authService'
 import type { UserRole } from '../types/auth'
 import type { ManagedUser, UpdateManagedUserInput, UserPermissions } from '../types/permissions'
 
@@ -63,6 +64,13 @@ export const mockUserManagementService = {
       normalizeUserPermissions(permissionStore[userId], nextRole),
       nextActive,
     )
+  },
+
+  async resetUserPassword(userId: string): Promise<void> {
+    await delay()
+    const user = mockUsers.find((candidate) => candidate.id === userId)
+    if (!user) throw new Error('User not found.')
+    setMockMustChangePassword(user.email, true)
   },
 
   resetStore() {
