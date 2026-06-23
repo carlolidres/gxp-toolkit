@@ -1,10 +1,10 @@
 # Current Handoff
 
-Last Updated: `2026-06-23 21:45 Asia/Taipei`
+Last Updated: `2026-06-23 21:55 Asia/Taipei`
 Version: `v14`
 Branch: `main` / `master`
-Commit: `b084c47`
-Deployment: `IN_PROGRESS`
+Commit: `476738f`
+Deployment: `SUCCESS`
 
 ## Current Status
 
@@ -38,9 +38,10 @@ Admin default-password reset implemented: User Management resets accounts to `iL
 |---|---|---|
 | Tests | `PASSED` | 29 tests |
 | Type-check / build | `PASSED` | chunk-size warning only |
-| Live migration | `NOT_RUN` | Fixed 42P13 — re-apply updated migration SQL |
-| Edge Function deploy | `NOT_RUN` | Awaiting owner deploy |
-| Browser retest | `NOT_RUN` | Requires Supabase backend |
+| Live migration | `PASSED` | Migrations through `20260623200000` applied |
+| Edge Function deploy | `PASSED` | `admin-reset-password` + `DEFAULT_RESET_PASSWORD` secret |
+| GitHub Pages | `PASSED` | https://carlolidres.github.io/gxp-toolkit/ (v14 + v14.1 pushes) |
+| Browser retest | `NOT_RUN` | Owner verification |
 
 
 ## Recently Completed
