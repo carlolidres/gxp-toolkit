@@ -4,6 +4,8 @@
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
 
+DROP FUNCTION IF EXISTS public.get_own_profile();
+
 CREATE OR REPLACE FUNCTION public.get_own_profile()
 RETURNS TABLE (
   id text,

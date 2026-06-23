@@ -4,6 +4,8 @@ UPDATE public.profiles
 SET role = 'admin', updated_at = now()
 WHERE lower(email) = lower('carlolidres@gmail.com');
 
+DROP FUNCTION IF EXISTS public.get_own_profile();
+
 CREATE OR REPLACE FUNCTION public.get_own_profile()
 RETURNS TABLE (
   id text,

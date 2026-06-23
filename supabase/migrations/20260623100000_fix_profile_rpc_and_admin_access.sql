@@ -33,6 +33,8 @@ AS $$
     );
 $$;
 
+DROP FUNCTION IF EXISTS public.get_own_profile();
+
 CREATE OR REPLACE FUNCTION public.get_own_profile()
 RETURNS TABLE (
   id text,
@@ -125,6 +127,8 @@ BEGIN
   LIMIT 1;
 END;
 $$;
+
+DROP FUNCTION IF EXISTS public.get_profile_by_id(text);
 
 CREATE OR REPLACE FUNCTION public.get_profile_by_id(target_id text)
 RETURNS TABLE (
