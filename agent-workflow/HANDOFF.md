@@ -3,7 +3,7 @@
 Last Updated: `2026-06-23 21:55 Asia/Taipei`
 Version: `v14`
 Branch: `main` / `master`
-Commit: `476738f`
+Commit: `9dc112e`
 Deployment: `SUCCESS`
 
 ## Current Status
@@ -22,15 +22,13 @@ Admin default-password reset implemented: User Management resets accounts to `iL
 ## Active Work
 
 - Objective: `Admin default-password reset flow`
-- Progress: `COMMITTED — Supabase migration + Edge Function deploy in progress`
-- Remaining: Owner browser retest with Supabase backend
+- Progress: `DEPLOYED — owner browser retest pending`
+- Remaining: Browser retest with live Supabase backend
 
 ## Next Action
 
-1. Apply migration `20260623200000_admin_default_password_reset.sql` to the live Supabase project.
-2. Deploy Edge Function: `supabase functions deploy admin-reset-password`
-3. Set secret: `supabase secrets set DEFAULT_RESET_PASSWORD=iLoveJesus`
-4. Retest `/admin/users` reset → `/login` hint → sign-in → forced password change → app access.
+1. Retest `/admin/users` reset → `/login` hint → sign-in → forced password change → app access.
+2. Verify VRMS dashboard KPI panel height matches Distribution on desktop.
 
 ## Verification
 
