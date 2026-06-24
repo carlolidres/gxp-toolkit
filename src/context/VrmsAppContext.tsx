@@ -69,10 +69,18 @@ export function VrmsAppProvider({ children }: { children: ReactNode }) {
 
   const saveDocument = useCallback(
     async (payload: SaveRoutingDocumentPayload) => {
-      const data = await service.saveDocument(payload, userEmail)
-      setAppData(data)
-      notify('Document routing record saved successfully.')
-      return data
+      try {
+        const data = await service.saveDocument(payload, userEmail)
+        setAppData(data)
+        notify('Document routing record saved successfully.')
+        return data
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'Could not save the routing record. Check required fields and your connection, then try again.'
+        throw new Error(message)
+      }
     },
     [notify, service, userEmail],
   )

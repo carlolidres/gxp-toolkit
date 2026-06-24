@@ -257,7 +257,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span>{user?.role}</span>
               </span>
             </button>
-            <button type="button" className="topbar-icon-circle topbar-icon-quiet" aria-label="Log out" onClick={logout}>
+            <button type="button" className="topbar-icon-circle topbar-icon-quiet" aria-label="Log out" onClick={() => void logout()}>
               <IconLogout />
             </button>
           </div>

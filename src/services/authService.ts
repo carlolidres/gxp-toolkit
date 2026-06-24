@@ -1,15 +1,29 @@
 import { mockUsers } from '../data/mockAuth'
 import { MOCK_MUST_CHANGE_PASSWORD_KEY } from '../config/authPasswordPolicy'
-import { getSessionOnce } from '../lib/authBootstrap'
+import {
+  getSessionOnce,
+  resetGetSessionOnce,
+  resetRestoreSessionOnce,
+  runRestoreSessionOnce,
+} from '../lib/authBootstrap'
+import {
+  clearAuthSessionStorage,
+  isInactiveBeyond,
+  readSessionUserJson,
+  touchSessionActivity,
+  writeSessionUserJson,
+} from '../lib/authSessionStore'
 import { getAuthRedirectUrl, getPasswordResetRedirectUrl } from '../lib/authRedirect'
 import { resolveProfileRole } from '../config/authPolicy'
 import { joinDisplayName } from '../lib/profileNames'
 import { mapSessionToAuthUser } from '../lib/authMapping'
 import { getAuthErrorMessage } from '../lib/authMessages'
+import { SESSION_USER_KEY } from '../config/sessionPolicy'
 import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabase'
 import type { AuthUser, LoginCredentials, SignUpCredentials } from '../types/auth'
 
-const SESSION_KEY = 'gxp-toolkit-user'
+// ponytail: legacy localStorage sessions are not migrated — force a fresh sign-in
+localStorage.removeItem(SESSION_USER_KEY)
 
 export interface UpdateProfileInput {
   firstName: string
@@ -38,17 +52,23 @@ async function fetchProfileViaRpc(
   client: NonNullable<ReturnType<typeof getSupabaseClient>>,
 ): Promise<ProfileRow | null> {
   const { data: ownRows, error: ownError } = await client.rpc('get_own_profile')
-  if (!ownError) {
+  if (ownError) {
+    console.warn('[auth] get_own_profile failed:', ownError.message)
+  } else {
     const row = firstProfileRpcRow(ownRows)
     if (row) return row
   }
 
   const { data: profileId, error: idError } = await client.rpc('current_profile_id')
-  if (!idError && profileId) {
+  if (idError) {
+    console.warn('[auth] current_profile_id failed:', idError.message)
+  } else if (profileId) {
     const { data: byIdRows, error: byIdError } = await client.rpc('get_profile_by_id', {
       target_id: profileId as string,
     })
-    if (!byIdError) {
+    if (byIdError) {
+      console.warn('[auth] get_profile_by_id failed:', byIdError.message)
+    } else {
       const row = firstProfileRpcRow(byIdRows)
       if (row) return row
     }
@@ -139,7 +159,8 @@ async function mockLogin(credentials: LoginCredentials): Promise<AuthUser> {
     email: credentials.email || user.email,
     mustChangePassword: mockMustChangePasswordForEmail(credentials.email || user.email),
   }
-  localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser))
+  writeSessionUserJson(JSON.stringify(sessionUser))
+  touchSessionActivity()
   return sessionUser
 }
 
@@ -156,7 +177,8 @@ async function mockSignUp(credentials: SignUpCredentials): Promise<AuthUser> {
     initials: `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase() || 'VR',
     active: true,
   }
-  localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser))
+  writeSessionUserJson(JSON.stringify(sessionUser))
+  touchSessionActivity()
   return sessionUser
 }
 
@@ -173,7 +195,8 @@ async function supabaseLogin(credentials: LoginCredentials): Promise<AuthUser> {
   if (!data.user?.email) throw new Error('Supabase sign-in succeeded but no user email was returned.')
 
   const sessionUser = await mapSupabaseSessionUser(data.user.id, data.user.email)
-  localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser))
+  writeSessionUserJson(JSON.stringify(sessionUser))
+  touchSessionActivity()
   return sessionUser
 }
 
@@ -204,8 +227,21 @@ async function supabaseSignUp(credentials: SignUpCredentials): Promise<AuthUser 
   if (!data.session?.user.email) return null
 
   const sessionUser = await mapSupabaseSessionUser(data.session.user.id, data.session.user.email)
-  localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser))
+  writeSessionUserJson(JSON.stringify(sessionUser))
+  touchSessionActivity()
   return sessionUser
+}
+
+async function clearStoredSession(): Promise<void> {
+  const client = getSupabaseClient()
+  try {
+    if (client) await client.auth.signOut({ scope: 'local' })
+  } catch (err) {
+    console.warn('[auth] signOut failed; clearing local session anyway:', err)
+  }
+  clearAuthSessionStorage()
+  resetGetSessionOnce()
+  resetRestoreSessionOnce()
 }
 
 export const authService = {
@@ -224,9 +260,7 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    const client = getSupabaseClient()
-    if (client) await client.auth.signOut()
-    localStorage.removeItem(SESSION_KEY)
+    await clearStoredSession()
   },
 
   async requestPasswordReset(email: string): Promise<void> {
@@ -272,7 +306,7 @@ export const authService = {
       if (cached?.email) {
         setMockMustChangePassword(cached.email, false)
         const sessionUser = { ...cached, mustChangePassword: false }
-        localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser))
+        writeSessionUserJson(JSON.stringify(sessionUser))
       }
       return
     }
@@ -292,7 +326,7 @@ export const authService = {
       if (!cached) throw new Error('No signed-in user.')
       const name = joinDisplayName(input.firstName, input.lastName)
       const sessionUser = { ...cached, name, initials: `${input.firstName[0] ?? ''}${input.lastName[0] ?? ''}`.toUpperCase() || cached.initials }
-      localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser))
+      writeSessionUserJson(JSON.stringify(sessionUser))
       return sessionUser
     }
 
@@ -325,7 +359,7 @@ export const authService = {
     }
 
     const sessionUser = await mapSupabaseSessionUser(authData.user.id, authData.user.email)
-    localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser))
+    writeSessionUserJson(JSON.stringify(sessionUser))
     return sessionUser
   },
 
@@ -337,14 +371,19 @@ export const authService = {
   },
 
   async clearSupabaseSession(): Promise<void> {
-    const client = getSupabaseClient()
-    if (client) await client.auth.signOut({ scope: 'local' })
-    localStorage.removeItem(SESSION_KEY)
+    await clearStoredSession()
   },
 
   getCachedUser(): AuthUser | null {
-    const value = localStorage.getItem(SESSION_KEY)
-    return value ? (JSON.parse(value) as AuthUser) : null
+    const value = readSessionUserJson()
+    if (!value) return null
+    try {
+      return JSON.parse(value) as AuthUser
+    } catch {
+      console.warn('[auth] Ignoring invalid cached session user JSON')
+      sessionStorage.removeItem(SESSION_USER_KEY)
+      return null
+    }
   },
 
   /** @deprecated use getCachedUser — kept for compatibility */
@@ -353,36 +392,54 @@ export const authService = {
   },
 
   async restoreSession(): Promise<AuthUser | null> {
-    if (!isSupabaseConfigured()) return this.getCachedUser()
+    return runRestoreSessionOnce(async () => {
+      if (!isSupabaseConfigured()) {
+        const cached = this.getCachedUser()
+        if (cached && isInactiveBeyond()) {
+          await clearStoredSession()
+          return null
+        }
+        if (cached) touchSessionActivity()
+        return cached
+      }
 
-    const client = getSupabaseClient()
-    if (!client) return this.getCachedUser()
+      const client = getSupabaseClient()
+      if (!client) return this.getCachedUser()
 
-    const callbackUrl = new URL(window.location.href)
-    const callbackError =
-      callbackUrl.searchParams.get('error_description') ||
-      callbackUrl.searchParams.get('error') ||
-      ''
+      const callbackUrl = new URL(window.location.href)
+      const callbackError =
+        callbackUrl.searchParams.get('error_description') ||
+        callbackUrl.searchParams.get('error') ||
+        ''
 
-    if (callbackError) {
-      throw new Error(getAuthErrorMessage(callbackError, 'Authentication callback failed.'))
-    }
+      if (callbackError) {
+        throw new Error(getAuthErrorMessage(callbackError, 'Authentication callback failed.'))
+      }
 
-    const { data, error } = await getSessionOnce(client)
+      const { data, error } = await getSessionOnce(client)
 
-    if (error) {
-      throw new Error(getAuthErrorMessage(error, 'Could not restore the authentication session.'))
-    }
+      if (error) {
+        console.error('[auth] getSession failed:', error.message)
+        throw new Error(getAuthErrorMessage(error, 'Could not restore the authentication session.'))
+      }
 
-    const session = data.session
-    if (!session?.user.email) {
-      localStorage.removeItem(SESSION_KEY)
-      return null
-    }
+      const session = data.session
+      if (!session?.user.email) {
+        clearAuthSessionStorage()
+        await client.auth.signOut({ scope: 'local' }).catch(() => undefined)
+        return null
+      }
 
-    const sessionUser = await mapSupabaseSessionUser(session.user.id, session.user.email)
-    localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser))
-    return sessionUser
+      if (isInactiveBeyond()) {
+        await clearStoredSession()
+        return null
+      }
+
+      const sessionUser = await mapSupabaseSessionUser(session.user.id, session.user.email)
+      writeSessionUserJson(JSON.stringify(sessionUser))
+      touchSessionActivity()
+      return sessionUser
+    })
   },
 
   onAuthStateChange(callback: (user: AuthUser | null, event?: string) => void) {
@@ -391,19 +448,20 @@ export const authService = {
 
     const { data } = client.auth.onAuthStateChange((event, session) => {
       if (!session?.user.email) {
-        localStorage.removeItem(SESSION_KEY)
         callback(null, event)
         return
       }
 
       void mapSupabaseSessionUser(session.user.id, session.user.email)
         .then((sessionUser) => {
-          localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser))
+          writeSessionUserJson(JSON.stringify(sessionUser))
+          touchSessionActivity()
           callback(sessionUser, event)
         })
         .catch(() => {
           const fallback = sessionFallbackUser(session)
-          localStorage.setItem(SESSION_KEY, JSON.stringify(fallback))
+          writeSessionUserJson(JSON.stringify(fallback))
+          touchSessionActivity()
           callback(fallback, event)
         })
     })

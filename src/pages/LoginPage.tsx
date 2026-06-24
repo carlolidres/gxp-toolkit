@@ -5,15 +5,24 @@ import { FormField, SelectInput, TextInput } from '../components/forms/FormContr
 import { APP_NAME } from '../config/appNavigation'
 import { ADMIN_DEFAULT_RESET_PASSWORD } from '../config/authPasswordPolicy'
 import { useAuth } from '../hooks/useAuth'
+import { consumeLoginFlash } from '../lib/authSessionStore'
 import { getAuthErrorMessage } from '../lib/authMessages'
 
 export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(() => consumeLoginFlash())
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [temporaryPasswordRequired, setTemporaryPasswordRequired] = useState(false)
-  const { isAuthenticated, login, usesSupabase, checkTemporaryPasswordRequired, user } = useAuth()
+  const { isAuthenticated, authReady, login, usesSupabase, checkTemporaryPasswordRequired, user } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!authReady || isAuthenticated) return
+    setEmail('')
+    setPassword('')
+    setTemporaryPasswordRequired(false)
+  }, [authReady, isAuthenticated])
 
   useEffect(() => {
     if (!usesSupabase || !email.trim()) {
@@ -37,6 +46,10 @@ export function LoginPage() {
       window.clearTimeout(timer)
     }
   }, [checkTemporaryPasswordRequired, email, usesSupabase])
+
+  if (!authReady) {
+    return <p className="auth-loading">Restoring session…</p>
+  }
 
   if (isAuthenticated) {
     if (user?.mustChangePassword) return <Navigate to="/reset-password" replace />
@@ -84,13 +97,20 @@ export function LoginPage() {
         </div>
       </section>
       <section className="login-panel">
-        <form className="login-card" onSubmit={handleSubmit}>
+        <form className="login-card" onSubmit={handleSubmit} autoComplete="off">
           <span className="eyebrow">Welcome back</span>
           <h2>Sign in to {APP_NAME}</h2>
           <p>{usesSupabase ? 'Use your email and password.' : 'Any password works in this mock environment.'}</p>
           {!usesSupabase ? (
             <FormField label="Email">
-              <TextInput name="email" type="email" defaultValue="admin@example.com" required />
+              <TextInput
+                name="email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                autoComplete="email"
+              />
             </FormField>
           ) : (
             <FormField label="Email">
@@ -110,7 +130,14 @@ export function LoginPage() {
             </p>
           ) : null}
           <FormField label="Password">
-            <TextInput name="password" type="password" defaultValue={usesSupabase ? '' : 'template'} required />
+            <TextInput
+              name="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              autoComplete="current-password"
+            />
           </FormField>
           {usesSupabase ? (
             <p className="auth-switch">

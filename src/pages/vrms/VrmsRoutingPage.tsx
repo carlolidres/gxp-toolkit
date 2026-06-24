@@ -75,6 +75,7 @@ export function VrmsRoutingPage() {
   const [form, setForm] = useState(initialForm)
   const [signatories, setSignatories] = useState<VrmsSignatory[]>([])
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [signingOrder, setSigningOrder] = useState<number | null>(null)
 
   const allowedNames = appData?.registries['Sent / Routing'] ?? []
@@ -152,6 +153,7 @@ export function VrmsRoutingPage() {
 
   async function handleSubmit() {
     setSaving(true)
+    setSaveError(null)
     try {
       const payload: SaveRoutingDocumentPayload = {
         ...form,
@@ -167,7 +169,12 @@ export function VrmsRoutingPage() {
         setSignatories(structuredClone(saved.signatories))
       }
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'Save failed.')
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Could not save the routing record. Check required fields and your connection, then try again.'
+      setSaveError(message)
+      notify(message)
     } finally {
       setSaving(false)
     }
@@ -260,6 +267,8 @@ export function VrmsRoutingPage() {
               )
             })}
           </div>
+
+          {saveError ? <p className="form-error">{saveError}</p> : null}
 
           <div className="vrms-actions">
             {canSubmit ? (

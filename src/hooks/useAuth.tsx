@@ -1,6 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { authService } from '../services/authService'
+import { setLoginFlash } from '../lib/authSessionStore'
+import { useInactivityLogout } from './useInactivityLogout'
 import type { AuthUser, LoginCredentials, SignUpCredentials, UserRole } from '../types/auth'
 
 interface AuthContextValue {
@@ -18,7 +21,7 @@ interface AuthContextValue {
   updateProfile: (input: { firstName: string; lastName: string }) => Promise<void>
   refreshUser: () => Promise<void>
   clearPasswordRecovery: () => void
-  logout: () => Promise<void>
+  logout: (reason?: 'manual' | 'inactivity') => Promise<void>
   hasRole: (roles: UserRole[]) => boolean
 }
 
@@ -37,6 +40,7 @@ function isSameUser(a: AuthUser | null, b: AuthUser | null): boolean {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate()
   const [user, setUser] = useState<AuthUser | null>(() => authService.getCachedUser())
   const [ready, setReady] = useState(!authService.usesSupabase())
   const [passwordRecoveryActive, setPasswordRecoveryActive] = useState(false)
@@ -45,6 +49,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((current) => (isSameUser(current, nextUser) ? current : nextUser))
   }, [])
 
+  const logout = useCallback(async (reason?: 'manual' | 'inactivity') => {
+    if (reason === 'inactivity') {
+      setLoginFlash('Your session expired after 15 minutes of inactivity. Please sign in again.')
+    }
+    await authService.logout()
+    setUserIfChanged(null)
+    setPasswordRecoveryActive(false)
+    navigate('/login', { replace: true })
+  }, [navigate, setUserIfChanged])
+
+  useInactivityLogout(Boolean(ready && user), logout)
+
   useEffect(() => {
     if (!authService.usesSupabase()) return
 
@@ -52,15 +68,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (window.location.hash.includes('type=recovery')) {
       setPasswordRecoveryActive(true)
     }
+
+    const authTimeout = window.setTimeout(() => {
+      if (!active) return
+      console.error('[auth] Session restore timed out; continuing without session')
+      setReady(true)
+    }, 15_000)
+
     void authService
       .restoreSession()
       .then((sessionUser) => {
         if (active) setUserIfChanged(sessionUser)
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('[auth] restoreSession failed:', err)
         if (active) setUserIfChanged(null)
       })
       .finally(() => {
+        window.clearTimeout(authTimeout)
         setReady(true)
       })
 
@@ -73,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       active = false
+      window.clearTimeout(authTimeout)
       subscription.unsubscribe()
     }
   }, [setUserIfChanged])
@@ -100,14 +126,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateProfile: async (input) => setUserIfChanged(await authService.updateProfile(input)),
       refreshUser: async () => setUserIfChanged(await authService.restoreSession()),
       clearPasswordRecovery: () => setPasswordRecoveryActive(false),
-      logout: async () => {
-        await authService.logout()
-        setUserIfChanged(null)
-        setPasswordRecoveryActive(false)
-      },
+      logout,
       hasRole: (roles) => Boolean(user && roles.includes(user.role)),
     }),
-    [passwordRecoveryActive, ready, setUserIfChanged, user],
+    [logout, passwordRecoveryActive, ready, setUserIfChanged, user],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -41,9 +41,15 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         setPermissions({})
         return
       }
-      const next = await userManagementService.getPermissions(resolvePermissionUserRef(user), user.role)
+      const next = await Promise.race([
+        userManagementService.getPermissions(resolvePermissionUserRef(user), user.role),
+        new Promise<UserPermissions>((_, reject) => {
+          window.setTimeout(() => reject(new Error('Permission load timed out')), 15_000)
+        }),
+      ])
       setPermissions(next)
-    } catch {
+    } catch (err) {
+      console.error('[permissions] load failed:', err)
       setPermissions(getRoleDefaultPermissions(user.role))
     } finally {
       setReady(true)
