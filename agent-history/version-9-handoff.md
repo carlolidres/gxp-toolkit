@@ -5,7 +5,7 @@ Version: `v14.5`
 Branch: `main` / `master`
 Commit: `390dfcc`
 Commit message: `v14.5: session security - inactivity logout and tab-scoped auth storage`
-Deployment: `PENDING`
+Deployment: `SUCCESS — https://carlolidres.github.io/gxp-toolkit/`
 
 ## Request
 
@@ -30,9 +30,10 @@ Commit, push, and deploy session security work: 15-minute inactivity logout, tab
 |---|---|---|
 | `npm run test` | PASSED | 33 tests |
 | `npm run build` | PASSED | chunk-size warning only |
-| Git commit | PENDING | |
-| Git push | PENDING | |
-| GitHub Pages | PENDING | push to `master` |
+| Git commit | PASSED | `390dfcc` |
+| Git push | PASSED | `main` + `master` |
+| GitHub Pages | PASSED | run `28131577207`; live URL HTTP 200 |
+| Supabase migration | PASSED | `20260624203027_rollback_accidental_feedback_purge_rpc` already applied |
 | Browser retest | NOT_RUN | Owner verification |
 
 ## Next Action

@@ -3,8 +3,8 @@
 Last Updated: `2026-06-25`
 Version: `v14.5`
 Branch: `main` / `master`
-Commit: `390dfcc`
-Deployment: `PENDING`
+Commit: `390dfcc` (feature) / `0737329` (handoff record)
+Deployment: `SUCCESS — https://carlolidres.github.io/gxp-toolkit/ (HTTP 200)`
 
 ## Current Status
 
