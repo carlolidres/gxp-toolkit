@@ -3,8 +3,9 @@
 Last Updated: `2026-06-25`
 Version: `v14.5`
 Branch: `main` / `master`
-Commit: `NOT_COMMITTED`
-Deployment: `NOT_RUN`
+Commit: `390dfcc`
+Commit message: `v14.5: session security - inactivity logout and tab-scoped auth storage`
+Deployment: `PENDING`
 
 ## Request
 
