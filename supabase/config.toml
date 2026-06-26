@@ -32,3 +32,6 @@ enable_signup = true
 [auth.email]
 enable_signup = true
 enable_confirmations = false
+
+[functions.forgot-password]
+verify_jwt = false

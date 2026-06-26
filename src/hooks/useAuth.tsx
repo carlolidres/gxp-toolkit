@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-import { authService } from '../services/authService'
+import { authService, type PasswordResetResult } from '../services/authService'
 import { clearAuthSessionStorage } from '../lib/authSessionStore'
 import type { AuthUser, LoginCredentials, SignUpCredentials, UserRole } from '../types/auth'
 
@@ -12,9 +12,9 @@ interface AuthContextValue {
   authReady: boolean
   usesSupabase: boolean
   passwordRecoveryActive: boolean
-  login: (credentials: LoginCredentials) => Promise<void>
+  login: (credentials: LoginCredentials) => Promise<AuthUser>
   signUp: (credentials: SignUpCredentials) => Promise<AuthUser | null>
-  requestPasswordReset: (email: string) => Promise<void>
+  requestPasswordReset: (email: string) => Promise<PasswordResetResult>
   checkTemporaryPasswordRequired: (email: string) => Promise<boolean>
   updatePassword: (newPassword: string) => Promise<void>
   updateProfile: (input: { firstName: string; lastName: string }) => Promise<void>
@@ -118,7 +118,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authReady: ready,
       usesSupabase: authService.usesSupabase(),
       passwordRecoveryActive,
-      login: async (credentials) => setUserIfChanged(await authService.login(credentials)),
+      login: async (credentials) => {
+        const sessionUser = await authService.login(credentials)
+        setUserIfChanged(sessionUser)
+        return sessionUser
+      },
       signUp: async (credentials) => {
         const sessionUser = await authService.signUp(credentials)
         if (sessionUser) setUserIfChanged(sessionUser)

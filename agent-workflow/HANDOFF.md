@@ -1,43 +1,47 @@
 # Current Handoff
 
 Last Updated: `2026-06-26`
-Version: `v15.0`
+Version: `v15.1`
 Branch: `main` / `master`
-Commit: `c0de462`
-Deployment: `SUCCESS — https://carlolidres.github.io/gxp-toolkit/ (run 28241944798)`
+Commit: `(pending)`
+Deployment: `(pending push to master)`
 
 ## Current Status
 
-Login password field shows a single custom eye toggle. Browser-native reveal controls are hidden so Edge/Chrome no longer duplicate the icon.
+Forgot Password now resets to the shared temporary default password (same as admin reset) instead of sending Supabase email links. Login page displays the temporary password, pre-fills the password field, and sign-in routes to mandatory `/reset-password` until changed.
 
 ## Recently Completed
 
-- Hide native `::-ms-reveal` / autofill decoration buttons on `PasswordInput` (login, sign-up, reset-password)
-- Prior v14.9: messaging/feedback, N/A optional fields, security remediation
+- `forgot-password` Edge Function: service-role reset, global sign-out, `must_change_password = true`, returns `temporaryPassword`
+- `authService.requestPasswordReset` invokes edge function (mock mode returns `MOCK_DEFAULT_RESET_PASSWORD`)
+- Login UI: temporary password panel, updated copy, post-login redirect when change required
+- `supabase/config.toml`: `verify_jwt = false` for `forgot-password`
 
 ## Active Work
 
-- Objective: `Password field duplicate eye icon fix`
-- Progress: `COMMITTED, PUSHED, DEPLOYED`
-- Remaining: Browser verify login password toggle on live site
+- Objective: `Self-service temporary password reset (no email link)`
+- Progress: `COMMITTING, PUSHING, DEPLOYING`
 
 ## Next Action
 
-1. Browser test: sign-in password field shows one eye icon; toggle shows/hides password.
-2. Apply `supabase/migrations/20260627100000_app_feedback_messages.sql` if not yet applied.
-3. Browser test: admin messaging and N/A fields (v14.9 backlog).
+1. Deploy edge function: `supabase functions deploy forgot-password` (uses existing `DEFAULT_RESET_PASSWORD` secret).
+2. Browser test: Forgot password → temp password shown → sign in → forced new password → app access → old temp password rejected.
+3. Prior backlog: feedback migration, messaging/N/A browser tests.
 
 ## Verification
 
 | Check | Status | Result |
 |---|---|---|
+| Tests | `PASSED` | `npm run test` — 39 tests |
 | Build | `PASSED` | `npm run build` |
-| Tests | `NOT_RUN` | CSS-only change |
-| Browser retest | `NOT_RUN` | Owner verification pending |
-| Deployment | `PASSED` | GitHub Pages run 28241944798 |
+| Edge function deploy | `PASSED` | `forgot-password` v1 on `ydndeoacgfnxjqwwnswh` |
+| Browser retest | `NOT_RUN` | Pending |
 
 ## Files Changed (summary)
 
 | Area | Paths |
 |---|---|
-| Auth UI | `src/styles/globals.css` |
+| Edge Function | `supabase/functions/forgot-password/index.ts`, `supabase/config.toml` |
+| Auth | `src/services/authService.ts`, `src/hooks/useAuth.tsx`, `src/config/authPasswordPolicy.ts` |
+| Login / reset UI | `src/pages/LoginPage.tsx`, `src/pages/ResetPasswordPage.tsx`, `src/styles/globals.css` |
+| Tests | `src/services/authService.passwordReset.test.ts` |

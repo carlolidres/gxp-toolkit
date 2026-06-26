@@ -1425,6 +1425,30 @@ tbody tr:hover { background: var(--table-row-hover); }
 .form-error, .form-success { margin: 10px 0; padding: 9px 11px; border-radius: 7px; font-size: .78rem; }
 .form-error { border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--border)); background: color-mix(in srgb, var(--danger) 10%, var(--surface)); color: var(--danger); }
 .form-success { border: 1px solid color-mix(in srgb, var(--teal) 40%, var(--border)); background: color-mix(in srgb, var(--teal) 10%, var(--surface)); color: var(--teal); }
+.temp-password-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--teal) 35%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--teal) 8%, var(--surface));
+}
+.temp-password-label {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+.temp-password-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--navy);
+  word-break: break-all;
+}
+.temp-password-panel small { color: var(--muted); font-size: .74rem; line-height: 1.45; }
 
 /* —— Responsive layout: mobile-first enhancements —— */
 

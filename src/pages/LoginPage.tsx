@@ -13,6 +13,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(() => consumeLoginFlash())
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [resetTemporaryPassword, setResetTemporaryPassword] = useState<string | null>(null)
   const [resetStatus, setResetStatus] = useState<string | null>(null)
   const [resetError, setResetError] = useState<string | null>(null)
   const [resetLoading, setResetLoading] = useState(false)
@@ -41,12 +42,12 @@ export function LoginPage() {
     const data = new FormData(event.currentTarget)
 
     try {
-      await login({
+      const sessionUser = await login({
         email: String(data.get('email')),
         password: String(data.get('password')),
         role: usesSupabase ? undefined : (String(data.get('role')) as import('../types/auth').UserRole),
       })
-      navigate('/')
+      navigate(sessionUser.mustChangePassword ? '/reset-password' : '/')
     } catch (err) {
       setError(getAuthErrorMessage(err, 'Sign in failed.'))
     } finally {
@@ -55,6 +56,7 @@ export function LoginPage() {
   }
 
   async function sendPasswordReset() {
+    setResetTemporaryPassword(null)
     setResetStatus(null)
     setResetError(null)
 
@@ -66,11 +68,13 @@ export function LoginPage() {
 
     setResetLoading(true)
     try {
-      await requestPasswordReset(address)
+      const { temporaryPassword } = await requestPasswordReset(address)
+      setResetTemporaryPassword(temporaryPassword)
+      setPassword(temporaryPassword)
       setResetStatus(
         usesSupabase
-          ? 'Password reset instructions were sent if the account exists.'
-          : 'Password reset request accepted in mock mode.',
+          ? 'Your password was reset to the temporary password below. Sign in, then create a new password.'
+          : 'Mock mode: use the temporary password below, then create a new password.',
       )
     } catch (err) {
       setResetError(getAuthErrorMessage(err, 'Password reset request failed.'))
@@ -134,7 +138,7 @@ export function LoginPage() {
           {!usesSupabase ? <small>Use role selection to test protected UI patterns.</small> : null}
           <div className="auth-footer">
             <button type="button" className="auth-footer-link" disabled={resetLoading} onClick={() => void sendPasswordReset()}>
-              {resetLoading ? 'Sending reset link…' : 'Forgot password?'}
+              {resetLoading ? 'Resetting password…' : 'Forgot password?'}
             </button>
             <button type="button" className="auth-footer-link" onClick={() => navigate('/signup')}>
               Sign-up
@@ -142,6 +146,13 @@ export function LoginPage() {
           </div>
           {resetError ? <p className="form-error">{resetError}</p> : null}
           {resetStatus ? <p className="form-success">{resetStatus}</p> : null}
+          {resetTemporaryPassword ? (
+            <div className="temp-password-panel" role="status">
+              <span className="temp-password-label">Temporary password</span>
+              <code className="temp-password-value">{resetTemporaryPassword}</code>
+              <small>Use this password to sign in. You must choose a new password before accessing the app.</small>
+            </div>
+          ) : null}
         </form>
       </section>
     </div>

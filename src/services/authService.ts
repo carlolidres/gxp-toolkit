@@ -1,5 +1,5 @@
 import { mockUsers } from '../data/mockAuth'
-import { MOCK_MUST_CHANGE_PASSWORD_KEY } from '../config/authPasswordPolicy'
+import { MOCK_DEFAULT_RESET_PASSWORD, MOCK_MUST_CHANGE_PASSWORD_KEY } from '../config/authPasswordPolicy'
 import {
   getSessionOnce,
   resetGetSessionOnce,
@@ -11,7 +11,7 @@ import {
   readSessionUserJson,
   writeSessionUserJson,
 } from '../lib/authSessionStore'
-import { getAuthRedirectUrl, getPasswordResetRedirectUrl } from '../lib/authRedirect'
+import { getAuthRedirectUrl } from '../lib/authRedirect'
 import { resolveProfileRole } from '../config/authPolicy'
 import { joinDisplayName } from '../lib/profileNames'
 import { mapSessionToAuthUser } from '../lib/authMapping'
@@ -26,6 +26,10 @@ localStorage.removeItem(SESSION_USER_KEY)
 export interface UpdateProfileInput {
   firstName: string
   lastName: string
+}
+
+export interface PasswordResetResult {
+  temporaryPassword: string
 }
 
 interface ProfileRow {
@@ -265,19 +269,38 @@ export const authService = {
     await clearStoredSession()
   },
 
-  async requestPasswordReset(email: string): Promise<void> {
+  async requestPasswordReset(email: string): Promise<PasswordResetResult> {
+    const normalized = email.trim().toLowerCase()
+    if (!normalized) throw new Error('A valid email address is required.')
+
     if (!isSupabaseConfigured()) {
       await new Promise((resolve) => setTimeout(resolve, 350))
-      return
+      setMockMustChangePassword(normalized, true)
+      return { temporaryPassword: MOCK_DEFAULT_RESET_PASSWORD }
     }
 
     const client = getSupabaseClient()
     if (!client) throw new Error('Supabase client is not available.')
 
-    const { error } = await client.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: getPasswordResetRedirectUrl(),
+    const { data, error } = await client.functions.invoke('forgot-password', {
+      body: { email: normalized },
     })
+
     if (error) throw new Error(getAuthErrorMessage(error, 'Password reset request failed.'))
+    if (data && typeof data === 'object' && 'error' in data && data.error) {
+      throw new Error(getAuthErrorMessage(String(data.error), 'Password reset request failed.'))
+    }
+
+    const temporaryPassword =
+      data && typeof data === 'object' && 'temporaryPassword' in data
+        ? String((data as { temporaryPassword?: unknown }).temporaryPassword ?? '').trim()
+        : ''
+
+    if (!temporaryPassword) {
+      throw new Error('Password reset succeeded but no temporary password was returned.')
+    }
+
+    return { temporaryPassword }
   },
 
   async checkTemporaryPasswordRequired(email: string): Promise<boolean> {

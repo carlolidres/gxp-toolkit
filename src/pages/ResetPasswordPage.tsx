@@ -68,7 +68,7 @@ export function ResetPasswordPage() {
           <span className="eyebrow">Password reset</span>
           <h2>{mandatoryChange ? 'Create your new password' : 'Choose a new password'}</h2>
           {mandatoryChange ? (
-            <p>Your administrator reset your account. Choose a new password before continuing.</p>
+            <p>Your password was reset. Choose a new password before continuing.</p>
           ) : null}
           <FormField label="New password">
             <PasswordInput
