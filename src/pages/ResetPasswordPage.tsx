@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 
-import { FormField, TextInput } from '../components/forms/FormControls'
-import { APP_NAME } from '../config/appNavigation'
+import { FormField, PasswordInput } from '../components/forms/FormControls'
+import { GxpLogo } from '../components/brand/GxpLogo'
 import { useAuth } from '../hooks/useAuth'
 import { getAuthErrorMessage } from '../lib/authMessages'
 
@@ -61,13 +61,7 @@ export function ResetPasswordPage() {
   return (
     <div className="login-page">
       <section className="login-story">
-        <div className="brand light">
-          <div className="brand-mark">GxP</div>
-          <div>
-            <strong>{APP_NAME}</strong>
-            <span>Set a new password</span>
-          </div>
-        </div>
+        <GxpLogo variant="full" tone="light" />
       </section>
       <section className="login-panel">
         <form className="login-card" onSubmit={handleSubmit}>
@@ -77,9 +71,8 @@ export function ResetPasswordPage() {
             <p>Your administrator reset your account. Choose a new password before continuing.</p>
           ) : null}
           <FormField label="New password">
-            <TextInput
+            <PasswordInput
               name="password"
-              type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
@@ -87,9 +80,8 @@ export function ResetPasswordPage() {
             />
           </FormField>
           <FormField label="Confirm password">
-            <TextInput
+            <PasswordInput
               name="confirmPassword"
-              type="password"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
               required

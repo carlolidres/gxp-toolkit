@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 
-import { FormField, TextInput } from '../components/forms/FormControls'
-import { APP_NAME, APP_TAGLINE } from '../config/appNavigation'
+import { FormField, PasswordInput, TextInput } from '../components/forms/FormControls'
+import { GxpLogo } from '../components/brand/GxpLogo'
+import { APP_NAME } from '../config/appNavigation'
 import { useAuth } from '../hooks/useAuth'
 import { getAuthErrorMessage } from '../lib/authMessages'
 
@@ -79,13 +80,7 @@ export function SignUpPage() {
   return (
     <div className="login-page">
       <section className="login-story">
-        <div className="brand light">
-          <div className="brand-mark">GxP</div>
-          <div>
-            <strong>{APP_NAME}</strong>
-            <span>{APP_TAGLINE}</span>
-          </div>
-        </div>
+        <GxpLogo variant="full" tone="light" />
         <div>
           <span className="eyebrow">Join VRMS</span>
           <h1>Create a validated routing workspace account.</h1>
@@ -129,21 +124,21 @@ export function SignUpPage() {
             />
           </FormField>
           <FormField label="Password">
-            <TextInput
+            <PasswordInput
               name="password"
-              type="password"
               value={form.password}
               onChange={(event) => updateField('password', event.target.value)}
               required
+              autoComplete="new-password"
             />
           </FormField>
           <FormField label="Confirm Password">
-            <TextInput
+            <PasswordInput
               name="confirmPassword"
-              type="password"
               value={form.confirmPassword}
               onChange={(event) => updateField('confirmPassword', event.target.value)}
               required
+              autoComplete="new-password"
             />
           </FormField>
           {error ? <p className="form-error">{error}</p> : null}

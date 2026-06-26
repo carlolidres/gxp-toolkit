@@ -8,9 +8,7 @@ import {
 } from '../lib/authBootstrap'
 import {
   clearAuthSessionStorage,
-  isInactiveBeyond,
   readSessionUserJson,
-  touchSessionActivity,
   writeSessionUserJson,
 } from '../lib/authSessionStore'
 import { getAuthRedirectUrl, getPasswordResetRedirectUrl } from '../lib/authRedirect'
@@ -160,7 +158,6 @@ async function mockLogin(credentials: LoginCredentials): Promise<AuthUser> {
     mustChangePassword: mockMustChangePasswordForEmail(credentials.email || user.email),
   }
   writeSessionUserJson(JSON.stringify(sessionUser))
-  touchSessionActivity()
   return sessionUser
 }
 
@@ -178,7 +175,6 @@ async function mockSignUp(credentials: SignUpCredentials): Promise<AuthUser> {
     active: true,
   }
   writeSessionUserJson(JSON.stringify(sessionUser))
-  touchSessionActivity()
   return sessionUser
 }
 
@@ -194,9 +190,9 @@ async function supabaseLogin(credentials: LoginCredentials): Promise<AuthUser> {
   if (error) throw new Error(getAuthErrorMessage(error, 'Sign in failed.'))
   if (!data.user?.email) throw new Error('Supabase sign-in succeeded but no user email was returned.')
 
+  resetGetSessionOnce()
   const sessionUser = await mapSupabaseSessionUser(data.user.id, data.user.email)
   writeSessionUserJson(JSON.stringify(sessionUser))
-  touchSessionActivity()
   return sessionUser
 }
 
@@ -226,9 +222,9 @@ async function supabaseSignUp(credentials: SignUpCredentials): Promise<AuthUser 
   }
   if (!data.session?.user.email) return null
 
+  resetGetSessionOnce()
   const sessionUser = await mapSupabaseSessionUser(data.session.user.id, data.session.user.email)
   writeSessionUserJson(JSON.stringify(sessionUser))
-  touchSessionActivity()
   return sessionUser
 }
 
@@ -251,11 +247,17 @@ export const authService = {
 
   async login(credentials: LoginCredentials): Promise<AuthUser> {
     if (isSupabaseConfigured()) return supabaseLogin(credentials)
+    if (import.meta.env.PROD) {
+      throw new Error('Sign-in is not configured for this deployment.')
+    }
     return mockLogin(credentials)
   },
 
   async signUp(credentials: SignUpCredentials): Promise<AuthUser | null> {
     if (isSupabaseConfigured()) return supabaseSignUp(credentials)
+    if (import.meta.env.PROD) {
+      throw new Error('Sign-up is not configured for this deployment.')
+    }
     return mockSignUp(credentials)
   },
 
@@ -264,6 +266,11 @@ export const authService = {
   },
 
   async requestPasswordReset(email: string): Promise<void> {
+    if (!isSupabaseConfigured()) {
+      await new Promise((resolve) => setTimeout(resolve, 350))
+      return
+    }
+
     const client = getSupabaseClient()
     if (!client) throw new Error('Supabase client is not available.')
 
@@ -394,18 +401,13 @@ export const authService = {
   async restoreSession(): Promise<AuthUser | null> {
     return runRestoreSessionOnce(async () => {
       if (!isSupabaseConfigured()) {
-        const cached = this.getCachedUser()
-        if (cached && isInactiveBeyond()) {
-          await clearStoredSession()
-          return null
-        }
-        if (cached) touchSessionActivity()
-        return cached
+        return this.getCachedUser()
       }
 
       const client = getSupabaseClient()
       if (!client) return this.getCachedUser()
 
+      resetGetSessionOnce()
       const callbackUrl = new URL(window.location.href)
       const callbackError =
         callbackUrl.searchParams.get('error_description') ||
@@ -430,14 +432,8 @@ export const authService = {
         return null
       }
 
-      if (isInactiveBeyond()) {
-        await clearStoredSession()
-        return null
-      }
-
       const sessionUser = await mapSupabaseSessionUser(session.user.id, session.user.email)
       writeSessionUserJson(JSON.stringify(sessionUser))
-      touchSessionActivity()
       return sessionUser
     })
   },
@@ -447,6 +443,9 @@ export const authService = {
     if (!client) return { unsubscribe: () => undefined }
 
     const { data } = client.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') {
+        resetGetSessionOnce()
+      }
       if (!session?.user.email) {
         callback(null, event)
         return
@@ -455,13 +454,11 @@ export const authService = {
       void mapSupabaseSessionUser(session.user.id, session.user.email)
         .then((sessionUser) => {
           writeSessionUserJson(JSON.stringify(sessionUser))
-          touchSessionActivity()
           callback(sessionUser, event)
         })
         .catch(() => {
           const fallback = sessionFallbackUser(session)
           writeSessionUserJson(JSON.stringify(fallback))
-          touchSessionActivity()
           callback(fallback, event)
         })
     })

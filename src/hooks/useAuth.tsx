@@ -1,9 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { authService } from '../services/authService'
-import { setLoginFlash } from '../lib/authSessionStore'
-import { useInactivityLogout } from './useInactivityLogout'
+import { clearAuthSessionStorage } from '../lib/authSessionStore'
 import type { AuthUser, LoginCredentials, SignUpCredentials, UserRole } from '../types/auth'
 
 interface AuthContextValue {
@@ -21,7 +20,7 @@ interface AuthContextValue {
   updateProfile: (input: { firstName: string; lastName: string }) => Promise<void>
   refreshUser: () => Promise<void>
   clearPasswordRecovery: () => void
-  logout: (reason?: 'manual' | 'inactivity') => Promise<void>
+  logout: () => Promise<void>
   hasRole: (roles: UserRole[]) => boolean
 }
 
@@ -41,6 +40,7 @@ function isSameUser(a: AuthUser | null, b: AuthUser | null): boolean {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const [user, setUser] = useState<AuthUser | null>(() => authService.getCachedUser())
   const [ready, setReady] = useState(!authService.usesSupabase())
   const [passwordRecoveryActive, setPasswordRecoveryActive] = useState(false)
@@ -49,29 +49,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((current) => (isSameUser(current, nextUser) ? current : nextUser))
   }, [])
 
-  const logout = useCallback(async (reason?: 'manual' | 'inactivity') => {
-    if (reason === 'inactivity') {
-      setLoginFlash('Your session expired after 15 minutes of inactivity. Please sign in again.')
-    }
+  const logout = useCallback(async () => {
     await authService.logout()
     setUserIfChanged(null)
     setPasswordRecoveryActive(false)
     navigate('/login', { replace: true })
   }, [navigate, setUserIfChanged])
 
-  useInactivityLogout(Boolean(ready && user), logout)
-
   useEffect(() => {
     if (!authService.usesSupabase()) return
 
     let active = true
+    let restoreCompleted = false
     if (window.location.hash.includes('type=recovery')) {
       setPasswordRecoveryActive(true)
     }
 
     const authTimeout = window.setTimeout(() => {
-      if (!active) return
-      console.error('[auth] Session restore timed out; continuing without session')
+      if (!active || restoreCompleted) return
+      console.error('[auth] Session restore timed out; clearing unverified cached session')
+      clearAuthSessionStorage()
+      setUserIfChanged(null)
       setReady(true)
     }, 15_000)
 
@@ -86,13 +84,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .finally(() => {
         window.clearTimeout(authTimeout)
+        restoreCompleted = true
         setReady(true)
       })
 
     const subscription = authService.onAuthStateChange((sessionUser, event) => {
       if (active) {
         setUserIfChanged(sessionUser)
-        if (event === 'PASSWORD_RECOVERY') setPasswordRecoveryActive(true)
+        if (event === 'PASSWORD_RECOVERY') {
+          setPasswordRecoveryActive(true)
+          navigate('/reset-password', { replace: true })
+        }
       }
     })
 
@@ -101,7 +103,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(authTimeout)
       subscription.unsubscribe()
     }
-  }, [setUserIfChanged])
+  }, [navigate, setUserIfChanged])
+
+  useEffect(() => {
+    if (ready && user && passwordRecoveryActive && location.pathname !== '/reset-password') {
+      navigate('/reset-password', { replace: true })
+    }
+  }, [location.pathname, navigate, passwordRecoveryActive, ready, user])
 
   const value = useMemo<AuthContextValue>(
     () => ({

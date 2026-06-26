@@ -107,8 +107,6 @@ export const vrmsRouteLabels: Record<string, string> = {
   '/audit': 'Audit Trail',
   '/registry': 'Registry',
   '/admin/users': 'User Management',
-  '/samples/components': 'Component showcase',
-  '/samples/statistics': 'Statistics dashboard',
   '/login': 'Sign in',
   '/signup': 'Sign up',
 }

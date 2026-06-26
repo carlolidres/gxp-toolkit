@@ -35,6 +35,7 @@ Do not duplicate database schema details here. Database work belongs in `DATA_MA
 | Path | Responsibility |
 |---|---|
 | `src/components/layout/` | App shell, VRMS layout, sidebar navigation |
+| `src/components/brand/` | Reusable application logo components |
 | `src/components/vrms/` | VRMS page shell, status badges, VRMS data table |
 | `src/components/forms/` | Reusable form controls |
 | `src/components/data-display/` | Reusable data table |
@@ -85,6 +86,7 @@ Do not duplicate database schema details here. Database work belongs in `DATA_MA
 | `src/config/appNavigation.ts` | App navigation definitions |
 | `src/config/sidebarMenus.ts` | Sidebar menu groups/items |
 | `src/config/navigationRegistry.ts` | Menu/permission navigation registry |
+| `src/assets/branding/` | Application logo SVG/PNG assets |
 | `.env.example` | Committed placeholder env template |
 | `vite.config.ts` | Vite React config and Vitest scope |
 | `tsconfig*.json` | TypeScript project settings |

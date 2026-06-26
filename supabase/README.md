@@ -38,7 +38,16 @@ supabase secrets set DEFAULT_RESET_PASSWORD=iLoveJesus
 
 - Migration adds `profiles.must_change_password`, `check_temporary_password_required(email)`, and `clear_must_change_password()`.
 - Edge Function `admin-reset-password` uses the service role to set Auth password and invalidate sessions. Callable only by admins (`is_vrms_admin()`).
-- Frontend shows the temporary password on `/login` when the flag is set, then forces `/reset-password` after sign-in.
+- Set `DEFAULT_RESET_PASSWORD` via Supabase secrets (not in client). After admin reset, user signs in with the password provided through a secure channel; `/reset-password` enforces change when `must_change_password` is set.
+
+## Security migrations (2026-06-26)
+
+Apply after `20260623200000_admin_default_password_reset.sql`:
+
+- `20260626100000_profiles_role_self_update_fix.sql` — prevents role self-elevation
+- `20260626100001_signup_and_temporary_password_security.sql` — removes signup admin bootstrap; restricts temp-password RPC to authenticated self
+
+Verify with `supabase/scripts/verify_profiles_rls.sql`.
 
 ## Approval Gate
 

@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../lib/supabase'
+import { requireSupabaseSession } from '../lib/supabaseAuth'
 import {
   mapAuditEventRow,
   mapRoutingDocumentRow,
@@ -39,15 +40,20 @@ function normalizeDocumentRow(row: RoutingDocumentRow & { signatories?: unknown 
   }
 }
 
-async function loadDocuments(): Promise<RoutingDocument[]> {
+async function requireAuthenticatedClient() {
   const client = requireClient()
+  return requireSupabaseSession(client)
+}
+
+async function loadDocuments(): Promise<RoutingDocument[]> {
+  const client = await requireAuthenticatedClient()
   const { data, error } = await client.from('routing_documents').select('*').order('updated_at', { ascending: false })
   if (error) throw new Error(error.message)
   return (data ?? []).map((row) => mapRoutingDocumentRow(normalizeDocumentRow(row as RoutingDocumentRow)))
 }
 
 async function loadRegistryValues(): Promise<RegistryValue[]> {
-  const client = requireClient()
+  const client = await requireAuthenticatedClient()
   const { data, error } = await client
     .from('registry_values')
     .select('*')
@@ -88,7 +94,7 @@ function buildAppDataFrom(
 }
 
 async function persistDocument(document: RoutingDocument): Promise<void> {
-  const client = requireClient()
+  const client = await requireAuthenticatedClient()
   const { error } = await client.from('routing_documents').upsert({
     routing_tracker: document.routingTracker,
     doc_tracer: document.docTracer,
@@ -127,7 +133,7 @@ async function appendAudit(
   userEmail: string,
   now = new Date(),
 ): Promise<void> {
-  const client = requireClient()
+  const client = await requireAuthenticatedClient()
   const { error } = await client.from('audit_events').insert({
     id: `audit-${Date.now()}`,
     event_timestamp: formatVrmsDateTime(now),
@@ -147,7 +153,7 @@ export const supabaseVrmsService: VrmsRepository = {
   },
 
   async getDocumentByTracker(tracker) {
-    const client = requireClient()
+    const client = await requireAuthenticatedClient()
     const { data, error } = await client
       .from('routing_documents')
       .select('*')
@@ -213,7 +219,7 @@ export const supabaseVrmsService: VrmsRepository = {
   },
 
   async getAuditTrail() {
-    const client = requireClient()
+    const client = await requireAuthenticatedClient()
     const { data, error } = await client
       .from('audit_events')
       .select('*')
@@ -231,7 +237,7 @@ export const supabaseVrmsService: VrmsRepository = {
       )
     }
 
-    const client = requireClient()
+    const client = await requireAuthenticatedClient()
     const registryValues = await loadRegistryValues()
     const exists = registryValues.some(
       (row) => row.registryType === type && row.value.toLowerCase() === trimmed.toLowerCase(),
@@ -258,13 +264,16 @@ export const supabaseVrmsService: VrmsRepository = {
 
   async deleteRegistryValue(type, value, userEmail) {
     const trimmed = String(value || '').trim()
-    const client = requireClient()
-    const { error } = await client
+    if (!trimmed) throw new Error('Registry value is required.')
+    const client = await requireAuthenticatedClient()
+    const { data: removed, error } = await client
       .from('registry_values')
       .delete()
       .eq('registry_type', type)
       .eq('value', trimmed)
+      .select('id')
     if (error) throw new Error(error.message)
+    if (!removed?.length) return this.getAppData(userEmail)
 
     await appendAudit(
       'Deleted registry value',

@@ -5,6 +5,7 @@ import type {
   VrmsDocumentStatus,
   VrmsSignatory,
 } from '../types/vrms'
+import { VRMS_ROUTING_FORM_FIELDS } from '../lib/vrmsFormConfig'
 import { VRMS_DEFAULT_REGISTRY } from '../lib/vrmsDefaults'
 
 const TRACKER_CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -64,7 +65,9 @@ export function getStatusKey(status: string): string {
 }
 
 export function normalizeOptionalField(value: string | undefined): string {
-  return String(value || '').trim() || 'n/a'
+  const text = String(value || '').trim()
+  if (!text || text.toLowerCase() === 'n/a') return 'n/a'
+  return text
 }
 
 export function formatVrmsDateTime(date: Date): string {
@@ -302,6 +305,15 @@ export interface SaveDocumentResult {
   auditDetails: string
 }
 
+export function validateRoutingPayload(payload: Partial<SaveRoutingDocumentPayload>): void {
+  const missing = VRMS_ROUTING_FORM_FIELDS.filter(
+    (field) => field.required && !String(payload[field.key as keyof SaveRoutingDocumentPayload] ?? '').trim(),
+  )
+  if (missing.length) {
+    throw new Error(`${missing.map((field) => field.label).join(', ')} required.`)
+  }
+}
+
 export function applySaveDocument(
   payload: SaveRoutingDocumentPayload,
   existing: RoutingDocument | undefined,
@@ -310,6 +322,7 @@ export function applySaveDocument(
   userEmail: string,
   now = new Date(),
 ): SaveDocumentResult {
+  validateRoutingPayload(payload)
   const originalTracker = String(payload.__originalTracker || payload.routingTracker || '').trim()
   const docTracer = String(payload.docTracer || '').trim()
   if (!docTracer) throw new Error('Document Tracer Number is required.')
@@ -606,9 +619,40 @@ function parseDateTime(value: string): Date | null {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
+export function buildDocumentSearchHaystack(doc: RoutingDocument): string {
+  const signatoryText = doc.signatories
+    .map((signatory) => `${signatory.Name} ${signatory.Status}`)
+    .join(' ')
+  return [
+    doc.routingTracker,
+    doc.docTracer,
+    doc.equipmentProduct,
+    doc.category,
+    doc.ilTag,
+    doc.status,
+    doc.sentRoutingTo,
+    doc.email,
+    doc.dateSent,
+    doc.reportProtocol,
+    doc.batchNo,
+    doc.clientName,
+    doc.department,
+    doc.preparedBy,
+    doc.datePrepared,
+    doc.checkedBy,
+    doc.dateChecked,
+    doc.targetCompletionDate,
+    doc.remarks,
+    signatoryText,
+  ]
+    .join(' ')
+    .toLowerCase()
+}
+
 export function ensureDefaultRegistryValues(
   current: { registryType: string; value: string }[],
 ): { registryType: string; value: string }[] {
+  if (current.length > 0) return current
   const next = [...current]
   const existing = new Set(next.map((row) => `${row.registryType}::${row.value.toLowerCase()}`))
 

@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { VrmsPage } from '../../components/vrms/VrmsPage'
+import { NaOptionalInput, NaOptionalTextarea } from '../../components/forms/NaOptionalField'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { useMenuPermission } from '../../hooks/usePermissions'
 import { useVrmsApp } from '../../context/VrmsAppContext'
 import { VRMS_ROUTING_FORM_FIELDS } from '../../lib/vrmsFormConfig'
-import { formatVrmsDateTime, getStatusKey, normalizeOptionalField } from '../../utils/vrmsLogic'
+import { NA_OPTIONAL_VALUE } from '../../lib/naOptionalField'
+import { formatVrmsDateTime, getStatusKey, normalizeOptionalField, validateRoutingPayload } from '../../utils/vrmsLogic'
 import type { RoutingDocument, SaveRoutingDocumentPayload, VrmsSignatory } from '../../types/vrms'
 
 function emptySignatory(order: number, active: boolean): VrmsSignatory {
@@ -49,7 +51,7 @@ const initialForm = {
   docTracer: '',
   equipmentProduct: '',
   category: '',
-  ilTag: '',
+  ilTag: NA_OPTIONAL_VALUE,
   status: '' as RoutingDocument['status'],
   sentRoutingTo: '',
   email: '',
@@ -63,7 +65,21 @@ const initialForm = {
   checkedBy: '',
   dateChecked: '',
   targetCompletionDate: '',
-  remarks: '',
+  remarks: NA_OPTIONAL_VALUE,
+}
+
+function buildRoutingPayload(
+  form: typeof initialForm,
+  signatories: VrmsSignatory[],
+  isCancelled: boolean,
+): SaveRoutingDocumentPayload {
+  return {
+    ...form,
+    ilTag: normalizeOptionalField(form.ilTag),
+    remarks: normalizeOptionalField(form.remarks),
+    signatories: isCancelled ? [] : signatories,
+    __originalTracker: form.routingTracker,
+  }
 }
 
 export function VrmsRoutingPage() {
@@ -77,10 +93,14 @@ export function VrmsRoutingPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [signingOrder, setSigningOrder] = useState<number | null>(null)
+  const persistedSnapshotRef = useRef('')
 
   const allowedNames = appData?.registries['Sent / Routing'] ?? []
   const isRouting = getStatusKey(form.status) === 'routing'
   const isCancelled = getStatusKey(form.status) === 'cancelled'
+  const isFormDirty =
+    persistedSnapshotRef.current !== '' &&
+    JSON.stringify(buildRoutingPayload(form, signatories, isCancelled)) !== persistedSnapshotRef.current
   const canModifyForm = canCreate || canEdit
   const canSubmit = form.routingTracker ? canEdit : canCreate
 
@@ -89,7 +109,11 @@ export function VrmsRoutingPage() {
       try {
         const record = await getDocumentByTracker(tracker)
         setForm(documentToFormState(record))
-        setSignatories(structuredClone(record.signatories))
+        const loadedSignatories = structuredClone(record.signatories)
+        setSignatories(loadedSignatories)
+        persistedSnapshotRef.current = JSON.stringify(
+          buildRoutingPayload(documentToFormState(record), loadedSignatories, getStatusKey(record.status) === 'cancelled'),
+        )
       } catch (err) {
         notify(err instanceof Error ? err.message : 'Failed to load tracker.')
       }
@@ -117,17 +141,13 @@ export function VrmsRoutingPage() {
   }
 
   function handleSentRoutingChange(value: string) {
+    setForm((current) => ({ ...current, sentRoutingTo: value }))
     if (!isRouting) return
-    if (!signatories.length) {
-      setSignatories([emptySignatory(1, true)])
-    }
     setSignatories((current) => {
-      const next = [...current]
-      if (!next[0]) next[0] = emptySignatory(1, true)
+      const next = current.length ? [...current] : [emptySignatory(1, true)]
       next[0] = { ...next[0], Name: value, Status: 'Active', Order: 1 }
       return next
     })
-    setForm((current) => ({ ...current, sentRoutingTo: value }))
   }
 
   function addSignatory() {
@@ -155,18 +175,17 @@ export function VrmsRoutingPage() {
     setSaving(true)
     setSaveError(null)
     try {
-      const payload: SaveRoutingDocumentPayload = {
-        ...form,
-        ilTag: normalizeOptionalField(form.ilTag),
-        remarks: normalizeOptionalField(form.remarks),
-        signatories: isCancelled ? [] : signatories,
-        __originalTracker: form.routingTracker,
-      }
+      const payload = buildRoutingPayload(form, signatories, isCancelled)
+      validateRoutingPayload(payload)
       const data = await saveDocument(payload)
       const saved = data.documents.find((doc) => doc.docTracer === form.docTracer)
       if (saved) {
         setForm(documentToFormState(saved))
-        setSignatories(structuredClone(saved.signatories))
+        const savedSignatories = structuredClone(saved.signatories)
+        setSignatories(savedSignatories)
+        persistedSnapshotRef.current = JSON.stringify(
+          buildRoutingPayload(documentToFormState(saved), savedSignatories, getStatusKey(saved.status) === 'cancelled'),
+        )
       }
     } catch (err) {
       const message =
@@ -182,6 +201,10 @@ export function VrmsRoutingPage() {
 
   async function handleSign(order: number) {
     if (!form.routingTracker) return
+    if (isFormDirty) {
+      notify('Submit the form to save your changes before signing.')
+      return
+    }
     setSigningOrder(order)
     try {
       const result = await signDocumentSignatory(form.routingTracker, order)
@@ -189,7 +212,11 @@ export function VrmsRoutingPage() {
         const saved = result.appData.documents.find((doc) => doc.routingTracker === form.routingTracker)
         if (saved) {
           setForm(documentToFormState(saved))
-          setSignatories(structuredClone(saved.signatories))
+          const savedSignatories = structuredClone(saved.signatories)
+          setSignatories(savedSignatories)
+          persistedSnapshotRef.current = JSON.stringify(
+            buildRoutingPayload(documentToFormState(saved), savedSignatories, getStatusKey(saved.status) === 'cancelled'),
+          )
         }
       }
     } catch (err) {
@@ -222,17 +249,28 @@ export function VrmsRoutingPage() {
           <div className="vrms-formgrid">
             {VRMS_ROUTING_FORM_FIELDS.map((field) => {
               const value = String(form[field.key as keyof typeof form] ?? '')
-              const isNa = (field.key === 'ilTag' || field.key === 'remarks') && value === 'n/a'
               return (
                 <div key={field.key} className={field.wide ? 'wide' : undefined}>
                   <label>
                     {field.label}
                     {field.required ? ' *' : ''}
                   </label>
-                  {field.type === 'textarea' ? (
+                  {field.naOptional && field.type === 'textarea' ? (
+                    <NaOptionalTextarea
+                      value={value}
+                      disabled={!canModifyForm}
+                      onChange={(next) => updateField(field.key, next)}
+                    />
+                  ) : field.naOptional ? (
+                    <NaOptionalInput
+                      type={field.type ?? 'text'}
+                      value={value}
+                      disabled={!canModifyForm}
+                      onChange={(next) => updateField(field.key, next)}
+                    />
+                  ) : field.type === 'textarea' ? (
                     <textarea
                       value={value}
-                      className={isNa ? 'is-na' : undefined}
                       disabled={!canModifyForm}
                       onChange={(event) => updateField(field.key, event.target.value)}
                     />
@@ -258,7 +296,6 @@ export function VrmsRoutingPage() {
                     <input
                       type={field.type ?? 'text'}
                       value={value}
-                      className={isNa ? 'is-na' : undefined}
                       disabled={!canModifyForm}
                       onChange={(event) => updateField(field.key, event.target.value)}
                     />
@@ -291,7 +328,8 @@ export function VrmsRoutingPage() {
               <p className="vrms-muted">No signatories added.</p>
             ) : (
               signatories.map((item, index) => {
-                const canSign = Boolean(form.routingTracker) && isRouting && item.Status === 'Active' && canApprove
+                const canSign =
+                  Boolean(form.routingTracker) && isRouting && item.Status === 'Active' && canApprove && !isFormDirty
                 const signed = item.Status === 'Signed'
                 return (
                   <div className="vrms-signatory-row" key={`${item.Order}-${index}`}>

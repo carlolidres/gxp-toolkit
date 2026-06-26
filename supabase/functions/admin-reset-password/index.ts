@@ -61,7 +61,10 @@ Deno.serve(async (request) => {
     return json({ error: 'This account has no email/password login linked. Password reset is not available.' }, 400)
   }
 
-  const defaultPassword = Deno.env.get('DEFAULT_RESET_PASSWORD') ?? 'iLoveJesus'
+  const defaultPassword = Deno.env.get('DEFAULT_RESET_PASSWORD')?.trim()
+  if (!defaultPassword) {
+    return json({ error: 'The reset service is not configured.' }, 503)
+  }
 
   const { error: passwordError } = await adminClient.auth.admin.updateUserById(profile.auth_user_id, {
     password: defaultPassword,

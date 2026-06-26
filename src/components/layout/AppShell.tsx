@@ -11,6 +11,9 @@ import { findSubmenuLabel } from '../../config/sidebarMenus'
 import { useAuth } from '../../hooks/useAuth'
 import { usePermissions } from '../../hooks/usePermissions'
 import { useTheme } from '../../hooks/useTheme'
+import { MessagesModal } from '../feedback/MessagesModal'
+import { GxpLogo } from '../brand/GxpLogo'
+import { useFeedbackMessages } from '../../hooks/useFeedbackMessages'
 import { SidebarNavGroup } from './SidebarNavGroup'
 
 type IconProps = SVGProps<SVGSVGElement>
@@ -29,15 +32,6 @@ function IconVrms(props: IconProps) {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true" {...props}>
       <path d="M12 3 19 6v5c0 4.5-2.8 7.8-7 10-4.2-2.2-7-5.5-7-10V6l7-3Z" />
       <path d="m9 12 2 2 4-5" />
-    </svg>
-  )
-}
-
-function IconVrmsBrand(props: IconProps) {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-      <path d="M12 2.75 19.25 5.8v5.35c0 4.62-2.9 8.42-7.25 10.1-4.35-1.68-7.25-5.48-7.25-10.1V5.8L12 2.75Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-      <path d="m8.75 12.1 2.2 2.25 4.55-5.1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -96,6 +90,15 @@ function IconGlobe(props: IconProps) {
   )
 }
 
+function IconMessage(props: IconProps) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true" {...props}>
+      <path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-6.2A8 8 0 1 1 21 12Z" />
+      <path d="M8 10h8M8 14h5" />
+    </svg>
+  )
+}
+
 function IconLogout(props: IconProps) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true" {...props}>
@@ -114,7 +117,9 @@ const groupIcons = {
 export function AppShell({ children }: { children: ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [messagesOpen, setMessagesOpen] = useState(false)
   const { user, logout, usesSupabase } = useAuth()
+  const { messages, loading, unreadCount, isAdmin, refresh, acknowledgeUnread } = useFeedbackMessages()
   const { accessibleNavigationGroups, permissionsReady, canViewMenu } = usePermissions()
   const { isDark, toggleTheme } = useTheme()
   const location = useLocation()
@@ -138,9 +143,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="app-shell">
       <aside className={sidebarClass}>
         <div className="sidebar-header">
-          <div className="sidebar-brand-mark">
-            <IconVrmsBrand />
-          </div>
+          <GxpLogo variant="mark" className="sidebar-brand-logo" />
           <div className="sidebar-brand">
             <span className="sidebar-brand-title">{APP_NAME}</span>
             <span className="sidebar-brand-sub">{APP_TAGLINE}</span>
@@ -219,6 +222,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               <IconSidebar />
             </button>
+            <GxpLogo variant="mark" className="topbar-brand-logo" />
             <p className="topbar-greeting">
               <span className="topbar-greeting-sub">{APP_NAME}</span>
               <span className="topbar-greeting-title">{current}</span>
@@ -247,6 +251,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             </button>
             <button
               type="button"
+              className={[
+                'topbar-icon-circle',
+                isAdmin && unreadCount > 0 ? 'topbar-icon-unread' : '',
+              ].filter(Boolean).join(' ')}
+              aria-label={isAdmin && unreadCount > 0 ? `Messages (${unreadCount} unread)` : 'Messages'}
+              onClick={() => openMessages()}
+            >
+              <IconMessage />
+            </button>
+            <button
+              type="button"
               className="topbar-profile-chip"
               aria-label="Account settings"
               onClick={() => { closeMobileNav(); navigate('/account') }}
@@ -268,6 +283,21 @@ export function AppShell({ children }: { children: ReactNode }) {
       {isMobileOpen && (
         <button type="button" className="sidebar-scrim" onClick={closeMobileNav} aria-label="Close navigation" />
       )}
+
+      <MessagesModal
+        isOpen={messagesOpen}
+        onClose={() => setMessagesOpen(false)}
+        messages={messages}
+        loading={loading}
+        isAdmin={isAdmin}
+        onRefresh={refresh}
+        onAcknowledgeUnread={acknowledgeUnread}
+      />
     </div>
   )
+
+  function openMessages() {
+    closeMobileNav()
+    setMessagesOpen(true)
+  }
 }

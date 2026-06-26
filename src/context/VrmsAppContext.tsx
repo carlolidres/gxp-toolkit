@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import { useToast } from '../components/feedback/ToastProvider'
 import { VRMS_AUTO_REFRESH_MS } from '../lib/vrmsDefaults'
+import { isSupabaseTableAuthError } from '../lib/supabaseAuth'
+import { authService } from '../services/authService'
 import { getVrmsService, resolveVrmsUserEmail } from '../services/vrmsService'
 import type {
   AuditEvent,
@@ -17,6 +19,7 @@ interface VrmsAppContextValue {
   loading: boolean
   error: string | null
   userEmail: string
+  dataRevision: number
   refresh: (quiet?: boolean) => Promise<void>
   saveDocument: (payload: SaveRoutingDocumentPayload) => Promise<VrmsAppData>
   signDocumentSignatory: (tracker: string, order: number) => Promise<SignDocumentResult>
@@ -32,24 +35,46 @@ export function VrmsAppProvider({ children }: { children: ReactNode }) {
   const [appData, setAppData] = useState<VrmsAppData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [dataRevision, setDataRevision] = useState(0)
   const refreshInProgress = useRef(false)
+  const mutationEpoch = useRef(0)
+  const authFailedRef = useRef(false)
   const { notify } = useToast()
   const service = useMemo(() => getVrmsService(), [])
   const userEmail = resolveVrmsUserEmail()
 
+  const bumpDataRevision = useCallback(() => {
+    mutationEpoch.current += 1
+    setDataRevision((current) => current + 1)
+  }, [])
+
   const refresh = useCallback(
     async (quiet = false) => {
-      if (refreshInProgress.current) return
+      if (refreshInProgress.current || authFailedRef.current) return
       refreshInProgress.current = true
+      const epochAtStart = mutationEpoch.current
       if (!quiet) setLoading(true)
       try {
+        if (authService.usesSupabase()) {
+          const sessionOk = await authService.hasSupabaseSession()
+          if (!sessionOk) {
+            authFailedRef.current = true
+            setError('Authentication session expired. Please sign in again.')
+            return
+          }
+        }
         const data = await service.getAppData(userEmail)
+        if (epochAtStart !== mutationEpoch.current) return
         setAppData(data)
         setError(null)
+        authFailedRef.current = false
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load VRMS data.'
+        if (isSupabaseTableAuthError(message)) {
+          authFailedRef.current = true
+        }
         setError(message)
-        if (!quiet) notify(message)
+        if (!quiet && !isSupabaseTableAuthError(message)) notify(message)
       } finally {
         refreshInProgress.current = false
         if (!quiet) setLoading(false)
@@ -59,9 +84,10 @@ export function VrmsAppProvider({ children }: { children: ReactNode }) {
   )
 
   useEffect(() => {
+    authFailedRef.current = false
     void refresh()
     const interval = window.setInterval(() => {
-      if (document.hidden) return
+      if (document.hidden || authFailedRef.current) return
       void refresh(true)
     }, VRMS_AUTO_REFRESH_MS)
     return () => window.clearInterval(interval)
@@ -70,11 +96,14 @@ export function VrmsAppProvider({ children }: { children: ReactNode }) {
   const saveDocument = useCallback(
     async (payload: SaveRoutingDocumentPayload) => {
       try {
+        bumpDataRevision()
         const data = await service.saveDocument(payload, userEmail)
         setAppData(data)
+        bumpDataRevision()
         notify('Document routing record saved successfully.')
         return data
       } catch (err) {
+        bumpDataRevision()
         const message =
           err instanceof Error
             ? err.message
@@ -82,13 +111,15 @@ export function VrmsAppProvider({ children }: { children: ReactNode }) {
         throw new Error(message)
       }
     },
-    [notify, service, userEmail],
+    [bumpDataRevision, notify, service, userEmail],
   )
 
   const signDocumentSignatory = useCallback(
     async (tracker: string, order: number) => {
+      bumpDataRevision()
       const result = await service.signDocumentSignatory(tracker, order, userEmail)
       if (result.appData) setAppData(result.appData)
+      bumpDataRevision()
       notify(
         result.final
           ? `Routing completed — status set to ${result.status}.`
@@ -96,7 +127,7 @@ export function VrmsAppProvider({ children }: { children: ReactNode }) {
       )
       return result
     },
-    [notify, service, userEmail],
+    [bumpDataRevision, notify, service, userEmail],
   )
 
   const getDocumentByTracker = useCallback(
@@ -108,22 +139,26 @@ export function VrmsAppProvider({ children }: { children: ReactNode }) {
 
   const addRegistryValue = useCallback(
     async (type: VrmsRegistryType, value: string) => {
+      bumpDataRevision()
       const data = await service.addRegistryValue(type, value, userEmail)
       setAppData(data)
+      bumpDataRevision()
       notify('Registry value added.')
       return data
     },
-    [notify, service, userEmail],
+    [bumpDataRevision, notify, service, userEmail],
   )
 
   const deleteRegistryValue = useCallback(
     async (type: VrmsRegistryType, value: string) => {
+      bumpDataRevision()
       const data = await service.deleteRegistryValue(type, value, userEmail)
       setAppData(data)
+      bumpDataRevision()
       notify('Registry value removed.')
       return data
     },
-    [notify, service, userEmail],
+    [bumpDataRevision, notify, service, userEmail],
   )
 
   const value = useMemo(
@@ -132,6 +167,7 @@ export function VrmsAppProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       userEmail,
+      dataRevision,
       refresh,
       saveDocument,
       signDocumentSignatory,
@@ -145,6 +181,7 @@ export function VrmsAppProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       userEmail,
+      dataRevision,
       refresh,
       saveDocument,
       signDocumentSignatory,

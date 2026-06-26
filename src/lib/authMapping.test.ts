@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ADMIN_DEFAULT_RESET_PASSWORD } from '../config/authPasswordPolicy'
-import { mapSessionToAuthUser } from './authMapping'
+import { mapSessionToAuthUser, mapVrmsRoleToUserRole } from './authMapping'
 
 describe('admin default password reset auth mapping', () => {
   it('maps mustChangePassword from profile data', () => {
@@ -17,8 +16,7 @@ describe('admin default password reset auth mapping', () => {
     expect(user.mustChangePassword).toBe(true)
   })
 
-  it('uses the approved temporary password constant', () => {
-    expect(ADMIN_DEFAULT_RESET_PASSWORD).toBe('iLoveJesus')
-    expect(ADMIN_DEFAULT_RESET_PASSWORD.length).toBeGreaterThanOrEqual(8)
+  it('maps database user role to Viewer', () => {
+    expect(mapVrmsRoleToUserRole('user')).toBe('Viewer')
   })
 })

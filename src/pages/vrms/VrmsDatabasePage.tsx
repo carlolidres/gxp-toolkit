@@ -7,7 +7,7 @@ import { useVrmsApp } from '../../context/VrmsAppContext'
 import { VRMS_DATABASE_COLUMNS } from '../../lib/vrmsFormConfig'
 import { VrmsDataTable } from '../../components/vrms/VrmsDataTable'
 import type { RoutingDocument } from '../../types/vrms'
-import { getStatusKey } from '../../utils/vrmsLogic'
+import { getStatusKey, buildDocumentSearchHaystack } from '../../utils/vrmsLogic'
 
 const DATABASE_TABLE_COLUMNS = VRMS_DATABASE_COLUMNS.slice(0, 8) as unknown as Array<{
   key: keyof RoutingDocument
@@ -76,7 +76,7 @@ export function VrmsDatabasePage() {
     const docs = appData?.documents ?? []
     const query = search.trim().toLowerCase()
     return docs.filter((doc) => {
-      const haystack = Object.values(doc).join(' ').toLowerCase()
+      const haystack = buildDocumentSearchHaystack(doc)
       return (
         (!query || haystack.includes(query)) &&
         (!status || doc.status === status) &&

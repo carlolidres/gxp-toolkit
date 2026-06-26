@@ -21,8 +21,9 @@ export function mapVrmsRoleToUserRole(role: VrmsProfileRole | string | undefined
     case 'viewer':
       return 'Viewer'
     case 'user':
+      return 'Viewer'
     default:
-      return 'Editor'
+      return 'Viewer'
   }
 }
 

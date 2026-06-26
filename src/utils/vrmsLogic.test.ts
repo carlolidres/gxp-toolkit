@@ -1,7 +1,8 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import { mockVrmsService } from '../services/mockVrmsService'
 import { resetVrmsStore } from '../services/vrmsStore'
-import { generateUniqueTracker, normalizeSignatories, applySaveDocument } from './vrmsLogic'
+import type { RoutingDocument } from '../types/vrms'
+import { generateUniqueTracker, normalizeSignatories, applySaveDocument, validateRoutingPayload, buildDocumentSearchHaystack } from './vrmsLogic'
 
 describe('vrmsLogic', () => {
   it('generates unique 4-character trackers', () => {
@@ -36,6 +37,68 @@ describe('vrmsLogic', () => {
       ),
     ).toThrow(/not in the Sent\/Routing To registry/)
   })
+
+  it('rejects save when required routing fields are missing', () => {
+    expect(() =>
+      validateRoutingPayload({
+        docTracer: 'TR-1',
+        equipmentProduct: '',
+        category: 'Equipment',
+        status: 'For Scanning',
+        sentRoutingTo: 'Steve',
+        reportProtocol: 'Report',
+        batchNo: 'B-1',
+        clientName: 'Client',
+        department: 'Validation',
+        preparedBy: 'Preparer',
+        datePrepared: '2026-06-16',
+        checkedBy: 'Checker',
+        dateChecked: '2026-06-16',
+      }),
+    ).toThrow(/Equipment\/Product/)
+  })
+
+  it('includes signatory names in document search haystack', () => {
+    const haystack = buildDocumentSearchHaystack({
+      routingTracker: 'aB3x',
+      docTracer: 'TR-1',
+      equipmentProduct: 'Mixer',
+      category: 'Equipment',
+      ilTag: '',
+      status: 'Routing',
+      sentRoutingTo: 'Steve',
+      email: '',
+      dateSent: '',
+      reportProtocol: 'Report',
+      batchNo: 'B-1',
+      clientName: 'Client',
+      department: 'Validation',
+      preparedBy: 'Preparer',
+      datePrepared: '2026-06-16',
+      checkedBy: 'Checker',
+      dateChecked: '2026-06-16',
+      targetCompletionDate: '',
+      remarks: '',
+      signatories: [
+        {
+          Order: 1,
+          Name: 'Isaiah',
+          Status: 'Active',
+          'Date/time forwarded': '',
+          'Date/time signed': '',
+          'Duration pending/signing time': '',
+        },
+      ],
+      totalRoutingDuration: '',
+      routingCompletedAt: '',
+      createdAt: '',
+      updatedAt: '',
+      updatedBy: '',
+    } as RoutingDocument)
+
+    expect(haystack).toContain('isaiah')
+    expect(haystack).not.toContain('[object object]')
+  })
 })
 
 describe('mockVrmsService', () => {
@@ -57,7 +120,7 @@ describe('mockVrmsService', () => {
         equipmentProduct: 'Mixer M-1',
         category: 'Equipment',
         status: 'For Scanning',
-        sentRoutingTo: '',
+        sentRoutingTo: 'Steve',
         reportProtocol: 'Report',
         batchNo: 'B-9999',
         clientName: 'Client A',
@@ -100,6 +163,47 @@ describe('mockVrmsService', () => {
         'test@example.com',
       ),
     ).toThrow(/at least one signatory/)
+  })
+
+  it('updates Sent/Routing To on loaded non-routing documents', () => {
+    const existing: RoutingDocument = {
+      routingTracker: 'krkG',
+      docTracer: 'DOC-1',
+      equipmentProduct: 'Mixer',
+      category: 'Equipment',
+      ilTag: 'n/a',
+      status: 'Sent',
+      sentRoutingTo: 'Fong',
+      email: '',
+      dateSent: '2026-06-16',
+      reportProtocol: 'Protocol',
+      batchNo: 'B-1',
+      clientName: 'Client',
+      department: 'Validation',
+      preparedBy: 'Carlo Lidres',
+      datePrepared: '2026-06-16',
+      checkedBy: 'Carlo Lidres',
+      dateChecked: '2026-06-16',
+      targetCompletionDate: '',
+      remarks: 'n/a',
+      signatories: [],
+      totalRoutingDuration: '',
+      routingCompletedAt: '',
+      createdAt: '2026-06-16 08:00:00',
+      updatedAt: '2026-06-16 08:00:00',
+      updatedBy: 'test@example.com',
+    }
+
+    const result = applySaveDocument(
+      { ...existing, sentRoutingTo: 'Client', __originalTracker: 'krkG' },
+      existing,
+      [existing],
+      ['Fong', 'Client'],
+      'test@example.com',
+      new Date('2026-06-16T09:00:00'),
+    )
+
+    expect(result.document.sentRoutingTo).toBe('Client')
   })
 
   it('signs active signatory on production routing document', async () => {

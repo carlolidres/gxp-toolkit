@@ -5,12 +5,13 @@ import { useVrmsApp } from '../../context/VrmsAppContext'
 import type { AuditEvent } from '../../types/vrms'
 
 export function VrmsAuditPage() {
-  const { getAuditTrail } = useVrmsApp()
+  const { getAuditTrail, dataRevision } = useVrmsApp()
   const [rows, setRows] = useState<AuditEvent[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let active = true
+    setLoading(true)
     void getAuditTrail()
       .then((data) => {
         if (active) setRows(data)
@@ -21,7 +22,7 @@ export function VrmsAuditPage() {
     return () => {
       active = false
     }
-  }, [getAuditTrail])
+  }, [getAuditTrail, dataRevision])
 
   return (
     <VrmsPage title="Audit Trail" description="Create, update, and registry activity.">

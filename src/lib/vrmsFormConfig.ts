@@ -6,6 +6,7 @@ export interface VrmsFormField {
   label: string
   required?: boolean
   wide?: boolean
+  naOptional?: boolean
   type?: 'text' | 'email' | 'date' | 'textarea'
   registryType?: VrmsRegistryType
 }
@@ -14,7 +15,7 @@ export const VRMS_ROUTING_FORM_FIELDS: VrmsFormField[] = [
   { key: 'docTracer', label: 'Doc Tracer #', required: true },
   { key: 'equipmentProduct', label: 'Equipment/Product', required: true, wide: true },
   { key: 'category', label: 'Category', required: true, registryType: 'Category' },
-  { key: 'ilTag', label: 'IL-Tag' },
+  { key: 'ilTag', label: 'IL-Tag', naOptional: true },
   { key: 'status', label: 'Status', required: true, registryType: 'Status' },
   { key: 'sentRoutingTo', label: 'Sent/Routing To', required: true, registryType: 'Sent / Routing' },
   { key: 'email', label: 'Email', type: 'email' },
@@ -28,7 +29,7 @@ export const VRMS_ROUTING_FORM_FIELDS: VrmsFormField[] = [
   { key: 'checkedBy', label: 'Checked By', required: true, registryType: 'Checked by' },
   { key: 'dateChecked', label: 'Date Checked', required: true, type: 'date' },
   { key: 'targetCompletionDate', label: 'Target Completion Date', type: 'date', wide: true },
-  { key: 'remarks', label: 'Remarks', type: 'textarea', wide: true },
+  { key: 'remarks', label: 'Remarks', type: 'textarea', wide: true, naOptional: true },
 ]
 
 export const VRMS_DATABASE_COLUMNS = [

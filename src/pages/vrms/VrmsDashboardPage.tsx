@@ -186,6 +186,7 @@ function DashboardDocumentCard({
   actionLabel,
   actionPath,
   onTrackerClick,
+  onRefresh,
 }: {
   title: string
   icon: 'clock' | 'share'
@@ -194,9 +195,11 @@ function DashboardDocumentCard({
   actionLabel: string
   actionPath: string
   onTrackerClick: (tracker: string) => void
+  onRefresh: () => void
 }) {
   const navigate = useNavigate()
-  const visibleCount = Math.min(10, total)
+  const previewRows = rows.slice(0, 10)
+  const visibleCount = previewRows.length
 
   return (
     <section className="vrms-panel vrms-dashboard-doc-card">
@@ -208,17 +211,14 @@ function DashboardDocumentCard({
           <h2>{title}</h2>
         </div>
         <div className="vrms-dashboard-doc-actions" aria-label={`${title} actions`}>
-          <button type="button" aria-label={`Refresh ${title}`}>
+          <button type="button" aria-label={`Refresh ${title}`} onClick={onRefresh}>
             <CardIcon name="refresh" />
-          </button>
-          <button type="button" aria-label={`${title} options`}>
-            <CardIcon name="more" />
           </button>
         </div>
       </div>
       <div className="vrms-dashboard-doc-table">
         <VrmsDataTable
-          rows={rows}
+          rows={previewRows}
           columns={dashboardPreviewColumns}
           onTrackerClick={onTrackerClick}
         />
@@ -238,7 +238,7 @@ function DashboardDocumentCard({
 }
 
 export function VrmsDashboardPage() {
-  const { appData, loading } = useVrmsApp()
+  const { appData, loading, refresh } = useVrmsApp()
   const { user } = useAuth()
   const navigate = useNavigate()
   const distributionRef = useRef<HTMLElement>(null)
@@ -381,6 +381,7 @@ export function VrmsDashboardPage() {
           actionLabel="View all updated"
           actionPath="/database"
           onTrackerClick={(tracker) => navigate(`/routing?tracker=${encodeURIComponent(tracker)}`)}
+          onRefresh={() => void refresh()}
         />
         <DashboardDocumentCard
           title="Active routing documents"
@@ -390,6 +391,7 @@ export function VrmsDashboardPage() {
           actionLabel="View all routing"
           actionPath="/database?status=Routing"
           onTrackerClick={(tracker) => navigate(`/routing?tracker=${encodeURIComponent(tracker)}`)}
+          onRefresh={() => void refresh()}
         />
       </div>
     </VrmsPage>

@@ -252,20 +252,27 @@ code { background: var(--code-bg); padding: 2px 6px; border-radius: 5px; }
   flex-shrink: 0;
 }
 
-.brand { display: flex; gap: 12px; align-items: center; padding: 0 8px 30px; }
-.brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; background: var(--teal); color: #fff; font: 700 1.1rem 'Manrope'; }
-.brand strong, .brand span { display: block; color: #fff; }
-.brand span { margin-top: 2px; color: #91a9ba; font-size: .72rem; }
-.brand.light { padding-left: 0; }
+.gxp-logo {
+  display: block;
+  height: auto;
+  object-fit: contain;
+}
 
-.sidebar-brand-mark {
+.gxp-logo-full {
+  width: min(260px, 72vw);
+  max-height: 76px;
+}
+
+.gxp-logo-mark {
   width: 44px;
   height: 44px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  background: var(--teal);
-  color: #fff;
+}
+
+.gxp-logo-light {
+  filter: none;
+}
+
+.sidebar-brand-logo {
   flex-shrink: 0;
 }
 
@@ -632,6 +639,113 @@ main {
 
 .topbar-icon-circle.topbar-icon-quiet { color: var(--topbar-muted); }
 
+@media (prefers-reduced-motion: no-preference) {
+  .topbar-icon-circle.topbar-icon-unread {
+    animation: topbar-icon-unread-pulse 2.2s ease-in-out infinite;
+    border-color: color-mix(in srgb, var(--teal) 45%, var(--topbar-icon-border));
+  }
+}
+
+@keyframes topbar-icon-unread-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--teal) 25%, transparent);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 0 12px 3px color-mix(in srgb, var(--teal) 35%, transparent);
+    transform: translateY(-1px) translateX(0.5px);
+  }
+}
+
+.messages-compose,
+.messages-inbox {
+  display: grid;
+  gap: 16px;
+}
+
+.messages-inbox h3,
+.messages-history h3 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+}
+
+.messages-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.messages-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--surface);
+}
+
+.messages-meta {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.messages-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.messages-meta-muted {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.messages-status {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.messages-status-unread { color: var(--teal); border-color: color-mix(in srgb, var(--teal) 35%, var(--border)); }
+.messages-status-read { color: var(--muted); }
+.messages-status-addressed { color: #1f7a4d; border-color: color-mix(in srgb, #1f7a4d 35%, var(--border)); }
+.messages-status-rejected { color: #b42318; border-color: color-mix(in srgb, #b42318 35%, var(--border)); }
+
+.messages-content {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.messages-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.messages-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+.button.small {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 0.78rem;
+}
+
+input.is-na,
+textarea.is-na,
+.input.is-na {
+  color: var(--muted);
+  font-style: italic;
+}
+
 .topbar-profile-chip {
   display: flex;
   align-items: center;
@@ -934,6 +1048,28 @@ main {
 .form-field { display: grid; gap: 7px; margin-bottom: 14px; color: var(--navy); font-size: .76rem; font-weight: 700; }
 .form-field small { color: var(--muted); font-weight: 400; }
 .input, .search-input { width: 100%; min-height: 40px; padding: 0 11px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--app-text); outline: none; }
+.password-input-wrap { position: relative; display: flex; align-items: center; }
+.password-input-wrap .input { padding-right: 42px; }
+.password-input-toggle {
+  position: absolute;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.password-input-toggle:hover,
+.password-input-toggle:focus-visible {
+  color: var(--navy);
+  background: rgba(22, 125, 131, 0.08);
+  outline: none;
+}
 .input:focus, .search-input:focus-within { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(22,125,131,.1); }
 .textarea { min-height: 95px; padding-top: 10px; resize: vertical; }
 .search-input { display: flex; align-items: center; gap: 8px; max-width: 360px; }
@@ -1245,6 +1381,36 @@ tbody tr:hover { background: var(--table-row-hover); }
 .auth-provider-logo { display: inline-flex; align-items: center; justify-content: center; }
 .auth-switch { margin: 14px 0 0; text-align: center; }
 .auth-switch button { padding: 0; border: 0; background: transparent; color: var(--teal); font: inherit; font-weight: 700; cursor: pointer; }
+.auth-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+.auth-footer-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--teal);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.auth-footer-link:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+.topbar-brand-logo {
+  display: none;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+.app-main.sidebar-collapsed .topbar-brand-logo {
+  display: block;
+}
 .form-error, .form-success { margin: 10px 0; padding: 9px 11px; border-radius: 7px; font-size: .78rem; }
 .form-error { border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--border)); background: color-mix(in srgb, var(--danger) 10%, var(--surface)); color: var(--danger); }
 .form-success { border: 1px solid color-mix(in srgb, var(--teal) 40%, var(--border)); background: color-mix(in srgb, var(--teal) 10%, var(--surface)); color: var(--teal); }
@@ -1312,6 +1478,7 @@ tbody tr:hover { background: var(--table-row-hover); }
   .menu-button:hover { background: var(--sidebar-hover); }
   .topbar-profile-text,
   .topbar-greeting { display: none; }
+  .topbar-brand-logo { display: block; }
   .topbar { padding: 0 14px; }
   .page { padding: var(--page-padding); }
   .page-header { align-items: flex-start; flex-direction: column; }

@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../lib/supabase'
+import { requireSupabaseSession } from '../lib/supabaseAuth'
 import { initialsFromName, mapUserRoleToProfileRole, mapVrmsRoleToUserRole } from '../lib/authMapping'
 import { normalizeUserPermissions } from '../lib/permissions'
 import { rowsToUserPermissions, userPermissionsToRows } from '../lib/permissionStorage'
@@ -16,10 +17,13 @@ interface ProfileRow {
 
 function requireClient() {
   const client = getSupabaseClient()
-  if (!client) {
-    throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
-  }
+  if (!client) throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
   return client
+}
+
+async function requireAuthenticatedClient() {
+  const client = requireClient()
+  return requireSupabaseSession(client)
 }
 
 function toManagedUser(profile: ProfileRow, permissions: UserPermissions): ManagedUser {
@@ -38,7 +42,7 @@ function toManagedUser(profile: ProfileRow, permissions: UserPermissions): Manag
 async function resolveProfileId(userRef: string): Promise<string> {
   if (userRef.startsWith('p-')) return userRef
 
-  const client = requireClient()
+  const client = await requireAuthenticatedClient()
   const { data: profileId, error: rpcError } = await client.rpc('current_profile_id')
   if (!rpcError && profileId) return profileId as string
 
@@ -54,7 +58,7 @@ async function resolveProfileId(userRef: string): Promise<string> {
 }
 
 async function loadPermissionRows(profileId: string) {
-  const client = requireClient()
+  const client = await requireAuthenticatedClient()
   const { data, error } = await client
     .from('user_menu_permissions')
     .select('menu_id, permissions')
@@ -65,7 +69,7 @@ async function loadPermissionRows(profileId: string) {
 }
 
 async function loadProfile(profileId: string): Promise<ProfileRow> {
-  const client = requireClient()
+  const client = await requireAuthenticatedClient()
   const { data, error } = await client.rpc('get_profile_by_id', { target_id: profileId })
 
   if (!error && data) {
@@ -86,7 +90,7 @@ async function loadProfile(profileId: string): Promise<ProfileRow> {
 
 export const supabaseUserManagementService = {
   async listUsers(): Promise<ManagedUser[]> {
-    const client = requireClient()
+    const client = await requireAuthenticatedClient()
     const { data: profiles, error } = await client
       .from('profiles')
       .select('id, email, display_name, role, active, auth_user_id')
@@ -131,7 +135,7 @@ export const supabaseUserManagementService = {
 
   async updateUser(userRef: string, input: UpdateManagedUserInput): Promise<ManagedUser> {
     const profileId = await resolveProfileId(userRef)
-    const client = requireClient()
+    const client = await requireAuthenticatedClient()
     const current = await loadProfile(profileId)
 
     const nextRole = input.role ?? mapVrmsRoleToUserRole(current.role)
@@ -170,7 +174,7 @@ export const supabaseUserManagementService = {
   },
 
   async resetUserPassword(profileId: string): Promise<void> {
-    const client = requireClient()
+    const client = await requireAuthenticatedClient()
     const { data, error } = await client.functions.invoke('admin-reset-password', {
       body: { profileId },
     })

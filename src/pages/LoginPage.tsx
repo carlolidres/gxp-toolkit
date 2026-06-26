@@ -1,9 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 
-import { FormField, SelectInput, TextInput } from '../components/forms/FormControls'
+import { FormField, PasswordInput, SelectInput, TextInput } from '../components/forms/FormControls'
+import { GxpLogo } from '../components/brand/GxpLogo'
 import { APP_NAME } from '../config/appNavigation'
-import { ADMIN_DEFAULT_RESET_PASSWORD } from '../config/authPasswordPolicy'
 import { useAuth } from '../hooks/useAuth'
 import { consumeLoginFlash } from '../lib/authSessionStore'
 import { getAuthErrorMessage } from '../lib/authMessages'
@@ -13,39 +13,17 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(() => consumeLoginFlash())
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [temporaryPasswordRequired, setTemporaryPasswordRequired] = useState(false)
-  const { isAuthenticated, authReady, login, usesSupabase, checkTemporaryPasswordRequired, user } = useAuth()
+  const [resetStatus, setResetStatus] = useState<string | null>(null)
+  const [resetError, setResetError] = useState<string | null>(null)
+  const [resetLoading, setResetLoading] = useState(false)
+  const { isAuthenticated, authReady, login, usesSupabase, requestPasswordReset, user } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
     if (!authReady || isAuthenticated) return
     setEmail('')
     setPassword('')
-    setTemporaryPasswordRequired(false)
   }, [authReady, isAuthenticated])
-
-  useEffect(() => {
-    if (!usesSupabase || !email.trim()) {
-      setTemporaryPasswordRequired(false)
-      return
-    }
-
-    let active = true
-    const timer = window.setTimeout(() => {
-      void checkTemporaryPasswordRequired(email)
-        .then((required) => {
-          if (active) setTemporaryPasswordRequired(required)
-        })
-        .catch(() => {
-          if (active) setTemporaryPasswordRequired(false)
-        })
-    }, 300)
-
-    return () => {
-      active = false
-      window.clearTimeout(timer)
-    }
-  }, [checkTemporaryPasswordRequired, email, usesSupabase])
 
   if (!authReady) {
     return <p className="auth-loading">Restoring session…</p>
@@ -76,16 +54,35 @@ export function LoginPage() {
     }
   }
 
+  async function sendPasswordReset() {
+    setResetStatus(null)
+    setResetError(null)
+
+    const address = email.trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
+      setResetError('Enter the email address used for your account above.')
+      return
+    }
+
+    setResetLoading(true)
+    try {
+      await requestPasswordReset(address)
+      setResetStatus(
+        usesSupabase
+          ? 'Password reset instructions were sent if the account exists.'
+          : 'Password reset request accepted in mock mode.',
+      )
+    } catch (err) {
+      setResetError(getAuthErrorMessage(err, 'Password reset request failed.'))
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
   return (
     <div className="login-page">
       <section className="login-story">
-        <div className="brand light">
-          <div className="brand-mark">GxP</div>
-          <div>
-            <strong>{APP_NAME}</strong>
-            <span>Validation Routing Monitoring System</span>
-          </div>
-        </div>
+        <GxpLogo variant="full" tone="light" />
         <div>
           <span className="eyebrow">Validation Routing Monitoring System</span>
           <h1>Quality operations, composed for reuse.</h1>
@@ -101,49 +98,25 @@ export function LoginPage() {
           <span className="eyebrow">Welcome back</span>
           <h2>Sign in to {APP_NAME}</h2>
           <p>{usesSupabase ? 'Use your email and password.' : 'Any password works in this mock environment.'}</p>
-          {!usesSupabase ? (
-            <FormField label="Email">
-              <TextInput
-                name="email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                autoComplete="email"
-              />
-            </FormField>
-          ) : (
-            <FormField label="Email">
-              <TextInput
-                name="email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                autoComplete="email"
-              />
-            </FormField>
-          )}
-          {usesSupabase && temporaryPasswordRequired ? (
-            <p className="auth-switch auth-temporary-password">
-              Your administrator reset your password. Temporary password: <strong>{ADMIN_DEFAULT_RESET_PASSWORD}</strong>
-            </p>
-          ) : null}
-          <FormField label="Password">
+          <FormField label="Email">
             <TextInput
+              name="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              autoComplete="email"
+            />
+          </FormField>
+          <FormField label="Password">
+            <PasswordInput
               name="password"
-              type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
               autoComplete="current-password"
             />
           </FormField>
-          {usesSupabase ? (
-            <p className="auth-switch">
-              Forgot your password? Contact your administrator to reset it.
-            </p>
-          ) : null}
           {!usesSupabase ? (
             <FormField label="Example role">
               <SelectInput name="role" defaultValue="Admin">
@@ -159,9 +132,16 @@ export function LoginPage() {
             {isLoading ? 'Signing in…' : 'Sign in'}
           </button>
           {!usesSupabase ? <small>Use role selection to test protected UI patterns.</small> : null}
-          <p className="auth-switch">
-            Need an account? <button type="button" onClick={() => navigate('/signup')}>Create one</button>
-          </p>
+          <div className="auth-footer">
+            <button type="button" className="auth-footer-link" disabled={resetLoading} onClick={() => void sendPasswordReset()}>
+              {resetLoading ? 'Sending reset link…' : 'Forgot password?'}
+            </button>
+            <button type="button" className="auth-footer-link" onClick={() => navigate('/signup')}>
+              Sign-up
+            </button>
+          </div>
+          {resetError ? <p className="form-error">{resetError}</p> : null}
+          {resetStatus ? <p className="form-success">{resetStatus}</p> : null}
         </form>
       </section>
     </div>

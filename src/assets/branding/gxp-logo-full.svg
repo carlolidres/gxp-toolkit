@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 104" role="img" aria-labelledby="title desc">
+  <title id="title">GxP Toolkit logo</title>
+  <desc id="desc">GxP Toolkit wordmark with a shield, check mark, and connected quality nodes.</desc>
+  <defs>
+    <linearGradient id="shield" x1="22" y1="12" x2="82" y2="92" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#167d83"/>
+      <stop offset="1" stop-color="#315d9a"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#shield)" d="M52 8 84 21.1v25.8c0 23.5-13.8 42-32 52.1-18.2-10.1-32-28.6-32-52.1V21.1L52 8Z"/>
+  <path fill="#fff" d="m45.1 63 24-26.8a5.8 5.8 0 0 1 8.6 7.7L49.5 75.5a5.8 5.8 0 0 1-8.3.3L27.3 61.9a5.8 5.8 0 1 1 8.2-8.2l9.6 9.3Z"/>
+  <path fill="none" stroke="#c9d9e4" stroke-linecap="round" stroke-width="4.8" d="M31.5 34.8h17.7L64.3 26h11.9M31.5 46.7h14.3"/>
+  <circle cx="31.5" cy="34.8" r="5.2" fill="#e2f1ef"/>
+  <circle cx="64.3" cy="26" r="5.2" fill="#e2f1ef"/>
+  <circle cx="76.2" cy="26" r="4" fill="#e2f1ef"/>
+  <text x="112" y="48" fill="#102a43" font-family="Manrope, Arial, sans-serif" font-size="32" font-weight="700">GxP Toolkit</text>
+  <text x="113" y="74" fill="#6b7c8f" font-family="DM Sans, Arial, sans-serif" font-size="15" font-weight="600" letter-spacing="1.2">QUALITY COMPLIANCE SYSTEM</text>
+</svg>
