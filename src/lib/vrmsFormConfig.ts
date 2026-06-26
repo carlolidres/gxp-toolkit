@@ -18,7 +18,7 @@ export const VRMS_ROUTING_FORM_FIELDS: VrmsFormField[] = [
   { key: 'ilTag', label: 'IL-Tag', naOptional: true },
   { key: 'status', label: 'Status', required: true, registryType: 'Status' },
   { key: 'sentRoutingTo', label: 'Sent/Routing To', required: true, registryType: 'Sent / Routing' },
-  { key: 'email', label: 'Email', type: 'email' },
+  { key: 'email', label: 'Email', type: 'email', naOptional: true },
   { key: 'dateSent', label: 'Date Sent', type: 'date' },
   { key: 'reportProtocol', label: 'Report/Protocol', required: true, registryType: 'Report / Protocol' },
   { key: 'batchNo', label: 'Batch No.', required: true },

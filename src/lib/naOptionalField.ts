@@ -9,6 +9,19 @@ export function displayNaOptionalValue(value: string | undefined | null): string
   return isNaOptionalValue(value) ? NA_OPTIONAL_VALUE : String(value)
 }
 
+/** When focused, show the raw value so an emptied field stays editable instead of snapping back to N/A. */
+export function resolveNaOptionalDisplayValue(
+  value: string | undefined | null,
+  focused: boolean,
+): string {
+  if (focused) return String(value ?? '')
+  return displayNaOptionalValue(value)
+}
+
+export function shouldShowNaOptionalStyle(value: string | undefined | null, focused: boolean): boolean {
+  return !focused && isNaOptionalValue(value)
+}
+
 export function normalizeNaOptionalValue(value: string | undefined | null): string {
   return isNaOptionalValue(value) ? 'n/a' : String(value).trim()
 }

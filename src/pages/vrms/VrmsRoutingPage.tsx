@@ -54,7 +54,7 @@ const initialForm = {
   ilTag: NA_OPTIONAL_VALUE,
   status: '' as RoutingDocument['status'],
   sentRoutingTo: '',
-  email: '',
+  email: NA_OPTIONAL_VALUE,
   dateSent: '',
   reportProtocol: '',
   batchNo: '',
@@ -76,6 +76,7 @@ function buildRoutingPayload(
   return {
     ...form,
     ilTag: normalizeOptionalField(form.ilTag),
+    email: normalizeOptionalField(form.email),
     remarks: normalizeOptionalField(form.remarks),
     signatories: isCancelled ? [] : signatories,
     __originalTracker: form.routingTracker,
@@ -263,7 +264,8 @@ export function VrmsRoutingPage() {
                     />
                   ) : field.naOptional ? (
                     <NaOptionalInput
-                      type={field.type ?? 'text'}
+                      type={field.type === 'email' ? 'text' : (field.type ?? 'text')}
+                      inputMode={field.type === 'email' ? 'email' : undefined}
                       value={value}
                       disabled={!canModifyForm}
                       onChange={(next) => updateField(field.key, next)}

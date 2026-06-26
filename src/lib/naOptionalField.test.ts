@@ -7,6 +7,8 @@ import {
   normalizeNaOptionalValue,
   onNaOptionalBlur,
   onNaOptionalFocus,
+  resolveNaOptionalDisplayValue,
+  shouldShowNaOptionalStyle,
 } from './naOptionalField'
 
 describe('naOptionalField', () => {
@@ -36,5 +38,14 @@ describe('naOptionalField', () => {
     expect(value).toBe('')
     onNaOptionalBlur(value, set)
     expect(value).toBe(NA_OPTIONAL_VALUE)
+  })
+
+  it('shows an empty string while focused so the field stays editable', () => {
+    expect(resolveNaOptionalDisplayValue('', true)).toBe('')
+    expect(resolveNaOptionalDisplayValue('n/a', true)).toBe('n/a')
+    expect(resolveNaOptionalDisplayValue('', false)).toBe(NA_OPTIONAL_VALUE)
+    expect(shouldShowNaOptionalStyle('', false)).toBe(true)
+    expect(shouldShowNaOptionalStyle('', true)).toBe(false)
+    expect(shouldShowNaOptionalStyle('Saved note', false)).toBe(false)
   })
 })

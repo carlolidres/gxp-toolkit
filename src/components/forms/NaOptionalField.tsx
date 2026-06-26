@@ -1,10 +1,10 @@
-import type { InputHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import { useState, type InputHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 
 import {
-  displayNaOptionalValue,
-  isNaOptionalValue,
   onNaOptionalBlur,
   onNaOptionalFocus,
+  resolveNaOptionalDisplayValue,
+  shouldShowNaOptionalStyle,
 } from '../../lib/naOptionalField'
 
 type NaOptionalInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> & {
@@ -18,19 +18,22 @@ type NaOptionalTextareaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>,
 }
 
 export function NaOptionalInput({ value, onChange, className, onFocus, onBlur, ...props }: NaOptionalInputProps) {
-  const displayNa = isNaOptionalValue(value)
-  const classes = [className, displayNa ? 'is-na' : ''].filter(Boolean).join(' ') || undefined
+  const [focused, setFocused] = useState(false)
+  const showNa = shouldShowNaOptionalStyle(value, focused)
+  const classes = [className, showNa ? 'is-na' : ''].filter(Boolean).join(' ') || undefined
 
   return (
     <input
       {...props}
       className={classes}
-      value={displayNaOptionalValue(value)}
+      value={resolveNaOptionalDisplayValue(value, focused)}
       onFocus={(event) => {
+        setFocused(true)
         onNaOptionalFocus(value, onChange)
         onFocus?.(event)
       }}
       onBlur={(event) => {
+        setFocused(false)
         onNaOptionalBlur(event.target.value, onChange)
         onBlur?.(event)
       }}
@@ -40,19 +43,22 @@ export function NaOptionalInput({ value, onChange, className, onFocus, onBlur, .
 }
 
 export function NaOptionalTextarea({ value, onChange, className, onFocus, onBlur, ...props }: NaOptionalTextareaProps) {
-  const displayNa = isNaOptionalValue(value)
-  const classes = [className, displayNa ? 'is-na' : ''].filter(Boolean).join(' ') || undefined
+  const [focused, setFocused] = useState(false)
+  const showNa = shouldShowNaOptionalStyle(value, focused)
+  const classes = [className, showNa ? 'is-na' : ''].filter(Boolean).join(' ') || undefined
 
   return (
     <textarea
       {...props}
       className={classes}
-      value={displayNaOptionalValue(value)}
+      value={resolveNaOptionalDisplayValue(value, focused)}
       onFocus={(event) => {
+        setFocused(true)
         onNaOptionalFocus(value, onChange)
         onFocus?.(event)
       }}
       onBlur={(event) => {
+        setFocused(false)
         onNaOptionalBlur(event.target.value, onChange)
         onBlur?.(event)
       }}

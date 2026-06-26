@@ -1,40 +1,37 @@
 # Current Handoff
 
 Last Updated: `2026-06-26`
-Version: `v15.1`
+Version: `v15.2`
 Branch: `main` / `master`
-Commit: `c72ee9e`
+Commit: `73f7c45` (prior deploy; N/A fix uncommitted)
 Deployment: `SUCCESS — https://carlolidres.github.io/gxp-toolkit/ (run 28242831457)`
 
 ## Current Status
 
-Forgot Password resets to the shared temporary default password (no email link). Login shows the temp password, sign-in enforces `/reset-password` until a new password is saved. Edge function `forgot-password` is deployed on Supabase.
+Optional VRMS fields (IL-Tag, Email, Remarks) use shared `NaOptionalInput` / `NaOptionalTextarea`. Focus-aware display fixes Remarks so cleared `N/A` stays editable while typing.
 
 ## Recently Completed
 
-- `forgot-password` edge function + frontend self-service reset flow
-- Commit `c72ee9e`, push `main`/`master`, GitHub Pages deploy run `28242831457`
-- Prior v15.0: single password eye icon on login
+- `resolveNaOptionalDisplayValue` — empty focused fields no longer snap back to `N/A`
+- Email marked `naOptional` with default `N/A` and save normalization
+- Prior v15.1: self-service forgot-password temporary reset
 
 ## Active Work
 
-- Objective: `Self-service temporary password reset`
-- Progress: `COMMITTED, PUSHED, DEPLOYED`
-- Remaining: Browser verify full forgot-password flow on live site
+- Objective: `Consistent optional N/A field behavior`
+- Progress: `COMMITTING, PUSHING, DEPLOYING`
 
 ## Next Action
 
-1. Browser test: Forgot password → temp password shown → sign in → forced new password → app access → old temp password rejected.
-2. Prior backlog: feedback migration, messaging/N/A browser tests.
+1. Browser test routing form optional fields (focus, type, blur, save, reload).
+2. Commit/push/deploy when ready.
 
 ## Verification
 
 | Check | Status | Result |
 |---|---|---|
-| Tests | `PASSED` | `npm run test` — 39 tests |
+| Tests | `PASSED` | `npm run test` — 40 tests |
 | Build | `PASSED` | `npm run build` |
-| Edge function deploy | `PASSED` | `forgot-password` v1 on `ydndeoacgfnxjqwwnswh` |
-| GitHub Pages deploy | `PASSED` | Run `28242831457` |
 | Browser retest | `NOT_RUN` | Owner verification pending |
 
 ## Files Changed (summary)
