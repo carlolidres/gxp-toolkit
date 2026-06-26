@@ -1050,6 +1050,17 @@ textarea.is-na,
 .input, .search-input { width: 100%; min-height: 40px; padding: 0 11px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--app-text); outline: none; }
 .password-input-wrap { position: relative; display: flex; align-items: center; }
 .password-input-wrap .input { padding-right: 42px; }
+.password-input-wrap .input::-ms-reveal,
+.password-input-wrap .input::-ms-clear {
+  display: none;
+}
+.password-input-wrap .input::-webkit-credentials-auto-fill-button,
+.password-input-wrap .input::-webkit-contacts-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
 .password-input-toggle {
   position: absolute;
   right: 4px;
