@@ -3,30 +3,29 @@
 Last Updated: `2026-06-26`
 Version: `v15.1`
 Branch: `main` / `master`
-Commit: `(pending)`
-Deployment: `(pending push to master)`
+Commit: `c72ee9e`
+Deployment: `SUCCESS — https://carlolidres.github.io/gxp-toolkit/ (run 28242831457)`
 
 ## Current Status
 
-Forgot Password now resets to the shared temporary default password (same as admin reset) instead of sending Supabase email links. Login page displays the temporary password, pre-fills the password field, and sign-in routes to mandatory `/reset-password` until changed.
+Forgot Password resets to the shared temporary default password (no email link). Login shows the temp password, sign-in enforces `/reset-password` until a new password is saved. Edge function `forgot-password` is deployed on Supabase.
 
 ## Recently Completed
 
-- `forgot-password` Edge Function: service-role reset, global sign-out, `must_change_password = true`, returns `temporaryPassword`
-- `authService.requestPasswordReset` invokes edge function (mock mode returns `MOCK_DEFAULT_RESET_PASSWORD`)
-- Login UI: temporary password panel, updated copy, post-login redirect when change required
-- `supabase/config.toml`: `verify_jwt = false` for `forgot-password`
+- `forgot-password` edge function + frontend self-service reset flow
+- Commit `c72ee9e`, push `main`/`master`, GitHub Pages deploy run `28242831457`
+- Prior v15.0: single password eye icon on login
 
 ## Active Work
 
-- Objective: `Self-service temporary password reset (no email link)`
-- Progress: `COMMITTING, PUSHING, DEPLOYING`
+- Objective: `Self-service temporary password reset`
+- Progress: `COMMITTED, PUSHED, DEPLOYED`
+- Remaining: Browser verify full forgot-password flow on live site
 
 ## Next Action
 
-1. Deploy edge function: `supabase functions deploy forgot-password` (uses existing `DEFAULT_RESET_PASSWORD` secret).
-2. Browser test: Forgot password → temp password shown → sign in → forced new password → app access → old temp password rejected.
-3. Prior backlog: feedback migration, messaging/N/A browser tests.
+1. Browser test: Forgot password → temp password shown → sign in → forced new password → app access → old temp password rejected.
+2. Prior backlog: feedback migration, messaging/N/A browser tests.
 
 ## Verification
 
@@ -35,7 +34,8 @@ Forgot Password now resets to the shared temporary default password (same as adm
 | Tests | `PASSED` | `npm run test` — 39 tests |
 | Build | `PASSED` | `npm run build` |
 | Edge function deploy | `PASSED` | `forgot-password` v1 on `ydndeoacgfnxjqwwnswh` |
-| Browser retest | `NOT_RUN` | Pending |
+| GitHub Pages deploy | `PASSED` | Run `28242831457` |
+| Browser retest | `NOT_RUN` | Owner verification pending |
 
 ## Files Changed (summary)
 
