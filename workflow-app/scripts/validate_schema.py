@@ -26,6 +26,11 @@ def main():
         "approvals",
         "audit_events",
         "baseline_snapshots",
+        "handoff_entries",
+        "selected_elements",
+        "attachments",
+        "project_briefs",
+        "reference_attachments",
     }
     missing = required - tables
     if missing:
@@ -80,6 +85,58 @@ def main():
         pass
     else:
         raise AssertionError("audit_events delete trigger did not fire")
+
+    conn.execute(
+        """
+        INSERT INTO handoff_entries
+          (id, reference_id, phase, title, submitter, created_at, updated_at)
+        VALUES ('handoff-1', 'FB-0001', 'feedback', 'Sample feedback', 'Tester',
+                '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO selected_elements
+          (id, handoff_entry_id, element_type, selector, created_at)
+        VALUES ('element-1', 'handoff-1', 'button', '[data-testid="save"]', '2026-01-01T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO attachments
+          (id, handoff_entry_id, file_path, created_at)
+        VALUES ('attachment-1', 'handoff-1', 'data/attachments/handoff-1/shot.png', '2026-01-01T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO project_briefs
+          (id, title, description, submitter, created_at, updated_at)
+        VALUES ('brief-1', 'Test brief', 'Build a workflow app', 'Tester',
+                '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO reference_attachments
+          (id, parent_type, parent_id, file_path, filename, created_at)
+        VALUES ('ref-1', 'brief', 'brief-1', 'data/attachments/brief/brief-1/note.txt', 'note.txt',
+                '2026-01-01T00:00:00Z')
+        """
+    )
+
+    try:
+        conn.execute(
+            """
+            INSERT INTO selected_elements
+              (id, handoff_entry_id, element_type, selector, created_at)
+            VALUES ('element-2', 'missing-entry', 'button', '#x', '2026-01-01T00:00:00Z')
+            """
+        )
+    except sqlite3.IntegrityError:
+        pass
+    else:
+        raise AssertionError("selected_elements foreign key did not enforce")
 
     fk_errors = conn.execute("PRAGMA foreign_key_check").fetchall()
     if fk_errors:

@@ -24,21 +24,6 @@ export async function requireSupabaseSession(
   const { data, error } = await client.auth.getSession()
   const hasSession = Boolean(data.session?.access_token)
 
-  // #region agent log
-  fetch('http://127.0.0.1:7279/ingest/1e249d7b-87da-4823-ad3b-2539191e7dd7', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '893cbc' },
-    body: JSON.stringify({
-      sessionId: '893cbc',
-      hypothesisId: 'H1',
-      location: 'supabaseAuth.ts:requireSupabaseSession',
-      message: 'session gate',
-      data: { hasSession, error: error?.message ?? null },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {})
-  // #endregion
-
   if (error || !hasSession) {
     throw new Error('Authentication session expired. Please sign in again.')
   }

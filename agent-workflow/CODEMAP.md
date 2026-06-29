@@ -1,6 +1,6 @@
 # Code Map
 
-Last Updated: `2026-06-21`
+Last Updated: `2026-06-27`
 
 ## Purpose
 
@@ -27,6 +27,7 @@ Do not duplicate database schema details here. Database work belongs in `DATA_MA
 | VRMS database | `src/pages/vrms/VrmsDatabasePage.tsx` | Document database table and filtering |
 | VRMS audit | `src/pages/vrms/VrmsAuditPage.tsx` | Audit/event visibility |
 | VRMS registry | `src/pages/vrms/VrmsRegistryPage.tsx` | Registry-maintenance views |
+| VMP module pages | `src/pages/vmp/VmpMasterlistFormPage.tsx`, `VmpDatabasePage.tsx`, `VmpModulePage.tsx` | Masterlist Form (data entry), Database (view/manage), placeholders for Risk/Timeline/Audit |
 | Admin users | `src/pages/admin/UserManagementPage.tsx` | User and menu-permission management |
 | Samples | `src/pages/ComponentsShowcasePage.tsx`, `src/pages/StatisticsDashboardPage.tsx` | Component/statistics reference routes |
 
@@ -96,11 +97,14 @@ Do not duplicate database schema details here. Database work belongs in `DATA_MA
 
 | Path | Responsibility |
 |---|---|
-| `workflow-app/server.py` | Python stdlib HTTP server, workflow API, SQLite store, baseline snapshot writer |
-| `workflow-app/database/schema.sql` | Workflow app SQLite tables, indexes, immutability/audit triggers |
-| `workflow-app/static/` | Static local workflow UI |
+| `workflow-app/server.py` | Python stdlib HTTP server, brief/baseline/handoff APIs, preview proxy, OpenAI improve, SQLite store |
+| `workflow-app/database/schema.sql` | Workflow app SQLite tables (`project_briefs`, `handoff_entries`, baseline snapshots, audit) |
+| `workflow-app/static/app.js` | Local workflow UI (dashboard, brief, baseline, UI/UX feedback, debugging, handoff queue) |
+| `workflow-app/static/inspector.js` | Injected preview element-selector for UI/UX feedback |
+| `workflow-app/static/index.html`, `workflow-app/static/styles.css` | Workflow app shell and styling |
 | `workflow-app/scripts/validate_schema.py` | In-memory workflow schema validation check |
 | `workflow-app/scripts/smoke_test.py` | End-to-end local workflow smoke check using temporary runtime data |
+| `workflow-app/.env.example` | Optional OpenAI key template (copy to `.env`; gitignored) |
 
 ## Tests
 

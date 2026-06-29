@@ -23,6 +23,13 @@ describe('permissions', () => {
     const groups = filterNavigationGroups(permissions)
     expect(groups.some((group) => group.id === 'admin')).toBe(false)
     expect(groups.find((group) => group.id === 'vrms')?.items.length).toBeGreaterThan(0)
+    expect(groups.find((group) => group.id === 'vmp')?.items.map((item) => item.id)).toEqual([
+      'vmp-masterlist',
+      'vmp-risk-assessment',
+      'vmp-timeline',
+      'vmp-database',
+      'vmp-audit',
+    ])
   })
 
   it('auto-enables view when granting a non-view action', () => {

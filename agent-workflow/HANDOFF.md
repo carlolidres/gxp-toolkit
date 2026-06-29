@@ -1,45 +1,47 @@
 # Current Handoff
 
-Last Updated: `2026-06-26`
-Version: `v15.2`
+Last Updated: `2026-06-29`
+Version: `v22`
 Branch: `main` / `master`
-Commit: `383fdc2`
-Deployment: `SUCCESS — https://carlolidres.github.io/gxp-toolkit/ (run 28243571522)`
+Commit: `NOT_COMMITTED`
+Deployment: `NOT_RUN`
 
 ## Current Status
 
-Optional VRMS fields (IL-Tag, Email, Remarks) use focus-aware N/A display. Remarks and other optional fields stay editable after focus; Email defaults to gray `N/A`.
+**Computerized Systems** — Group / Subcategory field hidden; `group` cleared on area switch and not saved.
+
+Prior: BUG-0001/BUG-0002 dropdown fix; area-specific cascading + QC instruments.
 
 ## Recently Completed
 
-- `resolveNaOptionalDisplayValue` focus fix for `NaOptionalInput` / `NaOptionalTextarea`
-- Email marked optional with shared N/A behavior
-- Commit `383fdc2`, push `main`/`master`, GitHub Pages deploy run `28243571522`
+- BUG-0001/BUG-0002 dropdown visibility + network noise (2026-06-29)
+- Area-specific cascading + QC instruments (2026-06-29)
 
 ## Active Work
 
-- Objective: `Consistent optional N/A field behavior`
-- Progress: `COMMITTED, PUSHED, DEPLOYED`
-- Remaining: Browser verify IL-Tag, Email, Remarks on live routing form
-
-## Next Action
-
-1. Browser test routing form optional fields on https://carlolidres.github.io/gxp-toolkit/
-2. Prior backlog: forgot-password flow, feedback migration, messaging tests
+- Objective: `BUG-0001 — dropdown list visibility`
+- Progress: `COMPLETED` (await owner mark-complete in workflow app)
+- Remaining: Owner browser verification on `/vmp/masterlist`
 
 ## Verification
 
 | Check | Status | Result |
 |---|---|---|
-| Tests | `PASSED` | `npm run test` — 40 tests |
-| Build | `PASSED` | `npm run build` |
-| GitHub Pages deploy | `PASSED` | Run `28243571522` |
-| Browser retest | `NOT_RUN` | Owner verification pending |
+| Type-check / Build | `PASSED` | `npm run build` (2026-06-29) |
+| Tests | `PASSED` | `npm run test` — 64 tests (2026-06-29) |
+| SQLite map | `NOT_RUN` | `npm run db:map` unavailable |
+| Browser verification | `NOT_RUN` | Owner/manual review pending |
 
-## Files Changed (summary)
+## Files Changed (this session)
 
 | Area | Paths |
 |---|---|
-| N/A utility | `src/lib/naOptionalField.ts`, `src/lib/naOptionalField.test.ts` |
-| Components | `src/components/forms/NaOptionalField.tsx` |
-| VRMS form | `src/lib/vrmsFormConfig.ts`, `src/pages/vrms/VrmsRoutingPage.tsx` |
+| Dropdown | `src/components/vmp/VmpFormFields.tsx` |
+| Styles | `src/styles/vrms.css` |
+| Debug cleanup | `src/lib/supabaseAuth.ts` |
+
+## Next Action
+
+1. Owner browser review: open Department / Facility and other searchable fields — list fully visible, section size unchanged, no failed fetch to `:7279/ingest`
+2. Mark BUG-0001 (and BUG-0002 if satisfied) complete in workflow app
+3. Plan Supabase migration + RLS when SQLite sign-off done

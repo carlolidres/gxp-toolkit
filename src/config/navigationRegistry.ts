@@ -3,6 +3,7 @@ import type { SidebarSubmenuItem } from './sidebarMenus'
 export const APP_NAME = 'GxP Toolkit'
 export const APP_TAGLINE = 'Quality systems kit'
 export const VRMS_MENU_TOOLTIP = 'Validation Routing Monitoring System'
+export const VMP_MENU_TOOLTIP = 'Validation Master Plan'
 
 export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'approve' | 'export'
 
@@ -41,6 +42,11 @@ const MENU_ACTIONS: Record<string, PermissionAction[]> = {
   database: ['view', 'export'],
   audit: ['view', 'export'],
   registry: ['view', 'create', 'edit', 'delete'],
+  'vmp-masterlist': ['view', 'create', 'edit', 'delete', 'export'],
+  'vmp-risk-assessment': ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+  'vmp-timeline': ['view', 'create', 'edit', 'delete', 'export'],
+  'vmp-database': ['view', 'export'],
+  'vmp-audit': ['view', 'export'],
   'user-management': ['view', 'create', 'edit', 'delete'],
 }
 
@@ -74,6 +80,18 @@ export const navigationRegistry: NavGroupDefinition[] = [
     ],
   },
   {
+    id: 'vmp',
+    label: 'VMP',
+    tooltip: VMP_MENU_TOOLTIP,
+    items: [
+      menu('vmp-masterlist', 'Masterlist Form', '/vmp/masterlist'),
+      menu('vmp-risk-assessment', 'Risk Assessment', '/vmp/risk-assessment'),
+      menu('vmp-timeline', 'Timeline', '/vmp/timeline'),
+      menu('vmp-database', 'Database', '/vmp/database'),
+      menu('vmp-audit', 'Audit Trail', '/vmp/audit'),
+    ],
+  },
+  {
     id: 'admin',
     label: 'Administration',
     items: [menu('user-management', 'User Management', '/admin/users')],
@@ -100,25 +118,37 @@ export const vrmsSidebarMenu: SidebarSubmenuItem[] = toSidebarItems(
   navigationRegistry.find((group) => group.id === 'vrms')?.items ?? [],
 )
 
+const moduleSidebarMenus: SidebarSubmenuItem[] = navigationRegistry
+  .filter((group) => group.id !== 'admin')
+  .flatMap((group) => toSidebarItems(group.items))
+
 export const vrmsRouteLabels: Record<string, string> = {
   '/': 'Dashboard',
   '/routing': 'Document Routing',
   '/database': 'Database',
   '/audit': 'Audit Trail',
   '/registry': 'Registry',
+  '/vmp/masterlist': 'Masterlist Form',
+  '/vmp/risk-assessment': 'Risk Assessment',
+  '/vmp/timeline': 'Timeline',
+  '/vmp/database': 'Database',
+  '/vmp/audit': 'Audit Trail',
   '/admin/users': 'User Management',
   '/login': 'Sign in',
   '/signup': 'Sign up',
 }
 
 export function isVrmsPath(pathname: string): boolean {
-  return vrmsSidebarMenu.some((item) => item.path === pathname)
+  return moduleSidebarMenus.some((item) => item.path === pathname)
 }
 
 export function resolveWorkspaceTitle(pathname: string): string {
   const page = vrmsRouteLabels[pathname]
   if (!page) return APP_NAME
-  if (isVrmsPath(pathname)) return `VRMS / ${page}`
+  const group = navigationRegistry.find((navGroup) =>
+    navGroup.items.some((item) => item.path === pathname),
+  )
+  if (group && group.id !== 'admin') return `${group.label} / ${page}`
   if (pathname === '/admin/users') return `Administration / ${page}`
   return page
 }

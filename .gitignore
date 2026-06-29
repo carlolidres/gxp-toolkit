@@ -8,7 +8,12 @@ npm-debug.log*
 __pycache__/
 *.pyc
 supabase/seed.vrms.generated.sql
+workflow-app/data/*
+!workflow-app/data/.gitkeep
+workflow-app/data/attachments/
 workflow-app/config.json
-workflow-app/data/
+workflow-app/.env
+workflow-app/__pycache__/
+workflow-app/scripts/__pycache__/
 project-files/
 agent-history/baseline-backups/

@@ -68,6 +68,7 @@ Audit import note: the source audit CSV has misleading headers for document-rela
 | Routing document | `routing_documents` / `routingDocuments` | VRMS document routing record and signatory tracker | `routing_tracker` | `reference/VRMSdatabase/VRMS - Documents.csv` |
 | Registry value | `registry_values` / `registryValues` | Controlled values for status, routing recipients, report/protocol, client, category, department, prepared by, checked by | `id`; unique `(registry_type, value)` | Registry CSV exports |
 | Audit event | `audit_events` / `auditEvents` | Append-only VRMS activity/audit history | `id` | `reference/VRMSdatabase/VRMS - AuditTrail.csv` |
+| VMP masterlist record | `vmp_masterlist_records` / `VmpMasterlistRecord` | Validation masterlist entries (form + database) | `id` (internal UUID); unique `record_id` | `database/sqlite/schema.sql`; mock store `src/services/mockVmpMasterlistService.ts` |
 
 ## Core Relationships
 
@@ -137,6 +138,29 @@ Key rules:
 
 - App behavior inserts audit rows.
 - RLS allows authenticated active profiles to view and insert audit records.
+
+### `vmp_masterlist_records`
+
+Purpose: Stores validation masterlist records submitted through **Masterlist Form** and managed in **VMP Database**.
+
+Source SQL: `database/sqlite/schema.sql`
+
+| Field | Type | Rule |
+|---|---|---|
+| `id` | text | Internal primary key (UUID) |
+| `record_id` | text | Unique business identifier; system-generated |
+| `validation_area` | text | Controlled validation area |
+| `site_plant` | text | Site/plant label (registry FK deferred) |
+| `department` | text | Department/facility label |
+| `group_name` | text | Group/subcategory |
+| `item_name` | text | Item/system/area name |
+| `asset_tag_no` | text | Optional asset/tag identifier |
+| `next_due_date` | text | ISO date; sole source for derived due month/year |
+| `is_draft` | integer | Draft flag |
+| `is_archived` | integer | Archive flag; no hard delete in UI |
+| `version` | integer | Optimistic concurrency |
+
+App status: TypeScript model and mock service wired via `VmpAppContext`. Supabase migration pending after SQLite validation and owner approval.
 - No update/delete policy is defined for audit records.
 
 ## Migration Rules

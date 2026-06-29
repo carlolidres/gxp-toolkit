@@ -93,6 +93,7 @@ export function VrmsRoutingPage() {
   const [signatories, setSignatories] = useState<VrmsSignatory[]>([])
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState<{ routingTracker: string; docTracer: string } | null>(null)
   const [signingOrder, setSigningOrder] = useState<number | null>(null)
   const persistedSnapshotRef = useRef('')
 
@@ -112,6 +113,7 @@ export function VrmsRoutingPage() {
         setForm(documentToFormState(record))
         const loadedSignatories = structuredClone(record.signatories)
         setSignatories(loadedSignatories)
+        setSaveSuccess(null)
         persistedSnapshotRef.current = JSON.stringify(
           buildRoutingPayload(documentToFormState(record), loadedSignatories, getStatusKey(record.status) === 'cancelled'),
         )
@@ -127,11 +129,20 @@ export function VrmsRoutingPage() {
     if (tracker) void loadTracker(tracker)
   }, [loadTracker, searchParams])
 
+  function resetFormState() {
+    setForm(initialForm)
+    setSignatories([])
+    setSaveError(null)
+    persistedSnapshotRef.current = ''
+  }
+
   function updateField(key: string, value: string) {
+    setSaveSuccess(null)
     setForm((current) => ({ ...current, [key]: value }))
   }
 
   function handleStatusChange(value: string) {
+    setSaveSuccess(null)
     if (getStatusKey(value) === 'cancelled') {
       setSignatories([])
       setForm((current) => ({ ...current, status: value as RoutingDocument['status'], sentRoutingTo: '' }))
@@ -142,6 +153,7 @@ export function VrmsRoutingPage() {
   }
 
   function handleSentRoutingChange(value: string) {
+    setSaveSuccess(null)
     setForm((current) => ({ ...current, sentRoutingTo: value }))
     if (!isRouting) return
     setSignatories((current) => {
@@ -180,14 +192,11 @@ export function VrmsRoutingPage() {
       validateRoutingPayload(payload)
       const data = await saveDocument(payload)
       const saved = data.documents.find((doc) => doc.docTracer === form.docTracer)
-      if (saved) {
-        setForm(documentToFormState(saved))
-        const savedSignatories = structuredClone(saved.signatories)
-        setSignatories(savedSignatories)
-        persistedSnapshotRef.current = JSON.stringify(
-          buildRoutingPayload(documentToFormState(saved), savedSignatories, getStatusKey(saved.status) === 'cancelled'),
-        )
-      }
+      const routingTracker = saved?.routingTracker ?? form.routingTracker
+      const docTracer = saved?.docTracer ?? form.docTracer
+      resetFormState()
+      setSaveSuccess({ routingTracker, docTracer })
+      navigate('/routing')
     } catch (err) {
       const message =
         err instanceof Error
@@ -228,8 +237,8 @@ export function VrmsRoutingPage() {
   }
 
   function clearForm() {
-    setForm(initialForm)
-    setSignatories([])
+    resetFormState()
+    setSaveSuccess(null)
     navigate('/routing')
   }
 
@@ -238,6 +247,13 @@ export function VrmsRoutingPage() {
       <div className="vrms-grid2">
         <section className="vrms-panel">
           <h2>Document Routing Form</h2>
+          {saveSuccess ? (
+            <p className="form-success" role="status" aria-live="polite">
+              Document routing record saved successfully.
+              {saveSuccess.routingTracker ? ` Tracker: ${saveSuccess.routingTracker}` : ''}
+              {saveSuccess.docTracer ? ` · Doc Tracer: ${saveSuccess.docTracer}` : ''}
+            </p>
+          ) : null}
           {form.routingTracker ? (
             <div className="vrms-tracker-callout">
               Tracker{' '}

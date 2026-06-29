@@ -46,6 +46,16 @@ function IconAdmin(props: IconProps) {
   )
 }
 
+function IconVmp(props: IconProps) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true" {...props}>
+      <path d="M8 4h8l2 3v13H6V7l2-3Z" />
+      <path d="M8 4v3h8V4" />
+      <path d="M9 12h6M9 16h4" />
+    </svg>
+  )
+}
+
 function IconSearch(props: IconProps) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true" {...props}>
@@ -111,6 +121,7 @@ function IconLogout(props: IconProps) {
 
 const groupIcons = {
   vrms: IconVrms,
+  vmp: IconVmp,
   admin: IconAdmin,
 } as const
 

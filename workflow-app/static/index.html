@@ -10,15 +10,13 @@
     <aside class="sidebar">
       <h1>Workflow</h1>
       <button class="nav active" data-view="dashboard">Dashboard</button>
-      <button class="nav" data-view="baseline">Project Baseline</button>
-      <button class="nav" data-view="planning">Planning</button>
-      <button class="nav" data-view="execution">Execution</button>
-      <button class="nav" data-view="review">Review</button>
-      <button class="nav" data-view="deployment">Deployment</button>
-      <button class="nav" data-view="maintenance">Maintenance</button>
-      <button class="nav" data-view="comments">Comments</button>
-      <button class="nav" data-view="history">Version History</button>
-      <button class="nav" data-view="audit">Audit Trail</button>
+      <button class="nav" data-view="brief">Project Brief</button>
+      <button class="nav" data-view="baseline">Requirements &amp; Baseline</button>
+      <button class="nav" data-view="feedback">UI/UX Feedback</button>
+      <button class="nav" data-view="bug">Debugging</button>
+      <button class="nav" data-view="tasks">Generated Tasks</button>
+      <button class="nav" data-view="history">Project History</button>
+      <button class="nav" data-view="settings">Settings</button>
     </aside>
     <main>
       <header>
@@ -32,62 +30,373 @@
         </label>
       </header>
       <section id="message" class="message" hidden></section>
+
       <section id="dashboardView" class="view"></section>
+
+      <section id="briefView" class="view" hidden>
+        <form id="briefForm" class="composer">
+          <p class="hint">Describe your project in natural language. Drafts autosave as you type.</p>
+          <label>
+            Project title
+            <input id="briefTitle" placeholder="My Application">
+          </label>
+          <label>
+            What should this project accomplish?
+            <textarea id="briefDescription" placeholder="Describe the goal, users, and outcomes..." required></textarea>
+          </label>
+          <label>
+            Intended workflow
+            <textarea id="briefWorkflow" placeholder="How should users move through the application?"></textarea>
+          </label>
+          <label>
+            Desired features and behavior
+            <textarea id="briefFeatures" placeholder="List features, screens, and behaviors you need."></textarea>
+          </label>
+          <label>
+            Additional instructions or comments
+            <textarea id="briefInstructions" placeholder="Constraints, preferences, or notes for the AI agent."></textarea>
+          </label>
+          <div class="attach-block">
+            <strong>Supporting references</strong>
+            <p class="hint">Images, PDFs, Word, Excel, text files, and other project documents.</p>
+            <input id="briefAttachment" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.md,.csv">
+            <input id="briefAttachmentNote" placeholder="Optional note for this file">
+            <div id="briefAttachments" class="file-list"></div>
+          </div>
+          <div class="toolbar">
+            <button type="button" id="structureBrief">Process with AI</button>
+            <button type="button" id="loadBriefBaseline">Load into Requirements</button>
+            <span id="briefAiStatus" class="ai-status"></span>
+          </div>
+          <details id="briefStructuredWrap" hidden>
+            <summary>AI-structured preview</summary>
+            <pre id="briefStructuredPreview"></pre>
+          </details>
+        </form>
+      </section>
+
       <section id="stageView" class="view" hidden>
-        <div class="toolbar">
+        <div class="toolbar" id="baselineToolbar">
           <select id="recordSelect"></select>
-          <button id="newRecord">New record</button>
-          <button id="submitReview">Submit for review</button>
-          <button id="approveRecord">Approve</button>
-          <button id="needsRevision">Needs revision</button>
-          <button id="rejectRecord">Reject</button>
-          <button id="completeRecord">Complete</button>
-          <button id="deployRecord">Deploy</button>
+          <span id="stageBadge" class="badge"></span>
+          <button id="newRecord" type="button">New record</button>
+          <button id="loadFromBrief" type="button" hidden>Load from brief</button>
+          <button id="saveBaseline" type="button">Update Baseline</button>
+          <button id="submitBaseline" type="button" class="primary-action">Submit Baseline</button>
+          <button id="submitReview" type="button" class="legacy-action" hidden>Submit for review</button>
+          <button id="approveRecord" type="button" class="legacy-action" hidden>Approve</button>
+          <button id="needsRevision" type="button" class="legacy-action" hidden>Needs revision</button>
+          <button id="rejectRecord" type="button" class="legacy-action" hidden>Reject</button>
+          <button id="completeRecord" type="button" class="legacy-action" hidden>Complete</button>
+          <button id="deployRecord" type="button" class="legacy-action" hidden>Deploy</button>
         </div>
+        <label id="changeSummaryWrap" class="change-summary" hidden>
+          Summary of changes (required for baseline approval)
+          <textarea id="changeSummary" placeholder="Describe what changed in this baseline version."></textarea>
+        </label>
         <form id="recordForm">
           <label>
             Title
             <input id="recordTitle" required>
           </label>
           <div id="dynamicFields" class="fields"></div>
-          <button type="submit">Save version</button>
+          <button type="submit">Save draft</button>
         </form>
+        <details id="stageHistoryWrap" open>
+          <summary>Revision history</summary>
+          <div id="stageHistory"></div>
+        </details>
       </section>
-      <section id="commentsView" class="view" hidden>
-        <form id="commentForm">
-          <label>
-            Record
-            <select id="commentRecord"></select>
-          </label>
-          <label>
-            Type
-            <select id="commentType">
-              <option>Comment</option>
-              <option>Revision Request</option>
-              <option>Decision Note</option>
-              <option>Bug</option>
-              <option>Maintenance</option>
-            </select>
-          </label>
-          <label>
-            Comment
-            <textarea id="commentBody" required></textarea>
-          </label>
-          <button type="submit">Add comment</button>
-        </form>
-        <div id="commentsList"></div>
-      </section>
-      <section id="historyView" class="view" hidden>
-        <div class="toolbar">
-          <select id="historyRecord"></select>
-          <button id="refreshHistory">Refresh</button>
+
+      <section id="feedbackView" class="view" hidden>
+        <div class="preview-toolbar">
+          <input id="previewUrl" placeholder="http://localhost:3000" class="grow">
+          <button id="loadPreview" type="button">Load preview</button>
+          <button id="openPreview" type="button">Open in new tab</button>
+          <button id="inspectToggle" type="button">Inspect: Off</button>
+          <select id="viewport">
+            <option value="100%">Desktop</option>
+            <option value="768px">Tablet</option>
+            <option value="390px">Mobile</option>
+          </select>
         </div>
-        <div id="historyList"></div>
-        <h3>Approved baseline snapshots</h3>
-        <div id="baselineSnapshots"></div>
+        <div class="preview-frame-wrap">
+          <iframe id="previewFrame" title="Application preview"></iframe>
+        </div>
+        <p class="hint" id="previewHint">Set a target URL in Settings, then Load preview and toggle Inspect to select elements.</p>
+
+        <form id="feedbackForm" class="composer">
+          <h3>UI/UX feedback</h3>
+          <label>
+            Title
+            <input id="fbTitle" required>
+          </label>
+          <div class="composer-grid">
+            <label>
+              Category
+              <select id="fbCategory"></select>
+            </label>
+            <label>
+              Priority
+              <select id="fbPriority"></select>
+            </label>
+          </div>
+          <div class="selected-block">
+            <div class="selected-head">
+              <strong>Selected UI context</strong>
+              <button id="clearElements" type="button" class="small">Clear all</button>
+            </div>
+            <div id="fbElements" class="chips"></div>
+          </div>
+          <label>
+            Desired UI/UX change
+            <textarea id="fbDescription" required></textarea>
+          </label>
+          <label>
+            Expected result / appearance
+            <textarea id="fbExpected"></textarea>
+          </label>
+          <label>
+            Acceptance criteria
+            <textarea id="fbAcceptance"></textarea>
+          </label>
+          <div class="attach-block">
+            <strong>Screenshots</strong>
+            <input id="fbScreenshot" type="file" accept="image/*">
+            <input id="fbScreenshotNote" placeholder="Annotation for the screenshot">
+            <div id="fbAttachments" class="thumbs"></div>
+          </div>
+
+          <div class="ai-block" data-ai="feedback">
+            <div class="ai-controls">
+              <button type="button" data-ai-action="improve">Generate task with AI</button>
+              <button type="button" data-ai-action="original">Use original input</button>
+              <button type="button" data-ai-action="compare">Compare</button>
+              <button type="button" data-ai-action="accept">Accept improved</button>
+              <button type="button" data-ai-action="restore">Restore original</button>
+              <span class="ai-status" data-ai-status></span>
+            </div>
+            <label>
+              AI implementation task (editable)
+              <textarea data-ai-improved></textarea>
+            </label>
+            <div class="ai-compare" data-ai-compare hidden></div>
+          </div>
+
+          <details class="preview-final">
+            <summary>Preview final agent instruction</summary>
+            <div id="fbFinalPreview" class="final-preview"></div>
+          </details>
+
+          <button type="submit">Submit feedback</button>
+        </form>
       </section>
-      <section id="auditView" class="view" hidden>
-        <div id="auditList"></div>
+
+      <section id="bugView" class="view" hidden>
+        <div class="preview-toolbar compact-preview">
+          <input id="bugPreviewUrl" placeholder="http://localhost:3000" class="grow">
+          <button id="bugLoadPreview" type="button">Load preview</button>
+          <button id="bugInspectToggle" type="button">Inspect: Off</button>
+        </div>
+        <div class="preview-frame-wrap compact-preview">
+          <iframe id="bugPreviewFrame" title="Debugging preview"></iframe>
+        </div>
+        <form id="bugForm" class="composer">
+          <h3>Debugging report</h3>
+          <div class="toolbar">
+            <button id="bugCapture" type="button">Auto-capture from preview</button>
+            <span class="hint" id="bugCaptureHint">Load a preview to capture route, browser, console, and network details.</span>
+          </div>
+          <label>
+            Bug title
+            <input id="bugTitle" required>
+          </label>
+          <div class="composer-grid">
+            <label>
+              Page or route
+              <input id="bugRoute">
+            </label>
+            <label>
+              Severity
+              <select id="bugSeverity"></select>
+            </label>
+            <label>
+              Priority
+              <select id="bugPriority"></select>
+            </label>
+          </div>
+          <div class="selected-block">
+            <div class="selected-head">
+              <strong>Affected element(s)</strong>
+              <button id="bugClearElements" type="button" class="small">Clear all</button>
+            </div>
+            <div id="bugElements" class="chips"></div>
+          </div>
+          <label>
+            Description of the issue
+            <textarea id="bugDescription" required></textarea>
+          </label>
+          <label>
+            Steps to reproduce
+            <textarea id="bugSteps"></textarea>
+          </label>
+          <div class="composer-grid">
+            <label>
+              Expected result
+              <textarea id="bugExpected"></textarea>
+            </label>
+            <label>
+              Actual result
+              <textarea id="bugActual"></textarea>
+            </label>
+          </div>
+          <label>
+            Browser / environment
+            <input id="bugEnv">
+          </label>
+          <div class="composer-grid">
+            <label>
+              Console error
+              <textarea id="bugConsole"></textarea>
+            </label>
+            <label>
+              Network error
+              <textarea id="bugNetwork"></textarea>
+            </label>
+          </div>
+          <div class="attach-block">
+            <strong>Screenshots</strong>
+            <input id="bugScreenshot" type="file" accept="image/*">
+            <input id="bugScreenshotNote" placeholder="Annotation for the screenshot">
+            <div id="bugAttachments" class="thumbs"></div>
+          </div>
+
+          <div class="ai-block" data-ai="bug">
+            <div class="ai-controls">
+              <button type="button" data-ai-action="improve">Generate debug task with AI</button>
+              <button type="button" data-ai-action="original">Use original input</button>
+              <button type="button" data-ai-action="compare">Compare</button>
+              <button type="button" data-ai-action="accept">Accept improved</button>
+              <button type="button" data-ai-action="restore">Restore original</button>
+              <span class="ai-status" data-ai-status></span>
+            </div>
+            <label>
+              AI-structured debug task (editable)
+              <textarea data-ai-improved></textarea>
+            </label>
+            <div class="ai-compare" data-ai-compare hidden></div>
+          </div>
+
+          <details class="preview-final">
+            <summary>Preview final agent instruction</summary>
+            <div id="bugFinalPreview" class="final-preview"></div>
+          </details>
+
+          <button type="submit">Submit debug report</button>
+        </form>
+      </section>
+
+      <section id="tasksView" class="view" hidden>
+        <div class="tab-bar">
+          <button type="button" class="tab active" data-tasks-tab="open">Open tasks</button>
+          <button type="button" class="tab" data-tasks-tab="all">All submissions</button>
+        </div>
+        <div class="toolbar">
+          <select id="queuePhase">
+            <option value="">All phases</option>
+            <option value="feedback">UI/UX Feedback</option>
+            <option value="bug">Debugging</option>
+          </select>
+          <select id="queueStatus">
+            <option value="">All statuses</option>
+          </select>
+          <button id="refreshQueue" type="button">Refresh</button>
+          <span class="hint">Queue mirrors <code>agent-workflow/handoff-queue.md</code></span>
+        </div>
+        <div id="queueList"></div>
+        <div id="submissionsList" hidden></div>
+      </section>
+
+      <section id="historyView" class="view" hidden>
+        <div class="tab-bar">
+          <button type="button" class="tab active" data-history-tab="baselines">Baseline versions</button>
+          <button type="button" class="tab" data-history-tab="records">Version history</button>
+          <button type="button" class="tab" data-history-tab="comments">Comments</button>
+          <button type="button" class="tab" data-history-tab="audit">Audit trail</button>
+          <button type="button" class="tab" data-history-tab="legacy">Legacy stages</button>
+        </div>
+        <div id="historyPanelBaselines">
+          <div id="baselineSnapshots"></div>
+        </div>
+        <div id="historyPanelRecords" hidden>
+          <div class="toolbar">
+            <select id="historyRecord"></select>
+            <button id="refreshHistory" type="button">Refresh</button>
+          </div>
+          <div id="historyList"></div>
+        </div>
+        <div id="historyPanelComments" hidden>
+          <form id="commentForm">
+            <label>
+              Record
+              <select id="commentRecord"></select>
+            </label>
+            <label>
+              Type
+              <select id="commentType">
+                <option>Comment</option>
+                <option>Revision Request</option>
+                <option>Decision Note</option>
+                <option>Bug</option>
+                <option>Maintenance</option>
+              </select>
+            </label>
+            <label>
+              Comment
+              <textarea id="commentBody" required></textarea>
+            </label>
+            <button type="submit">Add comment</button>
+          </form>
+          <div id="commentsList"></div>
+        </div>
+        <div id="historyPanelAudit" hidden>
+          <div id="auditList"></div>
+        </div>
+        <div id="historyPanelLegacy" hidden>
+          <p class="hint">Legacy workflow stages remain available for existing records.</p>
+          <div class="legacy-nav">
+            <button type="button" data-view="planning">Planning</button>
+            <button type="button" data-view="execution">Execution</button>
+            <button type="button" data-view="review">Review</button>
+            <button type="button" data-view="deployment">Deployment</button>
+            <button type="button" data-view="maintenance">Maintenance</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="settingsView" class="view" hidden>
+        <form id="settingsForm" class="composer">
+          <h3>Settings</h3>
+          <p id="aiStatus" class="ai-status"></p>
+          <label>
+            Target preview URL
+            <input id="setTargetUrl" placeholder="http://localhost:3000">
+          </label>
+          <label>
+            OpenAI model
+            <input id="setModel" placeholder="gpt-4o-mini">
+          </label>
+          <label>
+            OpenAI base URL
+            <input id="setBaseUrl" placeholder="https://api.openai.com/v1">
+          </label>
+          <label>
+            Default submitter
+            <input id="setSubmitter" placeholder="Project Owner">
+          </label>
+          <p class="hint">The OpenAI API key is read from the <code>OPENAI_API_KEY</code> environment variable on the backend and is never stored or shown here.</p>
+          <button type="submit">Save settings</button>
+        </form>
       </section>
     </main>
     <script src="app.js"></script>

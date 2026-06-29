@@ -23,7 +23,7 @@ Consolidate existing GxP systems, tools, modules, data registries, routing workf
 
 - Frontend: `Vite 8 + React 19 + TypeScript + custom CSS + Recharts (HashRouter)`
 - Backend: `Supabase client adapters with mock fallback services`
-- Database: `SQLite`
+- Database: `SQLite first; Supabase only after validated SQLite schema and relationships are stable`
 - Authentication: `Supabase Auth (email/password + OAuth: google, azure)`
 - Hosting: `GitHub Pages (static SPA)`
 - UI: `Custom CSS design system + VRMS layout/navigation patterns`
@@ -55,7 +55,7 @@ Consolidate existing GxP systems, tools, modules, data registries, routing workf
 | Human data map | `agent-workflow/DATA_MAP.md` |
 | Deployment | `[DEPLOYMENT_WORKFLOW_PATH]` |
 
-`database/sqlite/` is authoritative. `sqlite-out/` is generated and read-only.
+`database/sqlite/` is authoritative. `sqlite-out/` is generated and read-only. Supabase migrations must be derived only after the SQLite schema, constraints, and relationships have been locally validated and documented.
 
 `workflow-app/` is a local Python/SQLite approval workflow utility. Its committed files are source code and schema; `workflow-app/data/`, `workflow-app/config.json`, `project-files/`, and `agent-history/baseline-backups/` are local runtime output.
 

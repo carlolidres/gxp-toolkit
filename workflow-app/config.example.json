@@ -5,5 +5,14 @@
   "project_files_path": "../project-files",
   "baseline_path": "../agent-history/version-0-baseline.md",
   "history_path": "../agent-history",
-  "default_submitter": "Project Owner"
+  "handoff_queue_path": "../agent-workflow/handoff-queue.md",
+  "tasks_path": "../agent-workflow/tasks",
+  "attachments_path": "data/attachments",
+  "default_submitter": "Project Owner",
+  "target_preview_url": "",
+  "openai_model": "gpt-4o-mini",
+  "openai_base_url": "https://api.openai.com/v1",
+  "openai_timeout_seconds": 30,
+  "preview_timeout_seconds": 15,
+  "max_attachment_bytes": 5000000
 }
