@@ -3,8 +3,8 @@
 Last Updated: `2026-07-04`
 Version: `v31`
 Branch: `main` / `master`
-Commit: `(uncommitted — APQR seed data cleared)`
-Deployment: `PENDING` — APQR tables empty on linked Supabase; frontend deploy not run
+Commit: `9b4ab46` — v31: APQR module with empty seed data and Supabase migrations
+Deployment: `DEPLOYED` — GitHub Pages run 28708424556 (retry succeeded); Supabase migrations up to date; APQR data cleared
 
 ## Current Status
 
