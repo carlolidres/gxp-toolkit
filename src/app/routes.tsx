@@ -18,6 +18,15 @@ import { VmpModulePage } from '../pages/vmp/VmpModulePage'
 import { VmpMasterlistFormPage } from '../pages/vmp/VmpMasterlistFormPage'
 import { VmpDatabasePage } from '../pages/vmp/VmpDatabasePage'
 import { VmpFieldOptionsPage } from '../pages/vmp/VmpFieldOptionsPage'
+import { EdocAdministrationPage } from '../pages/edoc/EdocAdministrationPage'
+import { EdocAuditPage } from '../pages/edoc/EdocAuditPage'
+import { EdocCreateDocumentPage } from '../pages/edoc/EdocCreateDocumentPage'
+import { EdocDashboardPage } from '../pages/edoc/EdocDashboardPage'
+import { EdocDocumentsPage } from '../pages/edoc/EdocDocumentsPage'
+import { EdocInboxPage } from '../pages/edoc/EdocInboxPage'
+import { EdocReportsPage } from '../pages/edoc/EdocReportsPage'
+import { EdocRoutingTemplatesPage } from '../pages/edoc/EdocRoutingTemplatesPage'
+import { EdocWorkspacePage } from '../pages/edoc/EdocWorkspacePage'
 import { UserManagementPage } from '../pages/admin/UserManagementPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
@@ -125,6 +134,102 @@ export function AppRoutes() {
           element={
             <MenuPermissionRoute menuId="vmp-audit">
               <VmpModulePage module="Audit Trail" />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="edoc"
+          element={
+            <MenuPermissionRoute menuId="edoc-dashboard">
+              <EdocDashboardPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="edoc/inbox"
+          element={
+            <MenuPermissionRoute menuId="edoc-inbox">
+              <EdocInboxPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="edoc/my-documents"
+          element={
+            <MenuPermissionRoute menuId="edoc-my-documents">
+              <EdocDocumentsPage scope="my" title="My Documents" />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="edoc/documents"
+          element={
+            <MenuPermissionRoute menuId="edoc-all-documents">
+              <EdocDocumentsPage scope="all" title="All Documents" />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="edoc/create"
+          element={
+            <MenuPermissionRoute menuId="edoc-create">
+              <EdocCreateDocumentPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="edoc/returned"
+          element={
+            <MenuPermissionRoute menuId="edoc-returned">
+              <EdocDocumentsPage scope="returned" title="Returned Documents" />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="edoc/completed"
+          element={
+            <MenuPermissionRoute menuId="edoc-completed">
+              <EdocDocumentsPage scope="completed" title="Completed Documents" />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="edoc/templates"
+          element={
+            <MenuPermissionRoute menuId="edoc-routing-templates">
+              <EdocRoutingTemplatesPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="edoc/reports"
+          element={
+            <MenuPermissionRoute menuId="edoc-reports">
+              <EdocReportsPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="edoc/audit"
+          element={
+            <MenuPermissionRoute menuId="edoc-audit">
+              <EdocAuditPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="edoc/admin"
+          element={
+            <MenuPermissionRoute menuId="edoc-admin">
+              <EdocAdministrationPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="edoc/workspace/:assignmentId"
+          element={
+            <MenuPermissionRoute menuId="edoc-inbox">
+              <EdocWorkspacePage />
             </MenuPermissionRoute>
           }
         />

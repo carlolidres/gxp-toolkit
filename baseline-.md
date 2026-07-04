@@ -518,6 +518,65 @@ Cursor-second workflow with Graphify and SQLite schema mapping.
 
 Documentation and rules updated: `AGENTS.md`, `agent-workflow/*`, `README.md`, `.cursor/rules/*`.
 
+---
+
+## 11. eDoc Module Rollout
+
+### Scope
+
+**eDoc** (Electronic Document routing) is a third application module alongside VRMS and VMP. It handles controlled PDF upload, routing, review/approval/signature/acknowledgment, audit trail, and reports.
+
+| Use VRMS | Use eDoc |
+|----------|----------|
+| Legacy validation routing tracker / signatory matrix (spreadsheet-era workflow) | PDF-native controlled documents with field placement and electronic signature events |
+| Existing VRMS production CSV data | New documents created in eDoc after go-live |
+
+### Menu and routes
+
+Sidebar group **`eDoc`** is defined in `src/config/navigationRegistry.ts` (11 submenu items). Routes are protected by `MenuPermissionRoute` in `src/app/routes.tsx`.
+
+### SQLite reference (Phase 1)
+
+| File | Role |
+|------|------|
+| `database/sqlite/edoc_schema.sql` | Editable SQLite reference for all `edoc_*` tables (mirrors Supabase migration) |
+| `database/sqlite/edoc_seed.sql` | Non-production pilot fixtures for local agent validation |
+| `npm run db:map` | Regenerates `sqlite-out/` including eDoc tables |
+| `npm run verify:edoc-sqlite` | Static + optional live FK/seed validation |
+
+**Rule:** Design or change eDoc tables in `edoc_schema.sql` first; derive or update `supabase/migrations/20260704100000_edoc_supabase_module.sql` from the validated SQLite reference.
+
+### Supabase staging (Phase 2)
+
+| Artifact | Path |
+|----------|------|
+| Migration | `supabase/migrations/20260704100000_edoc_supabase_module.sql` |
+| RLS validation | `supabase/scripts/verify_edoc_rls.sql` |
+| Edge Functions | `edoc-file-access`, `edoc-sign-document`, `edoc-create-certificate` |
+| Staging checklist | `docs/edoc/STAGING_CHECKLIST.md` |
+
+Apply order documented in `docs/edoc/SETUP.md` and `docs/edoc/STAGING_CHECKLIST.md`.
+
+### Permissions
+
+Default role grants give **view-only** on eDoc menus for non-admin roles. Grant `create`, `edit`, `approve`, and `export` per menu in **User Management** before pilot users sign documents.
+
+### Definition of done (eDoc pilot)
+
+- [ ] SQLite reference passes `npm run verify:edoc-sqlite`
+- [ ] Staging migration applied; `verify_edoc_rls.sql` passes
+- [ ] Edge Functions deployed; storage buckets private
+- [ ] Pilot org membership and menu permissions configured
+- [ ] Browser smoke: create → route → inbox → workspace (staging)
+- [ ] Owner sign-off before production traffic
+
+### Deferred (not pilot blockers)
+
+- PDF.js canvas preview and stamping signatures into source PDF
+- Email reminders / escalations
+- Administrative write UI for eDoc configuration
+
+See `docs/edoc/IMPLEMENTATION_PLAN.md` and `docs/edoc/SECURITY.md`.
 
 ---
 

@@ -49,6 +49,21 @@ Apply after `20260623200000_admin_default_password_reset.sql`:
 
 Verify with `supabase/scripts/verify_profiles_rls.sql`.
 
+## eDoc module (2026-07-04)
+
+After `20260627100000_app_feedback_messages.sql`:
+
+1. Apply `20260704100000_edoc_supabase_module.sql` (included in `supabase db push`).
+2. Deploy Edge Functions: `edoc-file-access`, `edoc-sign-document`, `edoc-create-certificate`.
+3. Validate: `supabase db query --linked -f supabase/scripts/verify_edoc_rls.sql`
+4. Follow `docs/edoc/STAGING_CHECKLIST.md` for org membership, permissions, and browser smoke.
+
+SQLite reference: `database/sqlite/edoc_schema.sql` — validate locally with `npm run verify:edoc-sqlite`.
+
+After `20260704100000_edoc_supabase_module.sql`, apply:
+
+- `20260704110000_edoc_security_hardening.sql` — revokes `anon`/`PUBLIC` EXECUTE on eDoc RPCs, sets `security_invoker` on inbox view, pins trigger `search_path`.
+
 ## Approval Gate
 
 The current baseline and task plan are not approved. Treat this folder as preparation, not authorization to migrate regulated data.

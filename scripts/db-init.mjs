@@ -19,14 +19,23 @@ function hasSqlite3() {
 function runInit() {
   const dbPath = join(ROOT, 'database', 'sqlite', 'dev.db')
   const schemaPath = join(ROOT, 'database', 'sqlite', 'schema.sql')
+  const edocSchemaPath = join(ROOT, 'database', 'sqlite', 'edoc_schema.sql')
   const seedPath = join(ROOT, 'database', 'sqlite', 'seed.sql')
+  const edocSeedPath = join(ROOT, 'database', 'sqlite', 'edoc_seed.sql')
 
   if (!existsSync(schemaPath)) {
     console.error('Missing database/sqlite/schema.sql')
     process.exit(1)
   }
 
-  const args = [dbPath, `.read ${schemaPath.replace(/\\/g, '/')}`, `.read ${seedPath.replace(/\\/g, '/')}`]
+  const read = (p) => p.replace(/\\/g, '/')
+  const args = [
+    dbPath,
+    `.read ${read(schemaPath)}`,
+    `.read ${read(edocSchemaPath)}`,
+    `.read ${read(seedPath)}`,
+    `.read ${read(edocSeedPath)}`,
+  ]
   const result = spawnSync('sqlite3', args, { encoding: 'utf8', cwd: ROOT, shell: true })
 
   if (result.status !== 0) {

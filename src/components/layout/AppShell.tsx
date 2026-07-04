@@ -5,7 +5,6 @@ import {
   APP_NAME,
   APP_TAGLINE,
   resolveWorkspaceTitle,
-  toSidebarItems,
 } from '../../config/appNavigation'
 import { findSubmenuLabel } from '../../config/sidebarMenus'
 import { useAuth } from '../../hooks/useAuth'
@@ -14,7 +13,7 @@ import { useTheme } from '../../hooks/useTheme'
 import { MessagesModal } from '../feedback/MessagesModal'
 import { GxpLogo } from '../brand/GxpLogo'
 import { useFeedbackMessages } from '../../hooks/useFeedbackMessages'
-import { SidebarNavGroup } from './SidebarNavGroup'
+import { SidebarNavList } from './SidebarNavList'
 
 type IconProps = SVGProps<SVGSVGElement>
 
@@ -52,6 +51,17 @@ function IconVmp(props: IconProps) {
       <path d="M8 4h8l2 3v13H6V7l2-3Z" />
       <path d="M8 4v3h8V4" />
       <path d="M9 12h6M9 16h4" />
+    </svg>
+  )
+}
+
+function IconEdoc(props: IconProps) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true" {...props}>
+      <path d="M7 3h7l4 4v14H7z" />
+      <path d="M14 3v5h4" />
+      <path d="M9 13h6M9 17h4" />
+      <path d="m5 9-2 2 2 2" />
     </svg>
   )
 }
@@ -122,6 +132,7 @@ function IconLogout(props: IconProps) {
 const groupIcons = {
   vrms: IconVrms,
   vmp: IconVmp,
+  edoc: IconEdoc,
   admin: IconAdmin,
 } as const
 
@@ -170,25 +181,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <div className="sidebar-scroll">
-          <nav className="sidebar-nav" aria-label="Main navigation">
-            {permissionsReady ? (
-              accessibleNavigationGroups.map((group) => {
-                const Icon = groupIcons[group.id as keyof typeof groupIcons] ?? IconVrms
-                return (
-                  <SidebarNavGroup
-                    key={group.id}
-                    title={group.label}
-                    tooltip={group.tooltip}
-                    icon={Icon}
-                    items={toSidebarItems(group.items)}
-                    onNavigate={closeMobileNav}
-                  />
-                )
-              })
-            ) : (
-              <p className="sidebar-permissions-loading">Loading menus…</p>
-            )}
-          </nav>
+          {permissionsReady ? (
+            <SidebarNavList
+              groups={accessibleNavigationGroups}
+              groupIcons={groupIcons}
+              onNavigate={closeMobileNav}
+            />
+          ) : (
+            <p className="sidebar-permissions-loading">Loading menus…</p>
+          )}
         </div>
 
         <div className="sidebar-footer">

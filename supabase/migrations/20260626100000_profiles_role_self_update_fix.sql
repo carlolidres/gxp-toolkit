@@ -28,6 +28,7 @@ REVOKE ALL ON FUNCTION public.profile_self_update_allowed(text, text, boolean) F
 GRANT EXECUTE ON FUNCTION public.profile_self_update_allowed(text, text, boolean) TO authenticated;
 
 DROP POLICY IF EXISTS "Users update own profile" ON profiles;
+DROP POLICY IF EXISTS "Users update own display name" ON profiles;
 
 CREATE POLICY "Users update own display name" ON profiles
   FOR UPDATE TO authenticated

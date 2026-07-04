@@ -1,4 +1,5 @@
 -- SQLite schema — GxP Toolkit (navigation source; production uses Supabase migrations)
+-- eDoc tables: database/sqlite/edoc_schema.sql (included by npm run db:map and db:init)
 
 PRAGMA foreign_keys = ON;
 

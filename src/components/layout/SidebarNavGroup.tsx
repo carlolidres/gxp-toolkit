@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement, type SVGProps } from 'react'
+import { type DragEvent, type ReactElement, type SVGProps } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 
 import type { SidebarSubmenuItem } from '../../config/sidebarMenus'
@@ -19,33 +19,54 @@ export function SidebarNavGroup({
   tooltip,
   icon: Icon,
   items,
+  isOpen,
+  onToggle,
   onNavigate,
+  isDragging = false,
+  isDropTarget = false,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
 }: {
   title: string
   tooltip?: string
   icon: (props: IconProps) => ReactElement
   items: SidebarSubmenuItem[]
+  isOpen: boolean
+  onToggle: () => void
   onNavigate?: () => void
+  isDragging?: boolean
+  isDropTarget?: boolean
+  onDragStart?: (event: DragEvent<HTMLButtonElement>) => void
+  onDragEnd?: () => void
+  onDragOver?: (event: DragEvent<HTMLDivElement>) => void
+  onDrop?: (event: DragEvent<HTMLDivElement>) => void
 }) {
   const location = useLocation()
-  const isActiveInGroup = items.some((item) =>
-    isSidebarItemActive(item, location.pathname, location.hash),
-  )
 
-  const [isOpen, setIsOpen] = useState(isActiveInGroup)
-
-  useEffect(() => {
-    if (isActiveInGroup) setIsOpen(true)
-  }, [isActiveInGroup])
+  const groupClass = [
+    'sidebar-nav-group',
+    isOpen ? 'open' : '',
+    isDragging ? 'is-dragging' : '',
+    isDropTarget ? 'is-drop-target' : '',
+  ].filter(Boolean).join(' ')
 
   return (
-    <div className={`sidebar-nav-group${isOpen ? ' open' : ''}`}>
+    <div
+      className={groupClass}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+    >
       <button
         type="button"
         className="sidebar-nav-group-toggle"
         aria-expanded={isOpen}
         title={tooltip}
-        onClick={() => setIsOpen((value) => !value)}
+        draggable={Boolean(onDragStart)}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onClick={onToggle}
       >
         <Icon />
         <span>{title}</span>

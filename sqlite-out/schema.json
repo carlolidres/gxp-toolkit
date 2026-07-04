@@ -1,67 +1,22 @@
 {
   "meta": {
     "project": "gxp-toolkit",
-    "source": "database/sqlite/schema.sql",
-    "generatedAt": "2026-06-20T11:27:57.764Z",
-    "schemaVersion": 3,
-    "tableCount": 6,
-    "edgeCount": 1,
-    "indexCount": 6
+    "source": "database/sqlite/schema.sql + database/sqlite/edoc_schema.sql",
+    "generatedAt": "2026-07-04T07:05:31.801Z",
+    "schemaVersion": null,
+    "tableCount": 24,
+    "edgeCount": 71,
+    "indexCount": 15
   },
   "nodes": [
     {
-      "id": "schema_migrations",
-      "type": "table",
-      "columnCount": 3,
-      "primaryKeys": [
-        "version"
-      ],
-      "uniqueColumns": [],
-      "columns": [
-        {
-          "name": "version",
-          "type": "INTEGER",
-          "notNull": false,
-          "primaryKey": true,
-          "unique": false,
-          "default": null,
-          "check": null,
-          "references": null
-        },
-        {
-          "name": "description",
-          "type": "TEXT",
-          "notNull": true,
-          "primaryKey": false,
-          "unique": false,
-          "default": null,
-          "check": null,
-          "references": null
-        },
-        {
-          "name": "applied_at",
-          "type": "TEXT",
-          "notNull": true,
-          "primaryKey": false,
-          "unique": false,
-          "default": "(datetime('now'))",
-          "check": null,
-          "references": null
-        }
-      ],
-      "checks": [],
-      "indexes": []
-    },
-    {
       "id": "profiles",
       "type": "table",
-      "columnCount": 7,
+      "columnCount": 6,
       "primaryKeys": [
         "id"
       ],
-      "uniqueColumns": [
-        "email"
-      ],
+      "uniqueColumns": [],
       "columns": [
         {
           "name": "id",
@@ -74,11 +29,21 @@
           "references": null
         },
         {
+          "name": "auth_user_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
           "name": "email",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
-          "unique": true,
+          "unique": false,
           "default": null,
           "check": null,
           "references": null
@@ -99,8 +64,8 @@
           "notNull": true,
           "primaryKey": false,
           "unique": false,
-          "default": "'user'",
-          "check": "role IN ('user', 'admin', 'manager', 'editor', 'viewer')",
+          "default": "'viewer'",
+          "check": null,
           "references": null
         },
         {
@@ -110,121 +75,24 @@
           "primaryKey": false,
           "unique": false,
           "default": "1",
-          "check": "active IN (0, 1)",
-          "references": null
-        },
-        {
-          "name": "created_at",
-          "type": "TEXT",
-          "notNull": true,
-          "primaryKey": false,
-          "unique": false,
-          "default": "(datetime('now'))",
-          "check": null,
-          "references": null
-        },
-        {
-          "name": "updated_at",
-          "type": "TEXT",
-          "notNull": true,
-          "primaryKey": false,
-          "unique": false,
-          "default": "(datetime('now'))",
-          "check": null,
-          "references": null
-        }
-      ],
-      "checks": [
-        {
-          "table": "profiles",
-          "expression": "role IN ('user', 'admin', 'manager', 'editor', 'viewer')",
-          "columns": [
-            "role"
-          ]
-        },
-        {
-          "table": "profiles",
-          "expression": "active IN (0, 1)",
-          "columns": [
-            "active"
-          ]
-        }
-      ],
-      "indexes": []
-    },
-    {
-      "id": "user_menu_permissions",
-      "type": "table",
-      "columnCount": 4,
-      "primaryKeys": [],
-      "uniqueColumns": [],
-      "columns": [
-        {
-          "name": "user_id",
-          "type": "TEXT",
-          "notNull": true,
-          "primaryKey": false,
-          "unique": false,
-          "default": null,
-          "check": null,
-          "references": null
-        },
-        {
-          "name": "menu_id",
-          "type": "TEXT",
-          "notNull": true,
-          "primaryKey": false,
-          "unique": false,
-          "default": null,
-          "check": null,
-          "references": null
-        },
-        {
-          "name": "permissions",
-          "type": "TEXT",
-          "notNull": true,
-          "primaryKey": false,
-          "unique": false,
-          "default": "'{}'",
-          "check": null,
-          "references": null
-        },
-        {
-          "name": "updated_at",
-          "type": "TEXT",
-          "notNull": true,
-          "primaryKey": false,
-          "unique": false,
-          "default": "(datetime('now'))",
           "check": null,
           "references": null
         }
       ],
       "checks": [],
-      "indexes": [
-        {
-          "name": "idx_user_menu_permissions_user",
-          "unique": false,
-          "table": "user_menu_permissions",
-          "columns": [
-            "user_id"
-          ]
-        }
-      ]
+      "indexes": []
     },
     {
-      "id": "routing_documents",
+      "id": "app_feedback_messages",
       "type": "table",
-      "columnCount": 25,
+      "columnCount": 11,
       "primaryKeys": [
-        "routing_tracker"
+        "id"
       ],
-      "uniqueColumns": [
-        "doc_tracer"
-      ],
+      "uniqueColumns": [],
       "columns": [
         {
-          "name": "routing_tracker",
+          "name": "id",
           "type": "TEXT",
           "notNull": false,
           "primaryKey": true,
@@ -234,17 +102,32 @@
           "references": null
         },
         {
-          "name": "doc_tracer",
+          "name": "sender_profile_id",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
-          "unique": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "sender_name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
           "default": null,
           "check": null,
           "references": null
         },
         {
-          "name": "equipment_product",
+          "name": "sender_email",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
@@ -260,13 +143,13 @@
           "primaryKey": false,
           "unique": false,
           "default": null,
-          "check": null,
+          "check": "category IN ('improvement', 'bug')",
           "references": null
         },
         {
-          "name": "il_tag",
+          "name": "content",
           "type": "TEXT",
-          "notNull": false,
+          "notNull": true,
           "primaryKey": false,
           "unique": false,
           "default": null,
@@ -279,42 +162,12 @@
           "notNull": true,
           "primaryKey": false,
           "unique": false,
-          "default": null,
-          "check": null,
+          "default": "'unread'",
+          "check": "status IN ('unread', 'read', 'addressed', 'rejected')",
           "references": null
         },
         {
-          "name": "sent_routing_to",
-          "type": "TEXT",
-          "notNull": false,
-          "primaryKey": false,
-          "unique": false,
-          "default": null,
-          "check": null,
-          "references": null
-        },
-        {
-          "name": "email",
-          "type": "TEXT",
-          "notNull": false,
-          "primaryKey": false,
-          "unique": false,
-          "default": null,
-          "check": null,
-          "references": null
-        },
-        {
-          "name": "date_sent",
-          "type": "TEXT",
-          "notNull": false,
-          "primaryKey": false,
-          "unique": false,
-          "default": null,
-          "check": null,
-          "references": null
-        },
-        {
-          "name": "report_protocol",
+          "name": "submitted_at",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
@@ -324,7 +177,109 @@
           "references": null
         },
         {
-          "name": "batch_no",
+          "name": "status_updated_by_profile_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": "SET NULL",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "status_updated_by_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status_updated_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "app_feedback_messages",
+          "expression": "category IN ('improvement', 'bug')",
+          "columns": [
+            "category"
+          ]
+        },
+        {
+          "table": "app_feedback_messages",
+          "expression": "status IN ('unread', 'read', 'addressed', 'rejected')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_app_feedback_messages_status",
+          "unique": false,
+          "table": "app_feedback_messages",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "idx_app_feedback_messages_sender",
+          "unique": false,
+          "table": "app_feedback_messages",
+          "columns": [
+            "sender_profile_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vmp_masterlist_records",
+      "type": "table",
+      "columnCount": 26,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "record_id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "record_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "validation_area",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
@@ -334,7 +289,7 @@
           "references": null
         },
         {
-          "name": "client_name",
+          "name": "site_plant",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
@@ -354,7 +309,7 @@
           "references": null
         },
         {
-          "name": "prepared_by",
+          "name": "group_name",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
@@ -364,7 +319,17 @@
           "references": null
         },
         {
-          "name": "date_prepared",
+          "name": "room_line",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "item_name",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
@@ -374,7 +339,67 @@
           "references": null
         },
         {
-          "name": "checked_by",
+          "name": "asset_tag_no",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "protocol_tracer",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "report_tracer",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "report_approval_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "review_frequency",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "next_due_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "validation_status",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
@@ -384,7 +409,7 @@
           "references": null
         },
         {
-          "name": "date_checked",
+          "name": "lifecycle_status",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
@@ -394,7 +419,17 @@
           "references": null
         },
         {
-          "name": "target_completion_date",
+          "name": "criticality",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "responsible_owner",
           "type": "TEXT",
           "notNull": false,
           "primaryKey": false,
@@ -414,32 +449,32 @@
           "references": null
         },
         {
-          "name": "signatories",
-          "type": "TEXT",
+          "name": "is_draft",
+          "type": "INTEGER",
           "notNull": true,
           "primaryKey": false,
           "unique": false,
-          "default": "'[]'",
+          "default": "0",
           "check": null,
           "references": null
         },
         {
-          "name": "total_routing_duration",
-          "type": "TEXT",
-          "notNull": false,
+          "name": "is_archived",
+          "type": "INTEGER",
+          "notNull": true,
           "primaryKey": false,
           "unique": false,
-          "default": null,
+          "default": "0",
           "check": null,
           "references": null
         },
         {
-          "name": "routing_completed_at",
-          "type": "TEXT",
-          "notNull": false,
+          "name": "version",
+          "type": "INTEGER",
+          "notNull": true,
           "primaryKey": false,
           "unique": false,
-          "default": null,
+          "default": "1",
           "check": null,
           "references": null
         },
@@ -449,7 +484,17 @@
           "notNull": true,
           "primaryKey": false,
           "unique": false,
-          "default": "(datetime('now'))",
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
           "check": null,
           "references": null
         },
@@ -459,7 +504,7 @@
           "notNull": true,
           "primaryKey": false,
           "unique": false,
-          "default": "(datetime('now'))",
+          "default": null,
           "check": null,
           "references": null
         },
@@ -477,35 +522,51 @@
       "checks": [],
       "indexes": [
         {
-          "name": "idx_routing_documents_status",
+          "name": "idx_vmp_masterlist_record_id",
           "unique": false,
-          "table": "routing_documents",
+          "table": "vmp_masterlist_records",
           "columns": [
-            "status"
+            "record_id"
           ]
         },
         {
-          "name": "idx_routing_documents_doc_tracer",
+          "name": "idx_vmp_masterlist_validation_area",
           "unique": false,
-          "table": "routing_documents",
+          "table": "vmp_masterlist_records",
           "columns": [
-            "doc_tracer"
+            "validation_area"
           ]
         },
         {
-          "name": "idx_routing_documents_updated_at",
+          "name": "idx_vmp_masterlist_next_due_date",
           "unique": false,
-          "table": "routing_documents",
+          "table": "vmp_masterlist_records",
           "columns": [
-            "updated_at"
+            "next_due_date"
+          ]
+        },
+        {
+          "name": "idx_vmp_masterlist_is_archived",
+          "unique": false,
+          "table": "vmp_masterlist_records",
+          "columns": [
+            "is_archived"
+          ]
+        },
+        {
+          "name": "idx_vmp_masterlist_is_draft",
+          "unique": false,
+          "table": "vmp_masterlist_records",
+          "columns": [
+            "is_draft"
           ]
         }
       ]
     },
     {
-      "id": "registry_values",
+      "id": "vmp_field_options",
       "type": "table",
-      "columnCount": 4,
+      "columnCount": 16,
       "primaryKeys": [
         "id"
       ],
@@ -522,7 +583,57 @@
           "references": null
         },
         {
-          "name": "registry_type",
+          "name": "field_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "field_type IN ('site_plant', 'group', 'department', 'room_line')",
+          "references": null
+        },
+        {
+          "name": "validation_area",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "site_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "department_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "parent_option_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "display_value",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
@@ -532,11 +643,275 @@
           "references": null
         },
         {
-          "name": "value",
+          "name": "normalized_value",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
           "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "display_order",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "is_system_default",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "is_user_defined",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "is_active",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "vmp_field_options",
+          "expression": "field_type IN ('site_plant', 'group', 'department', 'room_line')",
+          "columns": [
+            "field_type"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_vmp_field_options_lookup",
+          "unique": false,
+          "table": "vmp_field_options",
+          "columns": [
+            "field_type",
+            "validation_area",
+            "site_id",
+            "department_id",
+            "is_active"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vmp_qc_instruments",
+      "type": "table",
+      "columnCount": 9,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "masterlist_record_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "vmp_masterlist_records",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "instrument_name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "display_order",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "is_active",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_vmp_qc_instruments_record",
+          "unique": false,
+          "table": "vmp_qc_instruments",
+          "columns": [
+            "masterlist_record_id",
+            "is_active"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edoc_organizations",
+      "type": "table",
+      "columnCount": 5,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "slug"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "slug",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
           "default": null,
           "check": null,
           "references": null
@@ -547,25 +922,26 @@
           "notNull": true,
           "primaryKey": false,
           "unique": false,
-          "default": "(datetime('now'))",
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
           "check": null,
           "references": null
         }
       ],
       "checks": [],
-      "indexes": [
-        {
-          "name": "idx_registry_values_type",
-          "unique": false,
-          "table": "registry_values",
-          "columns": [
-            "registry_type"
-          ]
-        }
-      ]
+      "indexes": []
     },
     {
-      "id": "audit_events",
+      "id": "edoc_organization_members",
       "type": "table",
       "columnCount": 8,
       "primaryKeys": [
@@ -584,37 +960,37 @@
           "references": null
         },
         {
-          "name": "event_timestamp",
+          "name": "organization_id",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
           "unique": false,
           "default": null,
           "check": null,
-          "references": null
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
         },
         {
-          "name": "user_email",
+          "name": "profile_id",
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
           "unique": false,
           "default": null,
           "check": null,
-          "references": null
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
         },
         {
-          "name": "action",
-          "type": "TEXT",
-          "notNull": true,
-          "primaryKey": false,
-          "unique": false,
-          "default": null,
-          "check": null,
-          "references": null
-        },
-        {
-          "name": "routing_tracker",
+          "name": "department_name",
           "type": "TEXT",
           "notNull": false,
           "primaryKey": false,
@@ -624,7 +1000,7 @@
           "references": null
         },
         {
-          "name": "doc_tracer",
+          "name": "business_unit_name",
           "type": "TEXT",
           "notNull": false,
           "primaryKey": false,
@@ -634,9 +1010,753 @@
           "references": null
         },
         {
-          "name": "details",
+          "name": "membership_role",
           "type": "TEXT",
           "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'member'",
+          "check": "membership_role IN ('owner', 'admin', 'controller', 'auditor', 'member')",
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'active'",
+          "check": "status IN ('active', 'invited', 'suspended')",
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_organization_members",
+          "expression": "membership_role IN ('owner', 'admin', 'controller', 'auditor', 'member')",
+          "columns": [
+            "membership_role"
+          ]
+        },
+        {
+          "table": "edoc_organization_members",
+          "expression": "status IN ('active', 'invited', 'suspended')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_documents",
+      "type": "table",
+      "columnCount": 20,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "owner_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "document_number",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "title",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "''",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "document_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "''",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "category",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "''",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "department_name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "''",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "business_unit_name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "''",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "confidentiality",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'internal'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "priority",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'normal'",
+          "check": "priority IN ('low', 'normal', 'high', 'urgent')",
+          "references": null
+        },
+        {
+          "name": "due_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "retention_class",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "''",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "tags",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'[]'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'draft'",
+          "check": "status IN (\n    'draft', 'preparing', 'ready_for_routing', 'in_routing', 'awaiting_action',\n    'returned', 'rejected', 'completed', 'cancelled', 'expired', 'archived'\n  )",
+          "references": null
+        },
+        {
+          "name": "current_version_number",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": "current_version_number > 0",
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "lock_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_documents",
+          "expression": "priority IN ('low', 'normal', 'high', 'urgent')",
+          "columns": [
+            "priority"
+          ]
+        },
+        {
+          "table": "edoc_documents",
+          "expression": "status IN (\n    'draft', 'preparing', 'ready_for_routing', 'in_routing', 'awaiting_action',\n    'returned', 'rejected', 'completed', 'cancelled', 'expired', 'archived'\n  )",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "table": "edoc_documents",
+          "expression": "current_version_number > 0",
+          "columns": []
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_edoc_documents_org_status",
+          "unique": false,
+          "table": "edoc_documents",
+          "columns": [
+            "organization_id",
+            "status"
+          ]
+        },
+        {
+          "name": "idx_edoc_documents_owner",
+          "unique": false,
+          "table": "edoc_documents",
+          "columns": [
+            "owner_id",
+            "status"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edoc_document_versions",
+      "type": "table",
+      "columnCount": 11,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "document_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_documents",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "version_number",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "version_number > 0",
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'draft'",
+          "check": "status IN ('draft', 'active', 'superseded', 'completed', 'void')",
+          "references": null
+        },
+        {
+          "name": "source_version_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_versions",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "change_summary",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "original_sha256",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "final_sha256",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_document_versions",
+          "expression": "version_number > 0",
+          "columns": []
+        },
+        {
+          "table": "edoc_document_versions",
+          "expression": "status IN ('draft', 'active', 'superseded', 'completed', 'void')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_edoc_versions_document",
+          "unique": false,
+          "table": "edoc_document_versions",
+          "columns": [
+            "document_id",
+            "version_number"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edoc_document_files",
+      "type": "table",
+      "columnCount": 13,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "object_key"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "document_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_documents",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "version_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_versions",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "file_role",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "file_role IN ('original', 'revised', 'signed', 'certificate', 'attachment')",
+          "references": null
+        },
+        {
+          "name": "bucket_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "object_key",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "file_name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "mime_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'application/pdf'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "size_bytes",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "size_bytes > 0",
+          "references": null
+        },
+        {
+          "name": "sha256",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_document_files",
+          "expression": "file_role IN ('original', 'revised', 'signed', 'certificate', 'attachment')",
+          "columns": [
+            "file_role"
+          ]
+        },
+        {
+          "table": "edoc_document_files",
+          "expression": "size_bytes > 0",
+          "columns": []
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_document_access_grants",
+      "type": "table",
+      "columnCount": 8,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "document_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_documents",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "grantee_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "permission_level",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "permission_level IN ('view', 'comment', 'edit')",
+          "references": null
+        },
+        {
+          "name": "granted_by",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "expires_at",
+          "type": "TEXT",
+          "notNull": false,
           "primaryKey": false,
           "unique": false,
           "default": null,
@@ -649,7 +1769,1838 @@
           "notNull": true,
           "primaryKey": false,
           "unique": false,
-          "default": "(datetime('now'))",
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_document_access_grants",
+          "expression": "permission_level IN ('view', 'comment', 'edit')",
+          "columns": [
+            "permission_level"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_routing_templates",
+      "type": "table",
+      "columnCount": 7,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "''",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "mode",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "mode IN ('sequential', 'parallel', 'mixed')",
+          "references": null
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_routing_templates",
+          "expression": "mode IN ('sequential', 'parallel', 'mixed')",
+          "columns": [
+            "mode"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_document_routes",
+      "type": "table",
+      "columnCount": 10,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "document_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_documents",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "version_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_versions",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "template_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_routing_templates",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "mode",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "mode IN ('sequential', 'parallel', 'mixed')",
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'draft'",
+          "check": "status IN ('draft', 'active', 'completed', 'rejected', 'returned', 'cancelled', 'expired')",
+          "references": null
+        },
+        {
+          "name": "started_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "completed_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_document_routes",
+          "expression": "mode IN ('sequential', 'parallel', 'mixed')",
+          "columns": [
+            "mode"
+          ]
+        },
+        {
+          "table": "edoc_document_routes",
+          "expression": "status IN ('draft', 'active', 'completed', 'rejected', 'returned', 'cancelled', 'expired')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_edoc_routes_document",
+          "unique": false,
+          "table": "edoc_document_routes",
+          "columns": [
+            "document_id",
+            "status"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edoc_route_steps",
+      "type": "table",
+      "columnCount": 12,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "route_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_routes",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "group_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "sequence",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "sequence > 0",
+          "references": null
+        },
+        {
+          "name": "action",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "action IN ('review', 'approve', 'sign', 'acknowledge')",
+          "references": null
+        },
+        {
+          "name": "completion_rule",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'all'",
+          "check": "completion_rule IN ('all', 'any', 'majority', 'minimum_count')",
+          "references": null
+        },
+        {
+          "name": "minimum_count",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "due_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "allow_delegation",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'pending'",
+          "check": "status IN ('pending', 'active', 'completed', 'rejected', 'returned', 'skipped', 'invalidated')",
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_route_steps",
+          "expression": "sequence > 0",
+          "columns": []
+        },
+        {
+          "table": "edoc_route_steps",
+          "expression": "action IN ('review', 'approve', 'sign', 'acknowledge')",
+          "columns": [
+            "action"
+          ]
+        },
+        {
+          "table": "edoc_route_steps",
+          "expression": "completion_rule IN ('all', 'any', 'majority', 'minimum_count')",
+          "columns": [
+            "completion_rule"
+          ]
+        },
+        {
+          "table": "edoc_route_steps",
+          "expression": "status IN ('pending', 'active', 'completed', 'rejected', 'returned', 'skipped', 'invalidated')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_route_step_assignees",
+      "type": "table",
+      "columnCount": 9,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "route_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_routes",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "step_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_route_steps",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "assignee_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "delegated_from_profile_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'pending'",
+          "check": "status IN ('pending', 'active', 'completed', 'rejected', 'returned', 'delegated', 'invalidated')",
+          "references": null
+        },
+        {
+          "name": "completed_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_route_step_assignees",
+          "expression": "status IN ('pending', 'active', 'completed', 'rejected', 'returned', 'delegated', 'invalidated')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_edoc_assignments_inbox",
+          "unique": false,
+          "table": "edoc_route_step_assignees",
+          "columns": [
+            "assignee_id",
+            "status"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edoc_route_step_actions",
+      "type": "table",
+      "columnCount": 11,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "route_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_routes",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "step_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_route_steps",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "assignment_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_route_step_assignees",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "actor_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "action",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "action IN ('review', 'approve', 'sign', 'acknowledge', 'reject', 'return', 'delegate', 'cancel')",
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "status IN ('completed', 'rejected', 'returned', 'delegated', 'cancelled')",
+          "references": null
+        },
+        {
+          "name": "comment",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "''",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_route_step_actions",
+          "expression": "action IN ('review', 'approve', 'sign', 'acknowledge', 'reject', 'return', 'delegate', 'cancel')",
+          "columns": [
+            "action"
+          ]
+        },
+        {
+          "table": "edoc_route_step_actions",
+          "expression": "status IN ('completed', 'rejected', 'returned', 'delegated', 'cancelled')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_signature_fields",
+      "type": "table",
+      "columnCount": 13,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "document_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_documents",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "version_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_versions",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "assignment_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_route_step_assignees",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "field_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "field_type IN (\n    'signature', 'initial', 'date_signed', 'name', 'job_title', 'text',\n    'approval_meaning', 'review_meaning', 'acknowledgment', 'checkbox'\n  )",
+          "references": null
+        },
+        {
+          "name": "page_number",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "page_number > 0",
+          "references": null
+        },
+        {
+          "name": "x",
+          "type": "REAL",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "x >= 0 AND x <= 1",
+          "references": null
+        },
+        {
+          "name": "y",
+          "type": "REAL",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "y >= 0 AND y <= 1",
+          "references": null
+        },
+        {
+          "name": "width",
+          "type": "REAL",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "width > 0 AND width <= 1",
+          "references": null
+        },
+        {
+          "name": "height",
+          "type": "REAL",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "height > 0 AND height <= 1",
+          "references": null
+        },
+        {
+          "name": "required",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_signature_fields",
+          "expression": "field_type IN (\n    'signature', 'initial', 'date_signed', 'name', 'job_title', 'text',\n    'approval_meaning', 'review_meaning', 'acknowledgment', 'checkbox'\n  )",
+          "columns": [
+            "field_type"
+          ]
+        },
+        {
+          "table": "edoc_signature_fields",
+          "expression": "page_number > 0",
+          "columns": []
+        },
+        {
+          "table": "edoc_signature_fields",
+          "expression": "x >= 0 AND x <= 1",
+          "columns": []
+        },
+        {
+          "table": "edoc_signature_fields",
+          "expression": "y >= 0 AND y <= 1",
+          "columns": []
+        },
+        {
+          "table": "edoc_signature_fields",
+          "expression": "width > 0 AND width <= 1",
+          "columns": []
+        },
+        {
+          "table": "edoc_signature_fields",
+          "expression": "height > 0 AND height <= 1",
+          "columns": []
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_signature_events",
+      "type": "table",
+      "columnCount": 20,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "document_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_documents",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "version_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_versions",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "route_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_routes",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "step_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_route_steps",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "assignment_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_route_step_assignees",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "signer_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "signer_display_name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "signature_meaning",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "auth_method",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "auth_timestamp",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "signing_timestamp",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "source_ip",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "user_agent",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "session_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "original_pdf_hash",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "signed_pdf_hash",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "integrity_hash",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    {
+      "id": "edoc_completion_certificates",
+      "type": "table",
+      "columnCount": 9,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "object_key",
+        "verification_code"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "document_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_documents",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "version_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_versions",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "route_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_routes",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "bucket_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'edoc-certificates'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "object_key",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "verification_code",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "issued_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    {
+      "id": "edoc_comments",
+      "type": "table",
+      "columnCount": 11,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "document_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_documents",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "version_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_versions",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "route_step_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_route_steps",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "parent_comment_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_comments",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "author_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "body",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "length(trim(body)) > 0",
+          "references": null
+        },
+        {
+          "name": "private",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "resolved_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_comments",
+          "expression": "length(trim(body)) > 0",
+          "columns": []
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_notifications",
+      "type": "table",
+      "columnCount": 11,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "recipient_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "document_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_documents",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "route_step_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_route_steps",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "notification_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "dedupe_key",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "title",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "body",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "''",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "read_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    {
+      "id": "edoc_audit_events",
+      "type": "table",
+      "columnCount": 18,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "actor_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "actor_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "event_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "entity_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "entity_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "document_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_documents",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "version_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_versions",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "previous_value",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "new_value",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "source_ip",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "user_agent",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "request_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "source",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'app'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "integrity_hash",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
           "check": null,
           "references": null
         }
@@ -657,23 +3608,188 @@
       "checks": [],
       "indexes": [
         {
-          "name": "idx_audit_events_timestamp",
+          "name": "idx_edoc_audit_document",
           "unique": false,
-          "table": "audit_events",
+          "table": "edoc_audit_events",
           "columns": [
-            "event_timestamp"
+            "document_id",
+            "created_at"
           ]
         }
       ]
+    },
+    {
+      "id": "edoc_file_access_logs",
+      "type": "table",
+      "columnCount": 6,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "file_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_files",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "profile_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "access_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "access_type IN ('preview', 'download')",
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_file_access_logs",
+          "expression": "access_type IN ('preview', 'download')",
+          "columns": [
+            "access_type"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_settings",
+      "type": "table",
+      "columnCount": 5,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "setting_key",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "setting_value",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'{}'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": []
     }
   ],
   "edges": [
     {
-      "id": "user_menu_permissions.user_id->profiles.id",
+      "id": "app_feedback_messages.sender_profile_id->profiles.id",
       "type": "foreign_key",
       "from": {
-        "table": "user_menu_permissions",
-        "column": "user_id"
+        "table": "app_feedback_messages",
+        "column": "sender_profile_id"
       },
       "to": {
         "table": "profiles",
@@ -681,55 +3797,1118 @@
       },
       "onDelete": "CASCADE",
       "onUpdate": null
+    },
+    {
+      "id": "app_feedback_messages.status_updated_by_profile_id->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "app_feedback_messages",
+        "column": "status_updated_by_profile_id"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": "SET NULL",
+      "onUpdate": null
+    },
+    {
+      "id": "vmp_field_options.parent_option_id->vmp_field_options.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "vmp_field_options",
+        "column": "parent_option_id"
+      },
+      "to": {
+        "table": "vmp_field_options",
+        "column": "id"
+      },
+      "onDelete": "SET NULL",
+      "onUpdate": null
+    },
+    {
+      "id": "vmp_qc_instruments.masterlist_record_id->vmp_masterlist_records.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "vmp_qc_instruments",
+        "column": "masterlist_record_id"
+      },
+      "to": {
+        "table": "vmp_masterlist_records",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_organization_members.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_organization_members",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_organization_members.profile_id->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_organization_members",
+        "column": "profile_id"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_documents.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_documents",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_documents.owner_id->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_documents",
+        "column": "owner_id"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_versions.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_versions",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_versions.document_id->edoc_documents.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_versions",
+        "column": "document_id"
+      },
+      "to": {
+        "table": "edoc_documents",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_versions.source_version_id->edoc_document_versions.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_versions",
+        "column": "source_version_id"
+      },
+      "to": {
+        "table": "edoc_document_versions",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_versions.created_by->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_versions",
+        "column": "created_by"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_files.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_files",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_files.document_id->edoc_documents.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_files",
+        "column": "document_id"
+      },
+      "to": {
+        "table": "edoc_documents",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_files.version_id->edoc_document_versions.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_files",
+        "column": "version_id"
+      },
+      "to": {
+        "table": "edoc_document_versions",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_files.created_by->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_files",
+        "column": "created_by"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_access_grants.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_access_grants",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_access_grants.document_id->edoc_documents.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_access_grants",
+        "column": "document_id"
+      },
+      "to": {
+        "table": "edoc_documents",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_access_grants.grantee_id->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_access_grants",
+        "column": "grantee_id"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_access_grants.granted_by->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_access_grants",
+        "column": "granted_by"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_routing_templates.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_routing_templates",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_routing_templates.created_by->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_routing_templates",
+        "column": "created_by"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_routes.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_routes",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_routes.document_id->edoc_documents.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_routes",
+        "column": "document_id"
+      },
+      "to": {
+        "table": "edoc_documents",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_routes.version_id->edoc_document_versions.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_routes",
+        "column": "version_id"
+      },
+      "to": {
+        "table": "edoc_document_versions",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_document_routes.template_id->edoc_routing_templates.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_document_routes",
+        "column": "template_id"
+      },
+      "to": {
+        "table": "edoc_routing_templates",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_route_steps.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_route_steps",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_route_steps.route_id->edoc_document_routes.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_route_steps",
+        "column": "route_id"
+      },
+      "to": {
+        "table": "edoc_document_routes",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_route_step_assignees.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_route_step_assignees",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_route_step_assignees.route_id->edoc_document_routes.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_route_step_assignees",
+        "column": "route_id"
+      },
+      "to": {
+        "table": "edoc_document_routes",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_route_step_assignees.step_id->edoc_route_steps.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_route_step_assignees",
+        "column": "step_id"
+      },
+      "to": {
+        "table": "edoc_route_steps",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_route_step_assignees.assignee_id->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_route_step_assignees",
+        "column": "assignee_id"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_route_step_assignees.delegated_from_profile_id->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_route_step_assignees",
+        "column": "delegated_from_profile_id"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_route_step_actions.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_route_step_actions",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_route_step_actions.route_id->edoc_document_routes.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_route_step_actions",
+        "column": "route_id"
+      },
+      "to": {
+        "table": "edoc_document_routes",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_route_step_actions.step_id->edoc_route_steps.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_route_step_actions",
+        "column": "step_id"
+      },
+      "to": {
+        "table": "edoc_route_steps",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_route_step_actions.assignment_id->edoc_route_step_assignees.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_route_step_actions",
+        "column": "assignment_id"
+      },
+      "to": {
+        "table": "edoc_route_step_assignees",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_route_step_actions.actor_id->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_route_step_actions",
+        "column": "actor_id"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_signature_fields.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_signature_fields",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_signature_fields.document_id->edoc_documents.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_signature_fields",
+        "column": "document_id"
+      },
+      "to": {
+        "table": "edoc_documents",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_signature_fields.version_id->edoc_document_versions.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_signature_fields",
+        "column": "version_id"
+      },
+      "to": {
+        "table": "edoc_document_versions",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_signature_fields.assignment_id->edoc_route_step_assignees.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_signature_fields",
+        "column": "assignment_id"
+      },
+      "to": {
+        "table": "edoc_route_step_assignees",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_signature_events.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_signature_events",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_signature_events.document_id->edoc_documents.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_signature_events",
+        "column": "document_id"
+      },
+      "to": {
+        "table": "edoc_documents",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_signature_events.version_id->edoc_document_versions.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_signature_events",
+        "column": "version_id"
+      },
+      "to": {
+        "table": "edoc_document_versions",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_signature_events.route_id->edoc_document_routes.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_signature_events",
+        "column": "route_id"
+      },
+      "to": {
+        "table": "edoc_document_routes",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_signature_events.step_id->edoc_route_steps.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_signature_events",
+        "column": "step_id"
+      },
+      "to": {
+        "table": "edoc_route_steps",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_signature_events.assignment_id->edoc_route_step_assignees.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_signature_events",
+        "column": "assignment_id"
+      },
+      "to": {
+        "table": "edoc_route_step_assignees",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_signature_events.signer_id->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_signature_events",
+        "column": "signer_id"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_completion_certificates.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_completion_certificates",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_completion_certificates.document_id->edoc_documents.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_completion_certificates",
+        "column": "document_id"
+      },
+      "to": {
+        "table": "edoc_documents",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_completion_certificates.version_id->edoc_document_versions.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_completion_certificates",
+        "column": "version_id"
+      },
+      "to": {
+        "table": "edoc_document_versions",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_completion_certificates.route_id->edoc_document_routes.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_completion_certificates",
+        "column": "route_id"
+      },
+      "to": {
+        "table": "edoc_document_routes",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_comments.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_comments",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_comments.document_id->edoc_documents.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_comments",
+        "column": "document_id"
+      },
+      "to": {
+        "table": "edoc_documents",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_comments.version_id->edoc_document_versions.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_comments",
+        "column": "version_id"
+      },
+      "to": {
+        "table": "edoc_document_versions",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_comments.route_step_id->edoc_route_steps.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_comments",
+        "column": "route_step_id"
+      },
+      "to": {
+        "table": "edoc_route_steps",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_comments.parent_comment_id->edoc_comments.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_comments",
+        "column": "parent_comment_id"
+      },
+      "to": {
+        "table": "edoc_comments",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_comments.author_id->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_comments",
+        "column": "author_id"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_notifications.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_notifications",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_notifications.recipient_id->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_notifications",
+        "column": "recipient_id"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_notifications.document_id->edoc_documents.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_notifications",
+        "column": "document_id"
+      },
+      "to": {
+        "table": "edoc_documents",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_notifications.route_step_id->edoc_route_steps.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_notifications",
+        "column": "route_step_id"
+      },
+      "to": {
+        "table": "edoc_route_steps",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_audit_events.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_audit_events",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_audit_events.actor_id->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_audit_events",
+        "column": "actor_id"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_audit_events.document_id->edoc_documents.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_audit_events",
+        "column": "document_id"
+      },
+      "to": {
+        "table": "edoc_documents",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_audit_events.version_id->edoc_document_versions.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_audit_events",
+        "column": "version_id"
+      },
+      "to": {
+        "table": "edoc_document_versions",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_file_access_logs.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_file_access_logs",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_file_access_logs.file_id->edoc_document_files.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_file_access_logs",
+        "column": "file_id"
+      },
+      "to": {
+        "table": "edoc_document_files",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_file_access_logs.profile_id->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_file_access_logs",
+        "column": "profile_id"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_settings.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_settings",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
     }
   ],
   "indexes": [
     {
-      "name": "idx_user_menu_permissions_user",
+      "name": "idx_app_feedback_messages_status",
       "unique": false,
-      "table": "user_menu_permissions",
-      "columns": [
-        "user_id"
-      ]
-    },
-    {
-      "name": "idx_routing_documents_status",
-      "unique": false,
-      "table": "routing_documents",
+      "table": "app_feedback_messages",
       "columns": [
         "status"
       ]
     },
     {
-      "name": "idx_routing_documents_doc_tracer",
+      "name": "idx_app_feedback_messages_sender",
       "unique": false,
-      "table": "routing_documents",
+      "table": "app_feedback_messages",
       "columns": [
-        "doc_tracer"
+        "sender_profile_id"
       ]
     },
     {
-      "name": "idx_routing_documents_updated_at",
+      "name": "idx_vmp_masterlist_record_id",
       "unique": false,
-      "table": "routing_documents",
+      "table": "vmp_masterlist_records",
       "columns": [
-        "updated_at"
+        "record_id"
       ]
     },
     {
-      "name": "idx_registry_values_type",
+      "name": "idx_vmp_masterlist_validation_area",
       "unique": false,
-      "table": "registry_values",
+      "table": "vmp_masterlist_records",
       "columns": [
-        "registry_type"
+        "validation_area"
       ]
     },
     {
-      "name": "idx_audit_events_timestamp",
+      "name": "idx_vmp_masterlist_next_due_date",
       "unique": false,
-      "table": "audit_events",
+      "table": "vmp_masterlist_records",
       "columns": [
-        "event_timestamp"
+        "next_due_date"
+      ]
+    },
+    {
+      "name": "idx_vmp_masterlist_is_archived",
+      "unique": false,
+      "table": "vmp_masterlist_records",
+      "columns": [
+        "is_archived"
+      ]
+    },
+    {
+      "name": "idx_vmp_masterlist_is_draft",
+      "unique": false,
+      "table": "vmp_masterlist_records",
+      "columns": [
+        "is_draft"
+      ]
+    },
+    {
+      "name": "idx_vmp_field_options_lookup",
+      "unique": false,
+      "table": "vmp_field_options",
+      "columns": [
+        "field_type",
+        "validation_area",
+        "site_id",
+        "department_id",
+        "is_active"
+      ]
+    },
+    {
+      "name": "idx_vmp_qc_instruments_record",
+      "unique": false,
+      "table": "vmp_qc_instruments",
+      "columns": [
+        "masterlist_record_id",
+        "is_active"
+      ]
+    },
+    {
+      "name": "idx_edoc_documents_org_status",
+      "unique": false,
+      "table": "edoc_documents",
+      "columns": [
+        "organization_id",
+        "status"
+      ]
+    },
+    {
+      "name": "idx_edoc_documents_owner",
+      "unique": false,
+      "table": "edoc_documents",
+      "columns": [
+        "owner_id",
+        "status"
+      ]
+    },
+    {
+      "name": "idx_edoc_versions_document",
+      "unique": false,
+      "table": "edoc_document_versions",
+      "columns": [
+        "document_id",
+        "version_number"
+      ]
+    },
+    {
+      "name": "idx_edoc_routes_document",
+      "unique": false,
+      "table": "edoc_document_routes",
+      "columns": [
+        "document_id",
+        "status"
+      ]
+    },
+    {
+      "name": "idx_edoc_assignments_inbox",
+      "unique": false,
+      "table": "edoc_route_step_assignees",
+      "columns": [
+        "assignee_id",
+        "status"
+      ]
+    },
+    {
+      "name": "idx_edoc_audit_document",
+      "unique": false,
+      "table": "edoc_audit_events",
+      "columns": [
+        "document_id",
+        "created_at"
       ]
     }
   ]

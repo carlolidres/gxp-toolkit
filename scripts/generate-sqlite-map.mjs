@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Parse database/sqlite/schema.sql and generate sqlite-out/ schema map.
+ * Parse database/sqlite/schema.sql + edoc_schema.sql and generate sqlite-out/ schema map.
  * Works without the sqlite3 CLI (regex/SQL parsing only).
  */
 
@@ -10,8 +10,13 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
-const SCHEMA_PATH = join(ROOT, 'database', 'sqlite', 'schema.sql')
+const SCHEMA_DIR = join(ROOT, 'database', 'sqlite')
+const SCHEMA_FILES = ['schema.sql', 'edoc_schema.sql']
 const OUT_DIR = join(ROOT, 'sqlite-out')
+
+function readSchemaSql() {
+  return SCHEMA_FILES.map((file) => readFileSync(join(SCHEMA_DIR, file), 'utf8')).join('\n\n')
+}
 
 /** @typedef {{ name: string, type: string, notNull: boolean, primaryKey: boolean, unique: boolean, default: string | null, check: string | null, foreignKey: ForeignKey | null }} Column */
 /** @typedef {{ table: string, column: string, onDelete: string | null, onUpdate: string | null }} ForeignKey */
@@ -313,7 +318,7 @@ function buildSchemaJson(tables, indexes, schemaVersion) {
   return {
     meta: {
       project: 'gxp-toolkit',
-      source: relative(ROOT, SCHEMA_PATH).replace(/\\/g, '/'),
+      source: SCHEMA_FILES.map((file) => relative(ROOT, join(SCHEMA_DIR, file)).replace(/\\/g, '/')).join(' + '),
       generatedAt: new Date().toISOString(),
       schemaVersion,
       tableCount: tables.length,
@@ -581,7 +586,7 @@ function buildSvgDiagram(schema) {
 }
 
 function main() {
-  const raw = readFileSync(SCHEMA_PATH, 'utf8')
+  const raw = readSchemaSql()
   const sql = stripComments(raw)
   const tables = parseTables(sql)
   const indexes = parseIndexes(sql)

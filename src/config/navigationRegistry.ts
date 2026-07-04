@@ -4,6 +4,7 @@ export const APP_NAME = 'GxP Toolkit'
 export const APP_TAGLINE = 'Quality systems kit'
 export const VRMS_MENU_TOOLTIP = 'Validation Routing Monitoring System'
 export const VMP_MENU_TOOLTIP = 'Validation Master Plan'
+export const EDOC_MENU_TOOLTIP = 'Electronic document routing and signature'
 
 export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'approve' | 'export'
 
@@ -47,6 +48,17 @@ const MENU_ACTIONS: Record<string, PermissionAction[]> = {
   'vmp-timeline': ['view', 'create', 'edit', 'delete', 'export'],
   'vmp-database': ['view', 'export'],
   'vmp-audit': ['view', 'export'],
+  'edoc-dashboard': ['view', 'export'],
+  'edoc-inbox': ['view', 'approve'],
+  'edoc-my-documents': ['view', 'create', 'edit', 'export'],
+  'edoc-all-documents': ['view', 'export'],
+  'edoc-create': ['view', 'create'],
+  'edoc-returned': ['view', 'edit', 'export'],
+  'edoc-completed': ['view', 'export'],
+  'edoc-routing-templates': ['view', 'create', 'edit', 'delete'],
+  'edoc-reports': ['view', 'export'],
+  'edoc-audit': ['view', 'export'],
+  'edoc-admin': ['view', 'create', 'edit', 'delete', 'export'],
   'user-management': ['view', 'create', 'edit', 'delete'],
 }
 
@@ -92,6 +104,24 @@ export const navigationRegistry: NavGroupDefinition[] = [
     ],
   },
   {
+    id: 'edoc',
+    label: 'eDoc',
+    tooltip: EDOC_MENU_TOOLTIP,
+    items: [
+      menu('edoc-dashboard', 'Dashboard', '/edoc'),
+      menu('edoc-inbox', 'My Inbox', '/edoc/inbox'),
+      menu('edoc-my-documents', 'My Documents', '/edoc/my-documents'),
+      menu('edoc-all-documents', 'All Documents', '/edoc/documents'),
+      menu('edoc-create', 'Create Document', '/edoc/create'),
+      menu('edoc-returned', 'Returned Documents', '/edoc/returned'),
+      menu('edoc-completed', 'Completed Documents', '/edoc/completed'),
+      menu('edoc-routing-templates', 'Routing Templates', '/edoc/templates'),
+      menu('edoc-reports', 'Reports', '/edoc/reports'),
+      menu('edoc-audit', 'Audit Trail', '/edoc/audit'),
+      menu('edoc-admin', 'Administration', '/edoc/admin'),
+    ],
+  },
+  {
     id: 'admin',
     label: 'Administration',
     items: [menu('user-management', 'User Management', '/admin/users')],
@@ -133,6 +163,17 @@ export const vrmsRouteLabels: Record<string, string> = {
   '/vmp/timeline': 'Timeline',
   '/vmp/database': 'Database',
   '/vmp/audit': 'Audit Trail',
+  '/edoc': 'Dashboard',
+  '/edoc/inbox': 'My Inbox',
+  '/edoc/my-documents': 'My Documents',
+  '/edoc/documents': 'All Documents',
+  '/edoc/create': 'Create Document',
+  '/edoc/returned': 'Returned Documents',
+  '/edoc/completed': 'Completed Documents',
+  '/edoc/templates': 'Routing Templates',
+  '/edoc/reports': 'Reports',
+  '/edoc/audit': 'Audit Trail',
+  '/edoc/admin': 'Administration',
   '/admin/users': 'User Management',
   '/login': 'Sign in',
   '/signup': 'Sign up',

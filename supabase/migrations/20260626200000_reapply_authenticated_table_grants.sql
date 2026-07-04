@@ -11,8 +11,6 @@ GRANT SELECT, INSERT ON public.audit_events TO authenticated;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_menu_permissions TO authenticated;
 
-GRANT SELECT, INSERT ON public.app_feedback_messages TO authenticated;
-GRANT UPDATE (status, status_updated_by_profile_id, status_updated_by_name, status_updated_at)
-  ON public.app_feedback_messages TO authenticated;
+-- app_feedback_messages grants are applied in 20260627100000_app_feedback_messages.sql
 
 NOTIFY pgrst, 'reload schema';

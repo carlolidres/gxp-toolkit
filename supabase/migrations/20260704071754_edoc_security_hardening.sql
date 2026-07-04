@@ -1,0 +1,2 @@
+-- DEPRECATED: superseded by 20260704110000_edoc_security_hardening.sql (correct apply order after eDoc module).
+-- Remote history repaired 2026-07-04. Safe to delete this file locally.

@@ -1,6 +1,6 @@
 # Data Map
 
-Last Updated: `2026-06-21`
+Last Updated: `2026-07-04`
 
 ## Purpose
 
@@ -12,13 +12,15 @@ This is a concise human map. It does not replace executable SQL.
 
 | Path | Role | Editing rule |
 |---|---|---|
-| `database/sqlite/schema.sql` | Placeholder SQLite schema template | Edit only if SQLite becomes an active target |
+| `database/sqlite/schema.sql` | Core SQLite schema (profiles, VMP, feedback) | Edit when core app models change |
+| `database/sqlite/edoc_schema.sql` | eDoc SQLite reference (19 `edoc_*` tables) | Edit before Supabase eDoc migration changes |
+| `database/sqlite/edoc_seed.sql` | eDoc pilot fixtures (non-production) | Pilot data only |
 | `database/sqlite/seed.sql` | Placeholder SQLite seed template | Do not put regulated/production data here |
 | `sqlite-out/` | Generated schema map used for fast navigation | Never edit manually |
 | `workflow-app/database/schema.sql` | Local workflow app SQLite schema for approval records, versions, comments, approvals, audit events, and baseline snapshots | Edit only with the workflow app source |
 | `workflow-app/data/` | Local generated workflow app database/runtime data | Gitignored; do not commit |
 
-Current status: SQLite is not yet modeled for VRMS. `schema.sql`, `seed.sql`, and `sqlite-out/SCHEMA_REPORT.md` are placeholders.
+Current status: Core VMP tables and **eDoc reference schema** are in `database/sqlite/`. Regenerate with `npm run db:map`; validate eDoc with `npm run verify:edoc-sqlite`.
 
 Workflow app status: `workflow-app/` uses its own local SQLite store for approval workflow tracking. It is not the VRMS application schema and is not deployed with the Vite app.
 
@@ -26,7 +28,9 @@ Workflow app status: `workflow-app/` uses its own local SQLite store for approva
 
 | Path | Role | Editing rule |
 |---|---|---|
-| `supabase/migrations/20260616000000_initial_gxp_toolkit_schema.sql` through `20260618400000_fix_profiles_rls_row_security.sql` | Reference Supabase migration sequence for template cleanup, VRMS schema, auth profiles, grants, menu permissions, and RLS fixes | Review and approve before applying |
+| `supabase/migrations/20260616000000_initial_gxp_toolkit_schema.sql` through `20260627100000_app_feedback_messages.sql` | VRMS schema, auth profiles, grants, menu permissions, RLS fixes, feedback | Review before applying |
+| `supabase/migrations/20260704100000_edoc_supabase_module.sql` | eDoc module: `edoc_*` tables, RLS, RPCs, storage buckets, inbox view | Applied staging 2026-07-04 |
+| `supabase/scripts/verify_edoc_rls.sql` | Static eDoc RLS/schema validation | Run after eDoc migration |
 | `supabase/seed.vrms.generated.sql` | Local generated seed from `src/data/vrmsProductionData.json` | Generated and gitignored; review before applying |
 | `scripts/generate-vrms-supabase-seed.mjs` | Generates the local Supabase seed SQL | Edit when data shape changes |
 | `scripts/verify-vrms-csv-bundle.mjs` | Verifies CSV row counts and audit field alignment | Run before migration/export |
@@ -69,6 +73,10 @@ Audit import note: the source audit CSV has misleading headers for document-rela
 | Registry value | `registry_values` / `registryValues` | Controlled values for status, routing recipients, report/protocol, client, category, department, prepared by, checked by | `id`; unique `(registry_type, value)` | Registry CSV exports |
 | Audit event | `audit_events` / `auditEvents` | Append-only VRMS activity/audit history | `id` | `reference/VRMSdatabase/VRMS - AuditTrail.csv` |
 | VMP masterlist record | `vmp_masterlist_records` / `VmpMasterlistRecord` | Validation masterlist entries (form + database) | `id` (internal UUID); unique `record_id` | `database/sqlite/schema.sql`; mock store `src/services/mockVmpMasterlistService.ts` |
+| eDoc organization | `edoc_organizations` | Tenant boundary for eDoc documents and routing | `id` | `database/sqlite/edoc_schema.sql`; `supabase/migrations/20260704100000_edoc_supabase_module.sql` |
+| eDoc document | `edoc_documents` | Controlled PDF document metadata and lifecycle status | `id`; unique `(organization_id, document_number)` | Same |
+| eDoc route assignment | `edoc_route_step_assignees` / `edoc_assignment_inbox` view | Inbox tasks for review/approve/sign/acknowledge | `id` | Same |
+| eDoc audit event | `edoc_audit_events` | Append-only eDoc workflow audit (trigger-protected on Supabase) | `id` | Same |
 
 ## Core Relationships
 
