@@ -39,6 +39,7 @@ function defaultGrantForRole(role: UserRole, menuId: string, action: PermissionA
     if (action === 'view') return true
     if (menuId === 'routing' && ['create', 'edit', 'approve'].includes(action)) return true
     if (menuId === 'registry' && ['create', 'edit'].includes(action)) return true
+    if (menuId.startsWith('apqr-') && ['create', 'edit'].includes(action)) return true
     return false
   }
 

@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 const SCHEMA_DIR = join(ROOT, 'database', 'sqlite')
-const SCHEMA_FILES = ['schema.sql', 'edoc_schema.sql']
+const SCHEMA_FILES = ['schema.sql', 'edoc_schema.sql', 'apqr_schema.sql']
 const OUT_DIR = join(ROOT, 'sqlite-out')
 
 function readSchemaSql() {

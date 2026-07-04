@@ -27,6 +27,12 @@ import { EdocInboxPage } from '../pages/edoc/EdocInboxPage'
 import { EdocReportsPage } from '../pages/edoc/EdocReportsPage'
 import { EdocRoutingTemplatesPage } from '../pages/edoc/EdocRoutingTemplatesPage'
 import { EdocWorkspacePage } from '../pages/edoc/EdocWorkspacePage'
+import { ApqrDashboardPage } from '../pages/apqr/ApqrDashboardPage'
+import { ApqrClientRegistryPage } from '../pages/apqr/ApqrClientRegistryPage'
+import { ApqrSchedulerPage } from '../pages/apqr/ApqrSchedulerPage'
+import { ApqrDatabasePage } from '../pages/apqr/ApqrDatabasePage'
+import { ApqrFormPage } from '../pages/apqr/ApqrFormPage'
+import { ApqrAuditPage } from '../pages/apqr/ApqrAuditPage'
 import { UserManagementPage } from '../pages/admin/UserManagementPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
@@ -230,6 +236,54 @@ export function AppRoutes() {
           element={
             <MenuPermissionRoute menuId="edoc-inbox">
               <EdocWorkspacePage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="apqr"
+          element={
+            <MenuPermissionRoute menuId="apqr-dashboard">
+              <ApqrDashboardPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="apqr/registry"
+          element={
+            <MenuPermissionRoute menuId="apqr-registry">
+              <ApqrClientRegistryPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="apqr/scheduler"
+          element={
+            <MenuPermissionRoute menuId="apqr-scheduler">
+              <ApqrSchedulerPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="apqr/database"
+          element={
+            <MenuPermissionRoute menuId="apqr-database">
+              <ApqrDatabasePage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="apqr/form"
+          element={
+            <MenuPermissionRoute menuId="apqr-form">
+              <ApqrFormPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="apqr/audit"
+          element={
+            <MenuPermissionRoute menuId="apqr-audit">
+              <ApqrAuditPage />
             </MenuPermissionRoute>
           }
         />

@@ -1,12 +1,12 @@
 {
   "meta": {
     "project": "gxp-toolkit",
-    "source": "database/sqlite/schema.sql + database/sqlite/edoc_schema.sql",
-    "generatedAt": "2026-07-04T07:05:31.801Z",
+    "source": "database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql",
+    "generatedAt": "2026-07-04T09:23:54.908Z",
     "schemaVersion": null,
-    "tableCount": 24,
-    "edgeCount": 71,
-    "indexCount": 15
+    "tableCount": 30,
+    "edgeCount": 74,
+    "indexCount": 26
   },
   "nodes": [
     {
@@ -3781,6 +3781,1032 @@
       ],
       "checks": [],
       "indexes": []
+    },
+    {
+      "id": "apqr_clients",
+      "type": "table",
+      "columnCount": 13,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "code"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "code",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "account_manager",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "client_name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "qa",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "technical",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "regulatory",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "apqr_package",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Billable'",
+          "check": "apqr_package IN ('Billable', 'Not Billable')",
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'active'",
+          "check": "status IN ('active', 'archived')",
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "apqr_clients",
+          "expression": "apqr_package IN ('Billable', 'Not Billable')",
+          "columns": [
+            "apqr_package"
+          ]
+        },
+        {
+          "table": "apqr_clients",
+          "expression": "status IN ('active', 'archived')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_apqr_clients_code",
+          "unique": false,
+          "table": "apqr_clients",
+          "columns": [
+            "code"
+          ]
+        },
+        {
+          "name": "idx_apqr_clients_name",
+          "unique": false,
+          "table": "apqr_clients",
+          "columns": [
+            "client_name"
+          ]
+        },
+        {
+          "name": "idx_apqr_clients_status",
+          "unique": false,
+          "table": "apqr_clients",
+          "columns": [
+            "status"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apqr_scheduler_entries",
+      "type": "table",
+      "columnCount": 20,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "apqr_id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "apqr_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "client_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "apqr_clients",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "stability_pull_out_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_code",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "review_coverage_start",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "review_coverage_end",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "review_coverage_adjustment_reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "commitment_schedule",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "commitment_schedule_status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Planned'",
+          "check": "commitment_schedule_status IN ('Planned', 'For Client Approval', 'Client Approved')",
+          "references": null
+        },
+        {
+          "name": "schedule_status_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "stability_pull_out_adjustment_reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "is_active",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "archived_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "archive_reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "apqr_scheduler_entries",
+          "expression": "commitment_schedule_status IN ('Planned', 'For Client Approval', 'Client Approved')",
+          "columns": [
+            "commitment_schedule_status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_apqr_scheduler_client",
+          "unique": false,
+          "table": "apqr_scheduler_entries",
+          "columns": [
+            "client_id"
+          ]
+        },
+        {
+          "name": "idx_apqr_scheduler_apqr_id",
+          "unique": false,
+          "table": "apqr_scheduler_entries",
+          "columns": [
+            "apqr_id"
+          ]
+        },
+        {
+          "name": "idx_apqr_scheduler_active",
+          "unique": false,
+          "table": "apqr_scheduler_entries",
+          "columns": [
+            "is_active"
+          ]
+        },
+        {
+          "name": "idx_apqr_scheduler_commitment",
+          "unique": false,
+          "table": "apqr_scheduler_entries",
+          "columns": [
+            "commitment_schedule"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apqr_records",
+      "type": "table",
+      "columnCount": 27,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "scheduler_entry_id",
+        "apr_reference_number"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "scheduler_entry_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "apqr_scheduler_entries",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "department",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "stability_tabulation_status",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "stability_tabulation_status IS NULL OR stability_tabulation_status IN (\n                                          'No Ongoing Stability', 'Not Sent', 'Sent'\n                                        )",
+          "references": null
+        },
+        {
+          "name": "stability_tabulation_status_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "no_ongoing_stability_justification",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "billing_reference_number",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "apqr_report_status",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "apqr_report_status IS NULL OR apqr_report_status IN (\n                                          'Draft Sent', 'For Client Approval', 'Client Approved'\n                                        )",
+          "references": null
+        },
+        {
+          "name": "sent_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "date_sent",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "apr_reference_number",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "number_of_batches",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "zero_batch_explanation",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "date_client_signed",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "final_apqr_delivery_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "delivery_classification",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "delivery_classification IS NULL OR delivery_classification IN (\n                                          'Delivered On Time', 'Delivered Overdue', 'Currently Overdue and Undelivered'\n                                        )",
+          "references": null
+        },
+        {
+          "name": "days_early_or_overdue",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "delay_category",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "delay_reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "delay_reason_change_note",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "expected_final_delivery_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "remarks",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "next_follow_up_due_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "record_status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'active'",
+          "check": "record_status IN ('active', 'archived')",
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "apqr_records",
+          "expression": "stability_tabulation_status IS NULL OR stability_tabulation_status IN (\n                                          'No Ongoing Stability', 'Not Sent', 'Sent'\n                                        )",
+          "columns": [
+            "stability_tabulation_status"
+          ]
+        },
+        {
+          "table": "apqr_records",
+          "expression": "apqr_report_status IS NULL OR apqr_report_status IN (\n                                          'Draft Sent', 'For Client Approval', 'Client Approved'\n                                        )",
+          "columns": [
+            "apqr_report_status"
+          ]
+        },
+        {
+          "table": "apqr_records",
+          "expression": "delivery_classification IS NULL OR delivery_classification IN (\n                                          'Delivered On Time', 'Delivered Overdue', 'Currently Overdue and Undelivered'\n                                        )",
+          "columns": [
+            "delivery_classification"
+          ]
+        },
+        {
+          "table": "apqr_records",
+          "expression": "record_status IN ('active', 'archived')",
+          "columns": [
+            "record_status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_apqr_records_scheduler",
+          "unique": false,
+          "table": "apqr_records",
+          "columns": [
+            "scheduler_entry_id"
+          ]
+        },
+        {
+          "name": "idx_apqr_records_apr_ref",
+          "unique": false,
+          "table": "apqr_records",
+          "columns": [
+            "apr_reference_number"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apqr_follow_ups",
+      "type": "table",
+      "columnCount": 6,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "record_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "apqr_records",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "follow_up_date",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "follow_up_remarks",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "recorded_by",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "recorded_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_apqr_follow_ups_record",
+          "unique": false,
+          "table": "apqr_follow_ups",
+          "columns": [
+            "record_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apqr_audit_events",
+      "type": "table",
+      "columnCount": 10,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "entity_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "entity_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "field_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "old_value",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "new_value",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "action_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "performed_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "performed_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_apqr_audit_entity",
+          "unique": false,
+          "table": "apqr_audit_events",
+          "columns": [
+            "entity_type",
+            "entity_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apqr_id_sequences",
+      "type": "table",
+      "columnCount": 2,
+      "primaryKeys": [
+        "year"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "year",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "last_number",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": []
     }
   ],
   "edges": [
@@ -4777,6 +5803,48 @@
       },
       "onDelete": null,
       "onUpdate": null
+    },
+    {
+      "id": "apqr_scheduler_entries.client_id->apqr_clients.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "apqr_scheduler_entries",
+        "column": "client_id"
+      },
+      "to": {
+        "table": "apqr_clients",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "apqr_records.scheduler_entry_id->apqr_scheduler_entries.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "apqr_records",
+        "column": "scheduler_entry_id"
+      },
+      "to": {
+        "table": "apqr_scheduler_entries",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "apqr_follow_ups.record_id->apqr_records.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "apqr_follow_ups",
+        "column": "record_id"
+      },
+      "to": {
+        "table": "apqr_records",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
     }
   ],
   "indexes": [
@@ -4909,6 +5977,95 @@
       "columns": [
         "document_id",
         "created_at"
+      ]
+    },
+    {
+      "name": "idx_apqr_clients_code",
+      "unique": false,
+      "table": "apqr_clients",
+      "columns": [
+        "code"
+      ]
+    },
+    {
+      "name": "idx_apqr_clients_name",
+      "unique": false,
+      "table": "apqr_clients",
+      "columns": [
+        "client_name"
+      ]
+    },
+    {
+      "name": "idx_apqr_clients_status",
+      "unique": false,
+      "table": "apqr_clients",
+      "columns": [
+        "status"
+      ]
+    },
+    {
+      "name": "idx_apqr_scheduler_client",
+      "unique": false,
+      "table": "apqr_scheduler_entries",
+      "columns": [
+        "client_id"
+      ]
+    },
+    {
+      "name": "idx_apqr_scheduler_apqr_id",
+      "unique": false,
+      "table": "apqr_scheduler_entries",
+      "columns": [
+        "apqr_id"
+      ]
+    },
+    {
+      "name": "idx_apqr_scheduler_active",
+      "unique": false,
+      "table": "apqr_scheduler_entries",
+      "columns": [
+        "is_active"
+      ]
+    },
+    {
+      "name": "idx_apqr_scheduler_commitment",
+      "unique": false,
+      "table": "apqr_scheduler_entries",
+      "columns": [
+        "commitment_schedule"
+      ]
+    },
+    {
+      "name": "idx_apqr_records_scheduler",
+      "unique": false,
+      "table": "apqr_records",
+      "columns": [
+        "scheduler_entry_id"
+      ]
+    },
+    {
+      "name": "idx_apqr_records_apr_ref",
+      "unique": false,
+      "table": "apqr_records",
+      "columns": [
+        "apr_reference_number"
+      ]
+    },
+    {
+      "name": "idx_apqr_follow_ups_record",
+      "unique": false,
+      "table": "apqr_follow_ups",
+      "columns": [
+        "record_id"
+      ]
+    },
+    {
+      "name": "idx_apqr_audit_entity",
+      "unique": false,
+      "table": "apqr_audit_events",
+      "columns": [
+        "entity_type",
+        "entity_id"
       ]
     }
   ]

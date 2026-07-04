@@ -1,8 +1,8 @@
 import { type DragEvent, type ReactElement, type SVGProps } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 
 import type { SidebarSubmenuItem } from '../../config/sidebarMenus'
-import { isSidebarItemActive, submenuHref } from '../../config/sidebarMenus'
+import { submenuHref, submenuNavLinkEnd } from '../../config/sidebarMenus'
 
 type IconProps = SVGProps<SVGSVGElement>
 
@@ -43,8 +43,6 @@ export function SidebarNavGroup({
   onDragOver?: (event: DragEvent<HTMLDivElement>) => void
   onDrop?: (event: DragEvent<HTMLDivElement>) => void
 }) {
-  const location = useLocation()
-
   const groupClass = [
     'sidebar-nav-group',
     isOpen ? 'open' : '',
@@ -76,13 +74,14 @@ export function SidebarNavGroup({
         <div className="sidebar-nav-group-items">
           {items.map((item) => {
             const href = submenuHref(item)
-            const isActive = isSidebarItemActive(item, location.pathname, location.hash)
             return (
               <NavLink
                 key={item.id}
                 to={href}
-                end={item.path === '/'}
-                className={isActive ? 'sidebar-nav-subitem active' : 'sidebar-nav-subitem'}
+                end={submenuNavLinkEnd(item, items)}
+                className={({ isActive }) =>
+                  isActive ? 'sidebar-nav-subitem active' : 'sidebar-nav-subitem'
+                }
                 onClick={onNavigate}
               >
                 <span>{item.label}</span>

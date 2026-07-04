@@ -9,6 +9,16 @@ export function submenuHref(item: SidebarSubmenuItem): string {
   return item.hash ? `${item.path}#${item.hash}` : item.path
 }
 
+export function submenuNavLinkEnd(
+  item: SidebarSubmenuItem,
+  siblings: SidebarSubmenuItem[],
+): boolean {
+  if (item.path === '/') return true
+  return siblings.some(
+    (other) => other.id !== item.id && other.path.startsWith(`${item.path}/`),
+  )
+}
+
 export function isSidebarItemActive(
   item: SidebarSubmenuItem,
   pathname: string,

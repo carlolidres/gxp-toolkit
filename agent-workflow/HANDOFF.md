@@ -1,18 +1,58 @@
 # Current Handoff
 
 Last Updated: `2026-07-04`
-Version: `v25`
+Version: `v31`
 Branch: `main` / `master`
-Commit: `(uncommitted — eDoc Phase 4 uses disposable staging test accounts)`
-Deployment: `PENDING` — eDoc staging backend applied; frontend deploy not run this session
+Commit: `(uncommitted — APQR seed data cleared)`
+Deployment: `PENDING` — APQR tables empty on linked Supabase; frontend deploy not run
 
 ## Current Status
 
-**eDoc rollout — Phase 1–3 complete. Phase 4 uses disposable `@example.test` accounts only (no real users for smoke/Playwright).**
+**APQR fixture data cleared** — clients, scheduler entries, records, follow-ups, audit events, and ID sequences removed from seed files, mock JSON, and linked Supabase. Menu permissions unchanged.
 
-Real-user pilot seed (`seed_edoc_pilot.sql`) is deprecated. Use `docs/edoc/STAGING_TEST_ACCOUNTS.md`.
+**APQR Client Registry + Database UI refreshed — stacked forms, summary cards, table hierarchy, filter/count pills.**
 
-Prior: VRMS/VMP stable; Computerized Systems VMP dropdown fixes (v22).
+Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database, APQR Form, **Audit Trail**.
+
+## APQR Module
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Dashboard chart layout | `PASSED` | Delivery Trend stacked above Performance; 6px stack gap; reference-style charts + summary footers |
+| Dashboard KPI cards | `PASSED` | Container-query responsive grid, vertical card layout, trend pills |
+| Dashboard Upcoming Actions | `PASSED` | Fixed height, scrollable list, tone-accent cards |
+| Dashboard Triage Table | `PASSED` | Single-line toolbar, pagination, sticky header, drag-resize columns (`localStorage`) |
+| APQR Form sample UI | `PASSED` | Lookup + record status, client/product cards, 5-col report grid, searchable Sent By combobox with saved suggestions, delay/overdue alerts, remarks counter, follow-up CRUD |
+| APQR Database sample UI | `PASSED` | Summary card hierarchy, record count pill, filter/columns icons, link tiers, compact status pills, empty states |
+| Audit Trail submenu | `PASSED` | `/apqr/audit` — searchable activity log, value diff styling, count pill, empty states |
+| Audit writes | `PASSED` | Client, scheduler, record, follow-up, archive actions |
+| Monthly delivery charts | `PASSED` | Line trend + on-time/overdue stacked bar chart on Dashboard |
+| Dashboard sample UI | `PASSED` | KPI board, chart stack, upcoming actions scroll, triage table pagination/toolbar |
+| Client Registry sample UI | `PASSED` | Stacked form grid, searchable Account Manager combobox, structured QA/Technical/Regulatory contact cards (Name, Title, Email, +/-), mode badge, count/filter pills |
+| APQR Scheduler sample UI | `PASSED` | Searchable client picker, summary card, info banner, inline add/edit rows, status badges, pagination, export |
+| Follow-up reminders | `PASSED` | 7-day cycle; due list on Dashboard; Add Follow-Up on Form |
+| Archive with reason | `PASSED` | Saved scheduler rows require reason; soft-archive + audit |
+| Delay category prompts | `PASSED` | Required when Final Delivery after Commitment |
+| Supabase migrations | `PASSED` | `20260704120000`, `20260704130000` pushed |
+| Supabase seed | `CLEARED` | 0 clients, 0 scheduler, 0 records — regenerate with `npm run apqr:seed` then `npm run apqr:seed-supabase` |
+| Menu permissions | `PASSED` | `npm run apqr:seed-permissions` |
+
+## Verification
+
+| Check | Status | Result |
+|---|---|---|
+| `npm run build` | `PASSED` | 2026-07-04 (APQR seed cleared) |
+| `npm run test` | `MIXED` | 85/87 — 2 unrelated timeouts (`greeting`, `apqrDelivery`); `apqrDashboard` 5/5 |
+| `supabase db push` | `PASSED` | APQR migrations applied |
+| `npm run apqr:seed-supabase` | `PASSED` | Remote APQR data cleared (DELETE-only script) |
+| `npm run apqr:seed-permissions` | `PASSED` | Admin + edoc-creator APQR menus |
+
+## Next Action
+
+1. Browser smoke on `/apqr/database` (summary cards, filters, columns, list/grid, pagination).
+2. Browser smoke on `/apqr/registry` (form layout, filters, pagination, edit flow).
+2. Re-run `npm run test` if greeting/apqrDelivery timeouts recur.
+3. Deploy frontend when ready.
 
 ## eDoc Rollout Progress
 
@@ -29,6 +69,7 @@ Prior: VRMS/VMP stable; Computerized Systems VMP dropdown fixes (v22).
 
 ## Recently Completed (this session)
 
+- APQR seed cleared: `database/sqlite/apqr_seed.sql`, `supabase/scripts/seed_apqr_data.sql`, `src/data/apqrSeedData.json`; linked Supabase wiped via `npm run apqr:seed-supabase`
 - `database/sqlite/edoc_schema.sql` — 19 eDoc tables mirroring Supabase migration
 - `database/sqlite/edoc_seed.sql` — pilot org/document/route fixtures
 - `scripts/verify-edoc-sqlite.mjs` + `npm run verify:edoc-sqlite`

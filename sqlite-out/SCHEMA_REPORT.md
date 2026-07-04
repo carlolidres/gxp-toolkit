@@ -1,10 +1,10 @@
 # SQLite Schema Report — GxP Toolkit (2026-07-04)
 
 ## Summary
-- Source: `database/sqlite/schema.sql + database/sqlite/edoc_schema.sql`
+- Source: `database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql`
 - Schema version: **unknown**
-- Tables: **24** · Foreign keys: **71** · Indexes: **15**
-- Generated: 2026-07-04T07:05:31.801Z
+- Tables: **30** · Foreign keys: **74** · Indexes: **26**
+- Generated: 2026-07-04T09:23:54.908Z
 
 ## Agent Usage
 
@@ -506,6 +506,151 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `setting_value` | TEXT | NO |  |  | '{}' |  |  |
 | `updated_at` | TEXT | NO |  |  |  |  |  |
 
+### `apqr_clients`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `code` | TEXT | NO |  | YES |  |  |  |
+| `account_manager` | TEXT | NO |  |  |  |  |  |
+| `client_name` | TEXT | NO |  |  |  |  |  |
+| `qa` | TEXT | YES |  |  |  |  |  |
+| `technical` | TEXT | YES |  |  |  |  |  |
+| `regulatory` | TEXT | YES |  |  |  |  |  |
+| `apqr_package` | TEXT | NO |  |  | 'Billable' | `apqr_package IN ('Billable', 'Not Billab…` |  |
+| `status` | TEXT | NO |  |  | 'active' | `status IN ('active', 'archived')` |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+| `created_by` | TEXT | YES |  |  |  |  |  |
+| `updated_by` | TEXT | YES |  |  |  |  |  |
+
+**Indexes:**
+- `idx_apqr_clients_code` (code)
+- `idx_apqr_clients_name` (client_name)
+- `idx_apqr_clients_status` (status)
+
+**CHECK constraints:**
+- `apqr_package IN ('Billable', 'Not Billable')`
+- `status IN ('active', 'archived')`
+
+### `apqr_scheduler_entries`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `apqr_id` | TEXT | NO |  | YES |  |  |  |
+| `client_id` | TEXT | NO |  |  |  |  | `apqr_clients.id` |
+| `stability_pull_out_date` | TEXT | YES |  |  |  |  |  |
+| `product_name` | TEXT | NO |  |  |  |  |  |
+| `product_code` | TEXT | NO |  |  |  |  |  |
+| `review_coverage_start` | TEXT | NO |  |  |  |  |  |
+| `review_coverage_end` | TEXT | NO |  |  |  |  |  |
+| `review_coverage_adjustment_reason` | TEXT | YES |  |  |  |  |  |
+| `commitment_schedule` | TEXT | NO |  |  |  |  |  |
+| `commitment_schedule_status` | TEXT | NO |  |  | 'Planned' | `commitment_schedule_status IN ('Planned'…` |  |
+| `schedule_status_date` | TEXT | YES |  |  |  |  |  |
+| `stability_pull_out_adjustment_reason` | TEXT | YES |  |  |  |  |  |
+| `is_active` | INTEGER | NO |  |  | 1 |  |  |
+| `archived_at` | TEXT | YES |  |  |  |  |  |
+| `archive_reason` | TEXT | YES |  |  |  |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+| `created_by` | TEXT | YES |  |  |  |  |  |
+| `updated_by` | TEXT | YES |  |  |  |  |  |
+
+**Indexes:**
+- `idx_apqr_scheduler_client` (client_id)
+- `idx_apqr_scheduler_apqr_id` (apqr_id)
+- `idx_apqr_scheduler_active` (is_active)
+- `idx_apqr_scheduler_commitment` (commitment_schedule)
+
+**CHECK constraints:**
+- `commitment_schedule_status IN ('Planned', 'For Client Approval', 'Client Approve…`
+
+### `apqr_records`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `scheduler_entry_id` | TEXT | NO |  | YES |  |  | `apqr_scheduler_entries.id` ON DELETE CASCADE |
+| `department` | TEXT | YES |  |  |  |  |  |
+| `stability_tabulation_status` | TEXT | YES |  |  |  | `stability_tabulation_status IS NULL OR s…` |  |
+| `stability_tabulation_status_date` | TEXT | YES |  |  |  |  |  |
+| `no_ongoing_stability_justification` | TEXT | YES |  |  |  |  |  |
+| `billing_reference_number` | TEXT | YES |  |  |  |  |  |
+| `apqr_report_status` | TEXT | YES |  |  |  | `apqr_report_status IS NULL OR apqr_repor…` |  |
+| `sent_by` | TEXT | YES |  |  |  |  |  |
+| `date_sent` | TEXT | YES |  |  |  |  |  |
+| `apr_reference_number` | TEXT | YES |  | YES |  |  |  |
+| `number_of_batches` | INTEGER | YES |  |  |  |  |  |
+| `zero_batch_explanation` | TEXT | YES |  |  |  |  |  |
+| `date_client_signed` | TEXT | YES |  |  |  |  |  |
+| `final_apqr_delivery_date` | TEXT | YES |  |  |  |  |  |
+| `delivery_classification` | TEXT | YES |  |  |  | `delivery_classification IS NULL OR deliv…` |  |
+| `days_early_or_overdue` | INTEGER | YES |  |  |  |  |  |
+| `delay_category` | TEXT | YES |  |  |  |  |  |
+| `delay_reason` | TEXT | YES |  |  |  |  |  |
+| `delay_reason_change_note` | TEXT | YES |  |  |  |  |  |
+| `expected_final_delivery_date` | TEXT | YES |  |  |  |  |  |
+| `remarks` | TEXT | YES |  |  |  |  |  |
+| `next_follow_up_due_date` | TEXT | YES |  |  |  |  |  |
+| `record_status` | TEXT | NO |  |  | 'active' | `record_status IN ('active', 'archived')` |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+| `updated_by` | TEXT | YES |  |  |  |  |  |
+
+**Indexes:**
+- `idx_apqr_records_scheduler` (scheduler_entry_id)
+- `idx_apqr_records_apr_ref` (apr_reference_number)
+
+**CHECK constraints:**
+- `stability_tabulation_status IS NULL OR stability_tabulation_status IN (
+        …`
+- `apqr_report_status IS NULL OR apqr_report_status IN (
+                          …`
+- `delivery_classification IS NULL OR delivery_classification IN (
+                …`
+- `record_status IN ('active', 'archived')`
+
+### `apqr_follow_ups`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `record_id` | TEXT | NO |  |  |  |  | `apqr_records.id` ON DELETE CASCADE |
+| `follow_up_date` | TEXT | NO |  |  |  |  |  |
+| `follow_up_remarks` | TEXT | NO |  |  |  |  |  |
+| `recorded_by` | TEXT | NO |  |  |  |  |  |
+| `recorded_at` | TEXT | NO |  |  |  |  |  |
+
+**Indexes:**
+- `idx_apqr_follow_ups_record` (record_id)
+
+### `apqr_audit_events`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `entity_type` | TEXT | NO |  |  |  |  |  |
+| `entity_id` | TEXT | NO |  |  |  |  |  |
+| `field_name` | TEXT | YES |  |  |  |  |  |
+| `old_value` | TEXT | YES |  |  |  |  |  |
+| `new_value` | TEXT | YES |  |  |  |  |  |
+| `action_type` | TEXT | NO |  |  |  |  |  |
+| `reason` | TEXT | YES |  |  |  |  |  |
+| `performed_by` | TEXT | YES |  |  |  |  |  |
+| `performed_at` | TEXT | NO |  |  |  |  |  |
+
+**Indexes:**
+- `idx_apqr_audit_entity` (entity_type, entity_id)
+
+### `apqr_id_sequences`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `year` | INTEGER | NO | YES |  |  |  |  |
+| `last_number` | INTEGER | NO |  |  | 0 |  |  |
+
 ## Relationships
 
 - `app_feedback_messages.sender_profile_id` → `profiles.id` (ON DELETE CASCADE)
@@ -579,6 +724,9 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 - `edoc_file_access_logs.file_id` → `edoc_document_files.id`
 - `edoc_file_access_logs.profile_id` → `profiles.id`
 - `edoc_settings.organization_id` → `edoc_organizations.id`
+- `apqr_scheduler_entries.client_id` → `apqr_clients.id`
+- `apqr_records.scheduler_entry_id` → `apqr_scheduler_entries.id` (ON DELETE CASCADE)
+- `apqr_follow_ups.record_id` → `apqr_records.id` (ON DELETE CASCADE)
 
 ## All Indexes
 
@@ -599,6 +747,17 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `idx_edoc_routes_document` | `edoc_document_routes` | document_id, status |  |
 | `idx_edoc_assignments_inbox` | `edoc_route_step_assignees` | assignee_id, status |  |
 | `idx_edoc_audit_document` | `edoc_audit_events` | document_id, created_at |  |
+| `idx_apqr_clients_code` | `apqr_clients` | code |  |
+| `idx_apqr_clients_name` | `apqr_clients` | client_name |  |
+| `idx_apqr_clients_status` | `apqr_clients` | status |  |
+| `idx_apqr_scheduler_client` | `apqr_scheduler_entries` | client_id |  |
+| `idx_apqr_scheduler_apqr_id` | `apqr_scheduler_entries` | apqr_id |  |
+| `idx_apqr_scheduler_active` | `apqr_scheduler_entries` | is_active |  |
+| `idx_apqr_scheduler_commitment` | `apqr_scheduler_entries` | commitment_schedule |  |
+| `idx_apqr_records_scheduler` | `apqr_records` | scheduler_entry_id |  |
+| `idx_apqr_records_apr_ref` | `apqr_records` | apr_reference_number |  |
+| `idx_apqr_follow_ups_record` | `apqr_follow_ups` | record_id |  |
+| `idx_apqr_audit_entity` | `apqr_audit_events` | entity_type, entity_id |  |
 
 ## Entity Relationship Diagram
 
@@ -675,6 +834,9 @@ erDiagram
   edoc_document_files ||--o{ edoc_file_access_logs : "file_id"
   profiles ||--o{ edoc_file_access_logs : "profile_id"
   edoc_organizations ||--o{ edoc_settings : "organization_id"
+  apqr_clients ||--o{ apqr_scheduler_entries : "client_id"
+  apqr_scheduler_entries ||--o{ apqr_records : "scheduler_entry_id"
+  apqr_records ||--o{ apqr_follow_ups : "record_id"
   profiles {
     text id PK
     text auth_user_id
@@ -997,5 +1159,95 @@ erDiagram
     text setting_key
     text setting_value
     text updated_at
+  }
+  apqr_clients {
+    text id PK
+    text code UK
+    text account_manager
+    text client_name
+    text qa
+    text technical
+    text regulatory
+    text apqr_package
+    text status
+    text created_at
+    text updated_at
+    text created_by
+    text updated_by
+  }
+  apqr_scheduler_entries {
+    text id PK
+    text apqr_id UK
+    text client_id FK
+    text stability_pull_out_date
+    text product_name
+    text product_code
+    text review_coverage_start
+    text review_coverage_end
+    text review_coverage_adjustment_reason
+    text commitment_schedule
+    text commitment_schedule_status
+    text schedule_status_date
+    text stability_pull_out_adjustment_reason
+    integer is_active
+    text archived_at
+    text archive_reason
+    text created_at
+    text updated_at
+    text created_by
+    text updated_by
+  }
+  apqr_records {
+    text id PK
+    text scheduler_entry_id UK FK
+    text department
+    text stability_tabulation_status
+    text stability_tabulation_status_date
+    text no_ongoing_stability_justification
+    text billing_reference_number
+    text apqr_report_status
+    text sent_by
+    text date_sent
+    text apr_reference_number UK
+    integer number_of_batches
+    text zero_batch_explanation
+    text date_client_signed
+    text final_apqr_delivery_date
+    text delivery_classification
+    integer days_early_or_overdue
+    text delay_category
+    text delay_reason
+    text delay_reason_change_note
+    text expected_final_delivery_date
+    text remarks
+    text next_follow_up_due_date
+    text record_status
+    text created_at
+    text updated_at
+    text updated_by
+  }
+  apqr_follow_ups {
+    text id PK
+    text record_id FK
+    text follow_up_date
+    text follow_up_remarks
+    text recorded_by
+    text recorded_at
+  }
+  apqr_audit_events {
+    text id PK
+    text entity_type
+    text entity_id
+    text field_name
+    text old_value
+    text new_value
+    text action_type
+    text reason
+    text performed_by
+    text performed_at
+  }
+  apqr_id_sequences {
+    integer year PK
+    integer last_number
   }
 ```

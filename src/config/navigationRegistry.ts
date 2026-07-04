@@ -5,6 +5,7 @@ export const APP_TAGLINE = 'Quality systems kit'
 export const VRMS_MENU_TOOLTIP = 'Validation Routing Monitoring System'
 export const VMP_MENU_TOOLTIP = 'Validation Master Plan'
 export const EDOC_MENU_TOOLTIP = 'Electronic document routing and signature'
+export const APQR_MENU_TOOLTIP = 'Annual Product Quality Review monitoring and scheduling'
 
 export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'approve' | 'export'
 
@@ -59,6 +60,12 @@ const MENU_ACTIONS: Record<string, PermissionAction[]> = {
   'edoc-reports': ['view', 'export'],
   'edoc-audit': ['view', 'export'],
   'edoc-admin': ['view', 'create', 'edit', 'delete', 'export'],
+  'apqr-dashboard': ['view', 'export'],
+  'apqr-registry': ['view', 'create', 'edit', 'delete', 'export'],
+  'apqr-scheduler': ['view', 'create', 'edit', 'delete', 'export'],
+  'apqr-database': ['view', 'export'],
+  'apqr-form': ['view', 'create', 'edit'],
+  'apqr-audit': ['view', 'export'],
   'user-management': ['view', 'create', 'edit', 'delete'],
 }
 
@@ -122,6 +129,19 @@ export const navigationRegistry: NavGroupDefinition[] = [
     ],
   },
   {
+    id: 'apqr',
+    label: 'APQR',
+    tooltip: APQR_MENU_TOOLTIP,
+    items: [
+      menu('apqr-dashboard', 'Dashboard', '/apqr'),
+      menu('apqr-registry', 'Client Registry', '/apqr/registry'),
+      menu('apqr-scheduler', 'APQR Scheduler', '/apqr/scheduler'),
+      menu('apqr-database', 'APQR Database', '/apqr/database'),
+      menu('apqr-form', 'APQR Form', '/apqr/form'),
+      menu('apqr-audit', 'Audit Trail', '/apqr/audit'),
+    ],
+  },
+  {
     id: 'admin',
     label: 'Administration',
     items: [menu('user-management', 'User Management', '/admin/users')],
@@ -174,6 +194,12 @@ export const vrmsRouteLabels: Record<string, string> = {
   '/edoc/reports': 'Reports',
   '/edoc/audit': 'Audit Trail',
   '/edoc/admin': 'Administration',
+  '/apqr': 'Dashboard',
+  '/apqr/registry': 'Client Registry',
+  '/apqr/scheduler': 'APQR Scheduler',
+  '/apqr/database': 'APQR Database',
+  '/apqr/form': 'APQR Form',
+  '/apqr/audit': 'Audit Trail',
   '/admin/users': 'User Management',
   '/login': 'Sign in',
   '/signup': 'Sign up',
