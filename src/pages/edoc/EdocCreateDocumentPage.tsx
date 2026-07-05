@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 
 import { EdocError, EdocPage } from '../../components/edoc/EdocComponents'
+import { DateInput } from '../../components/forms/FormControls'
 import { edocFieldTypeLabels, fieldTypesForAction } from '../../features/edoc/fieldRules'
 import { edocService } from '../../features/edoc/edocService'
 import { hasPdfSignature, sha256Hex, validateEdocPdfFile } from '../../features/edoc/fileValidation'
@@ -209,7 +210,7 @@ export function EdocCreateDocumentPage() {
             <label>Priority<select value={metadata.priority} onChange={(event) => updateMetadata('priority', event.target.value as EdocPriority)}>
               <option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option>
             </select></label>
-            <label>Due date<input type="date" value={metadata.dueAt} onChange={(event) => updateMetadata('dueAt', event.target.value)} /></label>
+            <label>Due date<DateInput value={metadata.dueAt} onChange={(event) => updateMetadata('dueAt', event.target.value)} /></label>
             <label>Retention class<input value={metadata.retentionClass} onChange={(event) => updateMetadata('retentionClass', event.target.value)} /></label>
             <label className="span-2">Description<textarea value={metadata.description} onChange={(event) => updateMetadata('description', event.target.value)} /></label>
             <div className="span-2 edoc-tag-row">
@@ -250,7 +251,7 @@ export function EdocCreateDocumentPage() {
                   <option value="all">All</option><option value="any">Any</option><option value="majority">Majority</option><option value="minimum_count">Minimum count</option>
                 </select></label>
                 <label>Minimum count<input type="number" min="1" value={step.minimumCount ?? ''} onChange={(event) => updateRouteStep(step.id, { minimumCount: event.target.value ? Number(event.target.value) : null })} /></label>
-                <label>Due date<input type="date" value={step.dueAt} onChange={(event) => updateRouteStep(step.id, { dueAt: event.target.value })} /></label>
+                <label>Due date<DateInput value={step.dueAt} onChange={(event) => updateRouteStep(step.id, { dueAt: event.target.value })} /></label>
                 <label className="edoc-inline-check"><input type="checkbox" checked={step.allowDelegation} onChange={(event) => updateRouteStep(step.id, { allowDelegation: event.target.checked })} /> Allow delegation</label>
                 {steps.length > 1 ? <button className="button" type="button" onClick={() => removeRouteStep(step.id)}>Remove step</button> : null}
               </div>

@@ -25,8 +25,35 @@ export interface ApqrActor {
   email: string
 }
 
+const AUDIT_STORAGE_KEY = 'gxp-apqr-audit-events'
+const MAX_AUDIT_EVENTS = 500
+
 let actor: ApqrActor = { name: 'System', email: 'system@local' }
-const events: ApqrAuditEvent[] = []
+
+function readStoredEvents(): ApqrAuditEvent[] {
+  try {
+    const raw = localStorage.getItem(AUDIT_STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as ApqrAuditEvent[]) : []
+  } catch {
+    return []
+  }
+}
+
+function writeStoredEvents(next: ApqrAuditEvent[]) {
+  localStorage.setItem(AUDIT_STORAGE_KEY, JSON.stringify(next.slice(0, MAX_AUDIT_EVENTS)))
+}
+
+function nextAuditSeq(existing: ApqrAuditEvent[]): number {
+  return existing.reduce((max, event) => {
+    const match = /^apqr-audit-(\d+)$/.exec(event.id)
+    return match ? Math.max(max, Number(match[1])) : max
+  }, 0)
+}
+
+const events: ApqrAuditEvent[] = readStoredEvents()
+let auditSeq = nextAuditSeq(events)
 
 export function setApqrActor(next: ApqrActor) {
   actor = next
@@ -67,7 +94,40 @@ export function buildFieldDescription(
   return `${actor.name} changed ${fieldLabel} on ${entityLabel} from ${displayValue(oldValue)} to ${displayValue(newValue)}.`
 }
 
-let auditSeq = 0
+function auditInsertRow(entry: ApqrAuditEvent, performedBy: string | null) {
+  return {
+    id: entry.id,
+    entity_type: entry.entity_type,
+    entity_id: entry.entity_id,
+    entity_label: entry.entity_label,
+    field_name: entry.field_name,
+    old_value: entry.old_value,
+    new_value: entry.new_value,
+    action_type: entry.action_type,
+    description: entry.description,
+    reason: entry.reason,
+    performed_by: performedBy,
+    performed_by_name: entry.performed_by_name,
+    performed_at: entry.performed_at,
+  }
+}
+
+async function persistAuditToSupabase(entry: ApqrAuditEvent): Promise<{ ok: boolean; error: string | null }> {
+  if (!isSupabaseConfigured()) return { ok: false, error: 'supabase-not-configured' }
+
+  const sb = getSupabaseClient()
+  if (!sb) return { ok: false, error: 'supabase-client-null' }
+
+  let performedBy = entry.performed_by
+  let { error } = await sb.from('apqr_audit_events').insert(auditInsertRow(entry, performedBy))
+
+  if (error?.code === '23503' && performedBy) {
+    performedBy = null
+    ;({ error } = await sb.from('apqr_audit_events').insert(auditInsertRow(entry, performedBy)))
+  }
+
+  return { ok: !error, error: error?.message ?? null }
+}
 
 export async function logApqrAudit(input: {
   entity_type: string
@@ -97,27 +157,9 @@ export async function logApqrAudit(input: {
     performed_at: new Date().toISOString(),
   }
   events.unshift(entry)
+  writeStoredEvents(events)
 
-  if (isSupabaseConfigured()) {
-    const sb = getSupabaseClient()
-    if (sb) {
-      await sb.from('apqr_audit_events').insert({
-        id: entry.id,
-        entity_type: entry.entity_type,
-        entity_id: entry.entity_id,
-        entity_label: entry.entity_label,
-        field_name: entry.field_name,
-        old_value: entry.old_value,
-        new_value: entry.new_value,
-        action_type: entry.action_type,
-        description: entry.description,
-        reason: entry.reason,
-        performed_by: entry.performed_by,
-        performed_by_name: entry.performed_by_name,
-        performed_at: entry.performed_at,
-      })
-    }
-  }
+  await persistAuditToSupabase(entry)
 
   return entry
 }
@@ -149,6 +191,8 @@ export async function auditFieldChanges<T extends object>(
 }
 
 export async function listApqrAuditEvents(): Promise<ApqrAuditEvent[]> {
+  const storedEvents = readStoredEvents()
+
   if (isSupabaseConfigured()) {
     const sb = getSupabaseClient()
     if (sb) {
@@ -156,11 +200,17 @@ export async function listApqrAuditEvents(): Promise<ApqrAuditEvent[]> {
         .from('apqr_audit_events')
         .select('*')
         .order('performed_at', { ascending: false })
-        .limit(500)
+        .limit(MAX_AUDIT_EVENTS)
+
       if (!error && data?.length) return data as ApqrAuditEvent[]
     }
   }
-  return [...events]
+
+  if (storedEvents.length) {
+    events.splice(0, events.length, ...storedEvents)
+  }
+
+  return storedEvents.length ? storedEvents : [...events]
 }
 
 export function formatAuditTimestamp(iso: string): string {

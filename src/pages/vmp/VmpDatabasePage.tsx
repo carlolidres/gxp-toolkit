@@ -8,6 +8,7 @@ import { VrmsPage } from '../../components/vrms/VrmsPage'
 import { useVmpApp } from '../../context/VmpAppContext'
 import { useVrmsApp } from '../../context/VrmsAppContext'
 import { useMenuPermission } from '../../hooks/usePermissions'
+import { formatAppDate } from '../../utils/dateUtils'
 import {
   applyVmpMasterlistFilters,
   criticalities,
@@ -315,6 +316,10 @@ export function VmpDatabasePage() {
       )
     }
     if (key === 'validationStatus') return <StatusPill status={record.validationStatus} />
+    if (key === 'nextDueDate') {
+      const formatted = formatAppDate(record.nextDueDate, '')
+      return formatted || <span className="vmp-empty-value">—</span>
+    }
     const value = String(record[key] ?? '')
     return value || <span className="vmp-empty-value">—</span>
   }

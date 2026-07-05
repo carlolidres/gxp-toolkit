@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { ApqrSearchableCombobox } from '../../components/apqr/ApqrSearchableCombobox'
+import { AppDateInput } from '../../components/forms/AppDateInput'
 import {
   ApqrCommitmentStatusBadge,
   ApqrError,
@@ -90,6 +91,7 @@ export function ApqrFormPage() {
   const showDelayPanel = showDelayPrompt || delayPanelOpen || Boolean(delayCategory || delayReason)
 
   const recordIsActive = data?.record?.record_status === 'active' && data?.sched?.is_active !== false
+  const canSetDateSigned = canEdit && reportStatus === 'Client Approved'
 
   const departmentOptions = useMemo(() => {
     const names = new Set<string>(DEPARTMENTS)
@@ -193,7 +195,7 @@ export function ApqrFormPage() {
         apr_reference_number: aprRef || null,
         number_of_batches: batches === '' ? null : Number(batches),
         zero_batch_explanation: zeroBatchRemark || null,
-        date_client_signed: dateSigned || null,
+        date_client_signed: reportStatus === 'Client Approved' ? dateSigned || null : null,
         final_apqr_delivery_date: finalDelivery || null,
         billing_reference_number: billingRef || null,
         delay_category: delayCategory || null,
@@ -285,7 +287,12 @@ export function ApqrFormPage() {
             <input
               id="apqr-form-lookup-id"
               type="search"
-              placeholder="APQR-YYYY-xxxx"
+              placeholder="4 chars, e.g. aB12"
+              title="4-character APQR ID (mixed upper and lower case letters and numbers)"
+              inputMode="text"
+              autoComplete="off"
+              spellCheck={false}
+              maxLength={16}
               value={lookup}
               onChange={(e) => setLookup(e.target.value)}
               onKeyDown={(e) => {
@@ -433,7 +440,11 @@ export function ApqrFormPage() {
                 <select
                   value={reportStatus}
                   disabled={!canEdit}
-                  onChange={(e) => setReportStatus(e.target.value as ApqrReportStatus)}
+                  onChange={(e) => {
+                    const next = e.target.value as ApqrReportStatus | ''
+                    setReportStatus(next)
+                    if (next !== 'Client Approved') setDateSigned('')
+                  }}
                 >
                   <option value="">Select…</option>
                   {REPORT_STATUSES.map((s) => (
@@ -455,7 +466,7 @@ export function ApqrFormPage() {
                 />
               </Field>
               <Field label="Date Sent" required>
-                <input type="date" value={dateSent} disabled={!canEdit} onChange={(e) => setDateSent(e.target.value)} />
+                <AppDateInput value={dateSent} disabled={!canEdit} onChange={(e) => setDateSent(e.target.value)} />
               </Field>
               <div className="apqr-form-action-chip apqr-form-followup-chip">
                 <span className="apqr-field-label">Follow-Up History</span>
@@ -481,10 +492,14 @@ export function ApqrFormPage() {
                 <input type="number" min={0} value={batches} disabled={!canEdit} onChange={(e) => setBatches(e.target.value)} />
               </Field>
               <Field label="Date Client Signed">
-                <input type="date" value={dateSigned} disabled={!canEdit} onChange={(e) => setDateSigned(e.target.value)} />
+                <AppDateInput
+                  value={dateSigned}
+                  disabled={!canSetDateSigned}
+                  onChange={(e) => setDateSigned(e.target.value)}
+                />
               </Field>
               <Field label="Final APQR Delivery Date">
-                <input type="date" value={finalDelivery} disabled={!canEdit} onChange={(e) => setFinalDelivery(e.target.value)} />
+                <AppDateInput value={finalDelivery} disabled={!canEdit} onChange={(e) => setFinalDelivery(e.target.value)} />
               </Field>
               <Field label="Billing Reference Number" required={data.client.apqr_package === 'Billable'}>
                 <input
@@ -587,8 +602,7 @@ export function ApqrFormPage() {
                   </p>
                   <div className="apqr-form-report-grid apqr-form-alert-grid">
                     <Field label="Expected Final Delivery Date" required>
-                      <input
-                        type="date"
+                      <AppDateInput
                         value={expectedDelivery}
                         disabled={!canEdit}
                         onChange={(e) => setExpectedDelivery(e.target.value)}
@@ -677,9 +691,8 @@ export function ApqrFormPage() {
                 <div className="apqr-form-followup-compose__body">
                   <div className="apqr-form-followup-grid">
                     <Field label="Follow-up date" required>
-                      <input
+                      <AppDateInput
                         id="follow-up-date"
-                        type="date"
                         value={followUpDate}
                         onChange={(e) => setFollowUpDate(e.target.value)}
                         required

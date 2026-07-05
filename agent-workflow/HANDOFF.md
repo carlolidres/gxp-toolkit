@@ -23,7 +23,7 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 | Dashboard Upcoming Actions | `PASSED` | Fixed height, scrollable list, tone-accent cards |
 | Dashboard Triage Table | `PASSED` | Single-line toolbar, pagination, sticky header, drag-resize columns (`localStorage`) |
 | APQR Form sample UI | `PASSED` | Lookup + record status, client/product cards, 5-col report grid, searchable Sent By combobox with saved suggestions, delay/overdue alerts, remarks counter, follow-up CRUD |
-| APQR Database sample UI | `PASSED` | Summary card hierarchy, record count pill, filter/columns icons, link tiers, compact status pills, empty states |
+| APQR Database sample UI | `PASSED` | Summary card hierarchy, record count pill, filter/columns icons, link tiers, compact status pills, empty states, sticky freeze-pane header, ~10-row scroll viewport |
 | Audit Trail submenu | `PASSED` | `/apqr/audit` — searchable activity log, value diff styling, count pill, empty states |
 | Audit writes | `PASSED` | Client, scheduler, record, follow-up, archive actions |
 | Monthly delivery charts | `PASSED` | Line trend + on-time/overdue stacked bar chart on Dashboard |
@@ -69,6 +69,7 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 
 ## Recently Completed (this session)
 
+- APQR ID format changed to 4-character mixed-case alphanumeric (e.g. `aB12`); migration `20260705223000_apqr_migrate_legacy_ids.sql` rewrites legacy `APQR-YYYY-xxxx` rows; re-run `npm run apqr:migrate-legacy-ids` if needed
 - APQR seed cleared: `database/sqlite/apqr_seed.sql`, `supabase/scripts/seed_apqr_data.sql`, `src/data/apqrSeedData.json`; linked Supabase wiped via `npm run apqr:seed-supabase`
 - `database/sqlite/edoc_schema.sql` — 19 eDoc tables mirroring Supabase migration
 - `database/sqlite/edoc_seed.sql` — pilot org/document/route fixtures

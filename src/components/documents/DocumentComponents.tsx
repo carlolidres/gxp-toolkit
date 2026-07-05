@@ -4,7 +4,7 @@ import type { DocumentRecord } from '../../types/documents'
 import { daysUntil, formatDate } from '../../utils/dateUtils'
 import { statusTone } from '../../utils/statusUtils'
 import { StatusBadge } from '../data-display/DataTable'
-import { FormField, SelectInput, TextInput } from '../forms/FormControls'
+import { FormField, DateInput, SelectInput, TextInput } from '../forms/FormControls'
 
 export function DocumentStatusBadge({ status }: Pick<DocumentRecord, 'status'>) {
   return <StatusBadge status={status} tone={statusTone(status)} />
@@ -16,7 +16,7 @@ export function DocumentUpload({ onUpload }: { onUpload: (name: string) => void 
 }
 
 export function DocumentMetadataForm() {
-  return <div className="form-grid"><FormField label="Document title"><TextInput defaultValue="Supplier Qualification Procedure" /></FormField><FormField label="Category"><SelectInput defaultValue="SOP"><option>SOP</option><option>Policy</option><option>Form</option><option>Work Instruction</option></SelectInput></FormField><FormField label="Owner"><TextInput defaultValue="Maya Chen" /></FormField><FormField label="Review date"><TextInput type="date" defaultValue="2027-06-13" /></FormField></div>
+  return <div className="form-grid"><FormField label="Document title"><TextInput defaultValue="Supplier Qualification Procedure" /></FormField><FormField label="Category"><SelectInput defaultValue="SOP"><option>SOP</option><option>Policy</option><option>Form</option><option>Work Instruction</option></SelectInput></FormField><FormField label="Owner"><TextInput defaultValue="Maya Chen" /></FormField><FormField label="Review date"><DateInput defaultValue="2027-06-13" /></FormField></div>
 }
 
 export function DocumentPreview({ document }: { document: DocumentRecord }) {

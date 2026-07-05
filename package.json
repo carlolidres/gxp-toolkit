@@ -26,6 +26,7 @@
     "apqr:seed": "node scripts/generate-apqr-seed.mjs",
     "apqr:seed-supabase": "supabase db query --linked -f supabase/scripts/seed_apqr_data.sql",
     "apqr:seed-permissions": "supabase db query --linked -f supabase/scripts/seed_apqr_permissions.sql",
+    "apqr:migrate-legacy-ids": "supabase db query --linked -f supabase/scripts/migrate_apqr_legacy_ids.sql",
     "supabase:seed:vrms": "node scripts/generate-vrms-supabase-seed.mjs",
     "workflow:dev": "python workflow-app/server.py",
     "workflow:validate": "python workflow-app/scripts/validate_schema.py",

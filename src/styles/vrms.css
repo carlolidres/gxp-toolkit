@@ -999,6 +999,7 @@
 .vmp-field input,
 .vmp-field select,
 .vmp-field textarea,
+.vmp-field .app-date-input,
 .vmp-rows-select select {
   width: 100%;
   min-height: 39px;
@@ -1007,6 +1008,16 @@
   border-radius: 7px;
   background: var(--surface);
   color: var(--app-text);
+}
+
+.vmp-field .app-date-input {
+  padding: 0;
+}
+
+.vmp-field .app-date-input-native,
+.vmp-field .app-date-input-display {
+  min-height: 39px;
+  padding: 8px 36px 8px 10px;
 }
 
 .vmp-field textarea {

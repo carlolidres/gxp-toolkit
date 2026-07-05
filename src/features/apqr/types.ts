@@ -1,6 +1,10 @@
 export type ApqrPackage = 'Billable' | 'Not Billable'
 export type ClientStatus = 'active' | 'archived'
 export type CommitmentScheduleStatus = 'Planned' | 'For Client Approval' | 'Client Approved'
+export type ApqrProductStatus = 'Active' | 'End-of-Life'
+
+/** UI label for commitment schedule status (maps to CommitmentScheduleStatus in persistence). */
+export type ApqrScheduleStatusLabel = 'Drafting' | 'Client Approval' | 'Client Approved'
 export type StabilityTabulationStatus = 'No Ongoing Stability' | 'Not Sent' | 'Sent'
 export type ApqrReportStatus = 'Draft Sent' | 'For Client Approval' | 'Client Approved'
 export type DeliveryClassification =
@@ -43,6 +47,11 @@ export interface ApqrSchedulerEntry {
   commitment_schedule_status: CommitmentScheduleStatus
   schedule_status_date: string | null
   stability_pull_out_adjustment_reason: string | null
+  product_status?: ApqrProductStatus
+  scheduler_remarks?: string | null
+  apqr_generation_date?: string | null
+  commitment_schedule_adjustment_reason?: string | null
+  apqr_generation_adjustment_reason?: string | null
   is_active: boolean
   archived_at: string | null
   archive_reason: string | null
@@ -185,12 +194,18 @@ export interface ApqrSchedulerRowInput {
   stability_pull_out_date: string
   product_name: string
   product_code: string
+  product_status?: ApqrProductStatus
   review_coverage_start: string
   review_coverage_end: string
   review_coverage_adjustment_reason?: string
+  commitment_schedule?: string
+  commitment_schedule_adjustment_reason?: string
+  apqr_generation_date?: string
+  apqr_generation_adjustment_reason?: string
   commitment_schedule_status: CommitmentScheduleStatus
   schedule_status_date?: string | null
   stability_pull_out_adjustment_reason?: string
+  scheduler_remarks?: string[]
 }
 
 export interface ApqrRecordInput {

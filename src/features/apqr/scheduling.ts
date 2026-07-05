@@ -18,6 +18,10 @@ export function defaultStabilityPullOutDate(reviewCoverageEnd: string): string {
   return addCalendarDays(reviewCoverageEnd, -60)
 }
 
+export function defaultApqrGenerationDate(reviewCoverageEnd: string): string {
+  return addCalendarDays(reviewCoverageEnd, 30)
+}
+
 export function defaultCommitmentSchedule(reviewCoverageEnd: string): string {
   return addCalendarDays(reviewCoverageEnd, 90)
 }

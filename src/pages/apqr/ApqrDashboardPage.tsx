@@ -20,12 +20,14 @@ import {
 import { ApqrError, ApqrIcon, ApqrLoading, ApqrPage, ApqrPriorityBadge } from '../../components/apqr/ApqrComponents'
 import { useChartPalette } from '../../components/charts/chartTheme'
 import {
+  apqrCycleYearOptions,
   buildDashboardTrends,
   buildTriageDistribution,
   buildUpcomingActions,
-  defaultApqrReviewCycle,
+  defaultApqrCycleYear,
   filterRowsByReviewCycle,
-  formatReviewCycleLabel,
+  formatApqrCycleYearLabel,
+  reviewCycleFromYear,
 } from '../../features/apqr/apqrDashboard'
 import {
   buildDashboardMetrics,
@@ -69,9 +71,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 export function ApqrDashboardPage() {
   const rows = useApqrDatabase()
   const { canExport } = useMenuPermission('apqr-dashboard')
-  const cycle = defaultApqrReviewCycle()
-  const [cycleStart, setCycleStart] = useState(cycle.start)
-  const [cycleEnd, setCycleEnd] = useState(cycle.end)
+  const [cycleYear, setCycleYear] = useState(defaultApqrCycleYear)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS)
@@ -81,6 +81,8 @@ export function ApqrDashboardPage() {
   const { getColumnStyle, onResizeHandleMouseDown } = useColumnResize<ColumnKey>('apqr-triage-column-widths')
 
   const allRows = rows.data ?? []
+  const cycleYearOptions = useMemo(() => apqrCycleYearOptions(allRows), [allRows])
+  const { start: cycleStart, end: cycleEnd } = useMemo(() => reviewCycleFromYear(cycleYear), [cycleYear])
   const scopedRows = useMemo(
     () => filterRowsByReviewCycle(allRows, cycleStart, cycleEnd),
     [allRows, cycleStart, cycleEnd],
@@ -118,7 +120,7 @@ export function ApqrDashboardPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [search, pageSize, cycleStart, cycleEnd])
+  }, [search, pageSize, cycleYear])
 
   if (rows.loading) {
     return (
@@ -143,27 +145,20 @@ export function ApqrDashboardPage() {
             <ApqrIcon name="filter" />
             Filters
           </button>
-          <div className="apqr-date-range" role="group" aria-label="Review coverage date range">
-            <span className="apqr-dashboard-toolbar-label">Review coverage</span>
-            <label className="apqr-date-field">
-              <input
-                type="date"
-                value={cycleStart}
-                onChange={(e) => setCycleStart(e.target.value)}
-                aria-label="Review coverage start"
-              />
-              <ApqrIcon name="calendar" />
-            </label>
-            <span className="apqr-date-separator" aria-hidden>
-              –
-            </span>
-            <label className="apqr-date-field">
-              <input
-                type="date"
-                value={cycleEnd}
-                onChange={(e) => setCycleEnd(e.target.value)}
-                aria-label="Review coverage end"
-              />
+          <div className="apqr-cycle-year-filter" role="group" aria-label="APQR cycle year">
+            <span className="apqr-dashboard-toolbar-label">APQR Cycle Year</span>
+            <label className="apqr-cycle-year-field">
+              <select
+                value={cycleYear}
+                onChange={(e) => setCycleYear(Number(e.target.value))}
+                aria-label="APQR cycle year"
+              >
+                {cycleYearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
               <ApqrIcon name="calendar" />
             </label>
           </div>
@@ -181,18 +176,13 @@ export function ApqrDashboardPage() {
           <div className="apqr-filter-panel-header">
             <h2>Global Filter</h2>
             <p className="help-text apqr-filter-panel-summary">
-              Showing APQRs with review coverage overlapping{' '}
-              <strong>{formatReviewCycleLabel(cycleStart, cycleEnd)}</strong> ({scopedRows.length} of{' '}
-              {allRows.length} records).
+              Showing APQRs for cycle year <strong>{cycleYear}</strong> (
+              {formatApqrCycleYearLabel(cycleYear)}; {scopedRows.length} of {allRows.length} records).
             </p>
           </div>
           <div className="inline-form">
-            <button type="button" className="button secondary" onClick={() => {
-              const next = defaultApqrReviewCycle()
-              setCycleStart(next.start)
-              setCycleEnd(next.end)
-            }}>
-              Reset to current cycle
+            <button type="button" className="button secondary" onClick={() => setCycleYear(defaultApqrCycleYear())}>
+              Reset to current cycle year
             </button>
           </div>
         </section>

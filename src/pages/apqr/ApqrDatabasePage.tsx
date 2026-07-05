@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import {
@@ -11,6 +11,11 @@ import {
   ApqrReportStatusBadge,
 } from '../../components/apqr/ApqrComponents'
 import { formatApqrDate, formatReviewCoverage } from '../../features/apqr/apqrService'
+import {
+  apqrCycleYearOptions,
+  defaultApqrCycleYear,
+  reviewCycleFromYear,
+} from '../../features/apqr/apqrDashboard'
 import type { ApqrDatabaseRow, ApqrDepartment, ApqrPriority, DeliveryClassification } from '../../features/apqr/types'
 import { useColumnResize } from '../../hooks/useColumnResize'
 import { useMenuPermission } from '../../hooks/usePermissions'
@@ -33,8 +38,10 @@ type ViewMode = 'list' | 'grid'
 type DeliveryFilter = 'all' | DeliveryClassification | 'pending'
 type ReportFilter = 'all' | NonNullable<ApqrDatabaseRow['apqr_report_status']> | 'none'
 type PriorityFilter = 'all' | ApqrPriority
+type SummaryFilter = 'all' | 'overdue' | 'delivered' | 'clientApproved' | 'missingInfo'
+type CycleYearFilter = 'all' | number
 
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
+const DEFAULT_CYCLE_YEAR = defaultApqrCycleYear()
 
 const COLUMN_LABELS: Record<ColumnKey, string> = {
   apqr_id: 'APQR ID',
@@ -76,18 +83,25 @@ export function ApqrDatabasePage() {
   const [columnsOpen, setColumnsOpen] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS)
   const [viewMode, setViewMode] = useState<ViewMode>('list')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
 
   const [departmentFilter, setDepartmentFilter] = useState<string>('all')
   const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>('all')
   const [reportFilter, setReportFilter] = useState<ReportFilter>('all')
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all')
+  const [cycleYearFilter, setCycleYearFilter] = useState<CycleYearFilter>(DEFAULT_CYCLE_YEAR)
+  const [summaryFilter, setSummaryFilter] = useState<SummaryFilter>('all')
 
   const { getColumnStyle, onResizeHandleMouseDown } = useColumnResize<ColumnKey>('apqr-database-column-widths')
   const rows = data ?? []
+  const cycleYearOptions = useMemo(() => apqrCycleYearOptions(rows), [rows])
+  const cycleYearRange = useMemo(
+    () => (cycleYearFilter === 'all' ? null : reviewCycleFromYear(cycleYearFilter)),
+    [cycleYearFilter],
+  )
 
   const hasActiveFilters =
+    summaryFilter !== 'all' ||
+    cycleYearFilter !== DEFAULT_CYCLE_YEAR ||
     departmentFilter !== 'all' ||
     deliveryFilter !== 'all' ||
     reportFilter !== 'all' ||
@@ -111,7 +125,14 @@ export function ApqrDatabasePage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return rows.filter((row) => {
+    const matches = rows.filter((row) => {
+      if (!rowMatchesSummaryFilter(row, summaryFilter)) return false
+      if (
+        cycleYearRange &&
+        (row.review_coverage_start > cycleYearRange.end || row.review_coverage_end < cycleYearRange.start)
+      ) {
+        return false
+      }
       if (departmentFilter !== 'all' && row.department !== departmentFilter) return false
       if (deliveryFilter === 'pending' && row.delivery_classification) return false
       if (deliveryFilter !== 'all' && deliveryFilter !== 'pending' && row.delivery_classification !== deliveryFilter) {
@@ -131,31 +152,23 @@ export function ApqrDatabasePage() {
         (row.department ?? '').toLowerCase().includes(q)
       )
     })
-  }, [rows, search, departmentFilter, deliveryFilter, reportFilter, priorityFilter])
-
-  const totalRows = filtered.length
-  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize))
-  const currentPage = Math.min(page, totalPages)
-  const pageStart = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1
-  const pageEnd = Math.min(currentPage * pageSize, totalRows)
-
-  const pagedRows = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return filtered.slice(start, start + pageSize)
-  }, [filtered, currentPage, pageSize])
+    return sortRowsBySummaryFilter(matches, summaryFilter)
+  }, [rows, search, departmentFilter, deliveryFilter, reportFilter, priorityFilter, summaryFilter, cycleYearRange])
 
   const activeFilterCount = useMemo(() => {
     let count = 0
+    if (summaryFilter !== 'all') count += 1
+    if (cycleYearFilter !== DEFAULT_CYCLE_YEAR) count += 1
     if (departmentFilter !== 'all') count += 1
     if (deliveryFilter !== 'all') count += 1
     if (reportFilter !== 'all') count += 1
     if (priorityFilter !== 'all') count += 1
     return count
-  }, [departmentFilter, deliveryFilter, reportFilter, priorityFilter])
+  }, [summaryFilter, cycleYearFilter, departmentFilter, deliveryFilter, reportFilter, priorityFilter])
 
-  useEffect(() => {
-    setPage(1)
-  }, [search, departmentFilter, deliveryFilter, reportFilter, priorityFilter, pageSize])
+  function toggleSummaryFilter(next: Exclude<SummaryFilter, 'all'>) {
+    setSummaryFilter((current) => (current === next ? 'all' : next))
+  }
 
   if (loading) {
     return (
@@ -171,11 +184,46 @@ export function ApqrDatabasePage() {
 
       <div className="apqr-database-summary-board">
         <section className="apqr-database-summary" aria-label="APQR database summary">
-          <SummaryStat label="Total Records" value={summary.totalRecords} tone="info" icon="stack" />
-          <SummaryStat label="Overdue" value={summary.overdue} tone="danger" icon="alert" />
-          <SummaryStat label="Delivered" value={summary.delivered} tone="success" icon="check" />
-          <SummaryStat label="Client Approved" value={summary.clientApproved} tone="success" icon="user" />
-          <SummaryStat label="Missing Info" value={summary.missingInfo} tone="warning" icon="info" />
+          <SummaryStat
+            label="Total Records"
+            value={summary.totalRecords}
+            tone="info"
+            icon="stack"
+            active={summaryFilter === 'all'}
+            onClick={() => setSummaryFilter('all')}
+          />
+          <SummaryStat
+            label="Overdue"
+            value={summary.overdue}
+            tone="danger"
+            icon="alert"
+            active={summaryFilter === 'overdue'}
+            onClick={() => toggleSummaryFilter('overdue')}
+          />
+          <SummaryStat
+            label="Delivered"
+            value={summary.delivered}
+            tone="success"
+            icon="check"
+            active={summaryFilter === 'delivered'}
+            onClick={() => toggleSummaryFilter('delivered')}
+          />
+          <SummaryStat
+            label="Client Approved"
+            value={summary.clientApproved}
+            tone="success"
+            icon="user"
+            active={summaryFilter === 'clientApproved'}
+            onClick={() => toggleSummaryFilter('clientApproved')}
+          />
+          <SummaryStat
+            label="Missing Info"
+            value={summary.missingInfo}
+            tone="warning"
+            icon="info"
+            active={summaryFilter === 'missingInfo'}
+            onClick={() => toggleSummaryFilter('missingInfo')}
+          />
         </section>
       </div>
 
@@ -291,69 +339,106 @@ export function ApqrDatabasePage() {
 
         {filtersOpen ? (
           <div id="apqr-database-filters" className="apqr-database-filters" role="search" aria-label="APQR record filters">
-            <DatabaseFilterField label="Department" htmlFor="apqr-db-filter-dept">
-              <select id="apqr-db-filter-dept" value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}>
-                <option value="all">All departments</option>
-                {DEPARTMENTS.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
-              </select>
-            </DatabaseFilterField>
-            <DatabaseFilterField label="Delivery" htmlFor="apqr-db-filter-delivery">
-              <select
-                id="apqr-db-filter-delivery"
-                value={deliveryFilter}
-                onChange={(e) => setDeliveryFilter(e.target.value as DeliveryFilter)}
+            <div className="apqr-database-filters-header">
+              <div className="apqr-database-filters-title">
+                <ApqrIcon name="filter" width={16} height={16} />
+                <span>Record filters</span>
+                {activeFilterCount > 0 ? (
+                  <span className="apqr-database-filters-active-count" aria-live="polite">
+                    {activeFilterCount} active
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            <div className="apqr-database-filters-grid">
+              <DatabaseFilterField label="APQR Cycle Year" htmlFor="apqr-db-filter-cycle-year">
+                <select
+                  id="apqr-db-filter-cycle-year"
+                  value={cycleYearFilter === 'all' ? 'all' : String(cycleYearFilter)}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setCycleYearFilter(value === 'all' ? 'all' : Number(value))
+                  }}
+                >
+                  <option value="all">All cycle years</option>
+                  {cycleYearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </DatabaseFilterField>
+              <DatabaseFilterField label="Department" htmlFor="apqr-db-filter-dept">
+                <select id="apqr-db-filter-dept" value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}>
+                  <option value="all">All departments</option>
+                  {DEPARTMENTS.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </select>
+              </DatabaseFilterField>
+              <DatabaseFilterField label="Delivery" htmlFor="apqr-db-filter-delivery">
+                <select
+                  id="apqr-db-filter-delivery"
+                  value={deliveryFilter}
+                  onChange={(e) => setDeliveryFilter(e.target.value as DeliveryFilter)}
+                >
+                  <option value="all">All delivery states</option>
+                  <option value="pending">Not yet delivered</option>
+                  <option value="Delivered On Time">Delivered On Time</option>
+                  <option value="Delivered Overdue">Delivered Overdue</option>
+                  <option value="Currently Overdue and Undelivered">Currently Overdue and Undelivered</option>
+                </select>
+              </DatabaseFilterField>
+              <DatabaseFilterField label="Report Status" htmlFor="apqr-db-filter-report">
+                <select
+                  id="apqr-db-filter-report"
+                  value={reportFilter}
+                  onChange={(e) => setReportFilter(e.target.value as ReportFilter)}
+                >
+                  <option value="all">All report statuses</option>
+                  <option value="none">Not started</option>
+                  <option value="Draft Sent">Draft Sent</option>
+                  <option value="For Client Approval">For Client Approval</option>
+                  <option value="Client Approved">Client Approved</option>
+                </select>
+              </DatabaseFilterField>
+              <DatabaseFilterField label="Priority" htmlFor="apqr-db-filter-priority">
+                <select
+                  id="apqr-db-filter-priority"
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value as PriorityFilter)}
+                >
+                  <option value="all">All priorities</option>
+                  <option value="Overdue Commitment">Overdue Commitment</option>
+                  <option value="Critical Commitment">Critical Commitment</option>
+                  <option value="High-Priority Commitment">High-Priority Commitment</option>
+                  <option value="Moderate Priority">Moderate Priority</option>
+                  <option value="Low Priority">Low Priority</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </DatabaseFilterField>
+            </div>
+            <div className="apqr-database-filters-footer">
+              <button
+                type="button"
+                className="button secondary apqr-database-filters-reset"
+                disabled={activeFilterCount === 0}
+                aria-label="Reset all record filters"
+                onClick={() => {
+                  setSummaryFilter('all')
+                  setCycleYearFilter(DEFAULT_CYCLE_YEAR)
+                  setDepartmentFilter('all')
+                  setDeliveryFilter('all')
+                  setReportFilter('all')
+                  setPriorityFilter('all')
+                }}
               >
-                <option value="all">All delivery states</option>
-                <option value="pending">Not yet delivered</option>
-                <option value="Delivered On Time">Delivered On Time</option>
-                <option value="Delivered Overdue">Delivered Overdue</option>
-                <option value="Currently Overdue and Undelivered">Currently Overdue and Undelivered</option>
-              </select>
-            </DatabaseFilterField>
-            <DatabaseFilterField label="Report Status" htmlFor="apqr-db-filter-report">
-              <select
-                id="apqr-db-filter-report"
-                value={reportFilter}
-                onChange={(e) => setReportFilter(e.target.value as ReportFilter)}
-              >
-                <option value="all">All report statuses</option>
-                <option value="none">Not started</option>
-                <option value="Draft Sent">Draft Sent</option>
-                <option value="For Client Approval">For Client Approval</option>
-                <option value="Client Approved">Client Approved</option>
-              </select>
-            </DatabaseFilterField>
-            <DatabaseFilterField label="Priority" htmlFor="apqr-db-filter-priority">
-              <select
-                id="apqr-db-filter-priority"
-                value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value as PriorityFilter)}
-              >
-                <option value="all">All priorities</option>
-                <option value="Overdue Commitment">Overdue Commitment</option>
-                <option value="Critical Commitment">Critical Commitment</option>
-                <option value="High-Priority Commitment">High-Priority Commitment</option>
-                <option value="Moderate Priority">Moderate Priority</option>
-                <option value="Low Priority">Low Priority</option>
-                <option value="Completed">Completed</option>
-              </select>
-            </DatabaseFilterField>
-            <button
-              type="button"
-              className="button secondary apqr-database-filters-reset"
-              onClick={() => {
-                setDepartmentFilter('all')
-                setDeliveryFilter('all')
-                setReportFilter('all')
-                setPriorityFilter('all')
-              }}
-            >
-              Reset filters
-            </button>
+                <ApqrIcon name="reset" width={15} height={15} />
+                Reset filters
+              </button>
+            </div>
           </div>
         ) : null}
 
@@ -380,7 +465,7 @@ export function ApqrDatabasePage() {
                 </tr>
               </thead>
               <tbody>
-                {pagedRows.map((row) => (
+                {filtered.map((row) => (
                   <tr key={row.apqr_id}>
                     {visibleColumns.map((key) => (
                       <td key={key} style={getColumnStyle(key)}>
@@ -400,7 +485,7 @@ export function ApqrDatabasePage() {
           </div>
         ) : (
           <div className="apqr-database-grid">
-            {pagedRows.map((row) => (
+            {filtered.map((row) => (
               <article key={row.apqr_id} className="apqr-database-card">
                 <header>
                   <Link className="apqr-database-card-id" to={`/apqr/form?apqr=${encodeURIComponent(row.apqr_id)}`}>
@@ -448,72 +533,6 @@ export function ApqrDatabasePage() {
           </div>
         )}
 
-        {totalRows > 0 ? (
-          <div className="apqr-scheduler-pagination apqr-database-pagination">
-            <span>
-              Showing {pageStart} to {pageEnd} of {totalRows} records
-            </span>
-            <label>
-              <span className="sr-only">Rows per page</span>
-              <select
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value))
-                  setPage(1)
-                }}
-              >
-                {PAGE_SIZE_OPTIONS.map((size) => (
-                  <option key={size} value={size}>
-                    {size} per page
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="apqr-pagination-buttons">
-              <button type="button" className="button secondary" disabled={currentPage <= 1} onClick={() => setPage(1)}>
-                First
-              </button>
-              <button type="button" className="button secondary" disabled={currentPage <= 1} onClick={() => setPage((p) => p - 1)}>
-                Prev
-              </button>
-              {Array.from({ length: totalPages }, (_, index) => index + 1)
-                .filter((n) => n === 1 || n === totalPages || Math.abs(n - currentPage) <= 1)
-                .map((n, index, list) => {
-                  const prev = list[index - 1]
-                  const gap = prev != null && n - prev > 1
-                  return (
-                    <span key={n} className="apqr-pagination-number-wrap">
-                      {gap ? <span className="apqr-pagination-ellipsis">…</span> : null}
-                      <button
-                        type="button"
-                        className={`button secondary${n === currentPage ? ' is-active' : ''}`}
-                        aria-current={n === currentPage ? 'page' : undefined}
-                        onClick={() => setPage(n)}
-                      >
-                        {n}
-                      </button>
-                    </span>
-                  )
-                })}
-              <button
-                type="button"
-                className="button secondary"
-                disabled={currentPage >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
-              </button>
-              <button
-                type="button"
-                className="button secondary"
-                disabled={currentPage >= totalPages}
-                onClick={() => setPage(totalPages)}
-              >
-                Last
-              </button>
-            </div>
-          </div>
-        ) : null}
       </section>
     </ApqrPage>
   )
@@ -607,8 +626,8 @@ function DatabaseEmptyState({
       <span className="apqr-database-empty-icon" aria-hidden>
         <ApqrIcon name="document" width={28} height={28} />
       </span>
-      <p className="apqr-database-empty-title">No records on this page</p>
-      <p className="apqr-database-empty-hint">Adjust pagination or page size to browse other records.</p>
+      <p className="apqr-database-empty-title">No records to display</p>
+      <p className="apqr-database-empty-hint">Try another APQR cycle year or clear filters.</p>
     </div>
   )
 }
@@ -623,7 +642,7 @@ function DatabaseFilterField({
   children: ReactNode
 }) {
   return (
-    <div className="apqr-form-field apqr-database-filter-field">
+    <div className="apqr-database-filter-field">
       <label className="apqr-field-label" htmlFor={htmlFor}>
         {label}
       </label>
@@ -632,25 +651,67 @@ function DatabaseFilterField({
   )
 }
 
+function rowMatchesSummaryFilter(row: ApqrDatabaseRow, filter: SummaryFilter): boolean {
+  if (filter === 'all') return true
+  if (filter === 'overdue') {
+    return (
+      row.priority === 'Overdue Commitment' ||
+      row.delivery_classification === 'Currently Overdue and Undelivered'
+    )
+  }
+  if (filter === 'delivered') return Boolean(row.final_apqr_delivery_date)
+  if (filter === 'clientApproved') return row.apqr_report_status === 'Client Approved'
+  if (filter === 'missingInfo') return row.missing_critical_count > 0
+  return true
+}
+
+function sortRowsBySummaryFilter(rows: ApqrDatabaseRow[], filter: SummaryFilter): ApqrDatabaseRow[] {
+  if (filter === 'all') return rows
+  const sorted = [...rows]
+  if (filter === 'overdue') {
+    return sorted.sort((a, b) => (a.days_remaining_or_overdue ?? 0) - (b.days_remaining_or_overdue ?? 0))
+  }
+  if (filter === 'delivered') {
+    return sorted.sort((a, b) => (b.final_apqr_delivery_date ?? '').localeCompare(a.final_apqr_delivery_date ?? ''))
+  }
+  if (filter === 'clientApproved') {
+    return sorted.sort((a, b) => (b.date_client_signed ?? '').localeCompare(a.date_client_signed ?? ''))
+  }
+  if (filter === 'missingInfo') {
+    return sorted.sort((a, b) => b.missing_critical_count - a.missing_critical_count)
+  }
+  return sorted
+}
+
 function SummaryStat({
   label,
   value,
   tone,
   icon,
+  active = false,
+  onClick,
 }: {
   label: string
   value: number
   tone: 'info' | 'success' | 'warning' | 'danger'
   icon: string
+  active?: boolean
+  onClick: () => void
 }) {
   return (
-    <article className={`apqr-database-stat tone-${tone}`}>
+    <button
+      type="button"
+      className={`apqr-database-stat tone-${tone}${active ? ' is-active' : ''}`}
+      aria-pressed={active}
+      aria-label={`${label}: ${value}. Filter records.`}
+      onClick={onClick}
+    >
       <span className={`apqr-database-stat-icon tone-${tone}`} aria-hidden>
         <SummaryIcon name={icon} />
       </span>
       <strong className="apqr-database-stat-value">{value}</strong>
       <span className="apqr-database-stat-label">{label}</span>
-    </article>
+    </button>
   )
 }
 

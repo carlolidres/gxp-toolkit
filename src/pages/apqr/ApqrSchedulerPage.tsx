@@ -2,34 +2,38 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import {
-  ApqrCommitmentStatusBadge,
   ApqrError,
   ApqrIcon,
   ApqrLoading,
   ApqrPackageBadge,
   ApqrPage,
 } from '../../components/apqr/ApqrComponents'
+import {
+  ApqrSchedulerFormPanel,
+  ApqrSchedulerViewDialog,
+} from '../../components/apqr/ApqrSchedulerFormPanel'
+import {
+  ApqrSchedulerScheduleTable,
+  exportSchedulerScheduleCsv,
+} from '../../components/apqr/ApqrSchedulerScheduleTable'
 import { useToast } from '../../components/feedback/ToastProvider'
+import { useAuth } from '../../hooks/useAuth'
 import { useMenuPermission } from '../../hooks/usePermissions'
-import { defaultApqrReviewCycle } from '../../features/apqr/apqrDashboard'
+import { logApqrAudit, buildFieldDescription } from '../../features/apqr/apqrAudit'
 import {
-  defaultCommitmentSchedule,
-  defaultStabilityPullOutDate,
-  expectedStabilityTabulationCompletionDate,
-} from '../../features/apqr/scheduling'
-import {
-  archiveSchedulerEntry,
-  formatApqrDate,
-  formatReviewCoverage,
-  saveSchedulerRows,
-} from '../../features/apqr/apqrService'
+  appendRemark,
+  computedScheduleDates,
+  currentCycleYear,
+  emptyScheduleRow,
+  formatOverrideRemark,
+  generateNextApqrCycle,
+  reviewCoverageNeedsReason,
+  rowFromSchedulerEntry,
+  stabilityTabulationConflict,
+  type ScheduleRowDraft,
+} from '../../features/apqr/schedulerForm'
+import { saveSchedulerRows } from '../../features/apqr/apqrService'
 import { useApqrClients, useApqrScheduler } from '../../features/apqr/useApqrData'
-import type { ApqrSchedulerEntry, ApqrSchedulerRowInput, CommitmentScheduleStatus } from '../../features/apqr/types'
-import { exportRows } from '../../utils/exportUtils'
-
-type RowDraft = ApqrSchedulerRowInput & { id?: string; apqr_id?: string }
-
-const PAGE_SIZE_OPTIONS = [6, 10, 25, 50]
 
 const SCHEDULER_PAGE_PROPS = {
   icon: 'calendar',
@@ -43,33 +47,8 @@ const SCHEDULER_PAGE_PROPS = {
   ),
 } as const
 
-function emptyRow(): RowDraft {
-  const cycle = defaultApqrReviewCycle()
-  return {
-    stability_pull_out_date: defaultStabilityPullOutDate(cycle.end),
-    product_name: '',
-    product_code: '',
-    review_coverage_start: cycle.start,
-    review_coverage_end: cycle.end,
-    commitment_schedule_status: 'Planned',
-    schedule_status_date: null,
-  }
-}
-
-function rowFromEntry(entry: ApqrSchedulerEntry): RowDraft {
-  return {
-    id: entry.id,
-    apqr_id: entry.apqr_id,
-    stability_pull_out_date: entry.stability_pull_out_date ?? defaultStabilityPullOutDate(entry.review_coverage_end),
-    product_name: entry.product_name,
-    product_code: entry.product_code,
-    review_coverage_start: entry.review_coverage_start,
-    review_coverage_end: entry.review_coverage_end,
-    review_coverage_adjustment_reason: entry.review_coverage_adjustment_reason ?? undefined,
-    commitment_schedule_status: entry.commitment_schedule_status,
-    schedule_status_date: entry.schedule_status_date,
-    stability_pull_out_adjustment_reason: entry.stability_pull_out_adjustment_reason ?? undefined,
-  }
+function rowIdentity(row: ScheduleRowDraft, index: number) {
+  return row.id ?? `draft-${index}-${row.product_code}-${row.review_coverage_start}`
 }
 
 export function ApqrSchedulerPage() {
@@ -78,10 +57,14 @@ export function ApqrSchedulerPage() {
   const [clientId, setClientId] = useState<string | null>(searchParams.get('client'))
   const scheduler = useApqrScheduler(clientId)
   const { canCreate, canEdit, canExport } = useMenuPermission('apqr-scheduler')
+  const { user } = useAuth()
   const { notify } = useToast()
-  const [rows, setRows] = useState<RowDraft[]>([])
-  const [draftRow, setDraftRow] = useState<RowDraft | null>(emptyRow())
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const actorName = user?.name ?? 'System'
+
+  const [rows, setRows] = useState<ScheduleRowDraft[]>([])
+  const [form, setForm] = useState<ScheduleRowDraft>(() => emptyScheduleRow())
+  const [editingKey, setEditingKey] = useState<string | null>(null)
+  const [viewRow, setViewRow] = useState<ScheduleRowDraft | null>(null)
   const [busy, setBusy] = useState(false)
   const [bannerOpen, setBannerOpen] = useState(true)
   const [clientPickerOpen, setClientPickerOpen] = useState(false)
@@ -97,6 +80,7 @@ export function ApqrSchedulerPage() {
   const clientPickerLabelId = useId()
 
   const selectedClient = useMemo(() => clients?.find((c) => c.id === clientId), [clients, clientId])
+  const canMutate = Boolean(canCreate || canEdit)
 
   const filteredClients = useMemo(() => {
     const q = clientSearch.trim().toLowerCase()
@@ -134,13 +118,23 @@ export function ApqrSchedulerPage() {
   useEffect(() => {
     if (!scheduler.data) {
       setRows([])
-      setEditingId(null)
+      setEditingKey(null)
       return
     }
-    setRows(scheduler.data.map(rowFromEntry))
-    setEditingId(null)
+    const clientName = selectedClient?.client_name ?? ''
+    setRows(scheduler.data.map((entry) => rowFromSchedulerEntry(entry, clientName)))
+    setEditingKey(null)
     setPage(1)
-  }, [scheduler.data])
+  }, [scheduler.data, selectedClient?.client_name])
+
+  useEffect(() => {
+    if (!selectedClient) return
+    setForm((prev) => ({
+      ...emptyScheduleRow(selectedClient.client_name),
+      ...prev,
+      client_name: selectedClient.client_name,
+    }))
+  }, [selectedClient?.id, selectedClient?.client_name])
 
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {
@@ -169,6 +163,8 @@ export function ApqrSchedulerPage() {
     setClientId(id)
     setClientPickerOpen(false)
     setClientSearch('')
+    setForm(emptyScheduleRow(clients?.find((c) => c.id === id)?.client_name ?? ''))
+    setEditingKey(null)
   }
 
   function onClientMenuKeyDown(event: React.KeyboardEvent) {
@@ -195,84 +191,139 @@ export function ApqrSchedulerPage() {
     }
   }
 
-  function updateRow(index: number, patch: Partial<RowDraft>) {
-    setRows((prev) =>
-      prev.map((row, i) => {
-        if (i !== index) return row
-        const next = { ...row, ...patch }
-        if (patch.review_coverage_end) {
-          next.stability_pull_out_date = defaultStabilityPullOutDate(patch.review_coverage_end)
-        }
-        return next
-      }),
-    )
+  function clearForm() {
+    setForm(emptyScheduleRow(selectedClient?.client_name ?? ''))
+    setEditingKey(null)
   }
 
-  function updateDraft(patch: Partial<RowDraft>) {
-    setDraftRow((prev) => {
-      const base = prev ?? emptyRow()
-      const next = { ...base, ...patch }
-      if (patch.review_coverage_end) {
-        next.stability_pull_out_date = defaultStabilityPullOutDate(patch.review_coverage_end)
-      }
-      return next
-    })
+  function validateForm(draft: ScheduleRowDraft): string | null {
+    if (!draft.product_name.trim() || !draft.product_code.trim()) {
+      return 'Product name and code are required.'
+    }
+    if (draft.review_coverage_end < draft.review_coverage_start) {
+      return 'Review coverage end date cannot be before the start date.'
+    }
+    if (
+      reviewCoverageNeedsReason(draft.review_coverage_start, draft.review_coverage_end) &&
+      !draft.review_coverage_adjustment_reason?.trim()
+    ) {
+      return 'A reason is required for non-standard review coverage.'
+    }
+    const dates = computedScheduleDates(draft.review_coverage_end)
+    const commitment = draft.commitment_schedule ?? dates.commitment_schedule
+    if (stabilityTabulationConflict(draft.stability_pull_out_date, commitment)) {
+      return 'Stability tabulation completion exceeds commitment date. Adjust dates or add justification.'
+    }
+    return null
   }
 
-  function confirmDraft() {
-    if (!draftRow?.product_name.trim() || !draftRow.product_code.trim()) {
-      notify('Product name and code are required.')
+  async function handleSubmit() {
+    const error = validateForm(form)
+    if (error) {
+      notify(error)
       return
     }
-    setRows((prev) => [...prev, { ...draftRow }])
-    setDraftRow(emptyRow())
-    setPage(Math.max(1, Math.ceil((rows.length + 1) / pageSize)))
-  }
-
-  function clearDraft() {
-    setDraftRow(emptyRow())
-  }
-
-  async function removeRow(index: number) {
-    const row = rows[index]
-    if (!window.confirm('Are you sure you want to remove this APQR Scheduler row?')) return
-
-    if (row.id) {
-      const reason = window.prompt('Enter the reason for removing this saved scheduler row:')
-      if (!reason?.trim()) return
-      setBusy(true)
-      try {
-        await archiveSchedulerEntry(row.id, reason)
-        notify('Successfully Saved')
-        setRows((prev) => prev.filter((_, i) => i !== index))
-        await scheduler.reload()
-      } catch (err) {
-        notify(err instanceof Error ? err.message : 'Failed to Save')
-      } finally {
-        setBusy(false)
-      }
+    if (!clientId || !canMutate) {
+      notify('Select a client and ensure you have edit permission.')
       return
     }
 
-    setRows((prev) => prev.filter((_, i) => i !== index))
-  }
+    const submitted: ScheduleRowDraft = {
+      ...form,
+      product_name: form.product_name.trim(),
+      product_code: form.product_code.trim().toUpperCase(),
+      schedule_status_date: form.schedule_status_date ?? new Date().toISOString().slice(0, 10),
+      client_name: selectedClient?.client_name ?? form.client_name,
+    }
 
-  async function handleSave() {
-    if (!clientId || (!canCreate && !canEdit) || rows.length === 0) return
+    const nextRows = editingKey
+      ? rows.map((row, index) => (rowIdentity(row, index) === editingKey ? { ...submitted } : row))
+      : [...rows, submitted]
+
     setBusy(true)
     try {
-      await saveSchedulerRows(
-        clientId,
-        rows,
-        rows.map((r) => r.id).filter((id): id is string => Boolean(id)),
-      )
+      await saveSchedulerRows(clientId, nextRows, nextRows.map((r) => r.id))
+      if (!editingKey) {
+        setPage(Math.max(1, Math.ceil(nextRows.length / pageSize)))
+      }
+      await scheduler.reload()
+      notify(editingKey ? 'Schedule entry updated.' : 'Schedule entry saved.')
+      clearForm()
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Failed to save schedule entry')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleSaveAll() {
+    if (!clientId || !canMutate || rows.length === 0) return
+    setBusy(true)
+    try {
+      await saveSchedulerRows(clientId, rows, rows.map((r) => r.id))
       notify('Successfully Saved')
       await scheduler.reload()
+      clearForm()
     } catch (err) {
       notify(err instanceof Error ? err.message : 'Failed to Save')
     } finally {
       setBusy(false)
     }
+  }
+
+  async function handleMarkEol(row: ScheduleRowDraft) {
+    if (!canMutate) return
+    const reason = window.prompt('Enter reason for marking this product as End-of-Life:')?.trim()
+    if (!reason) return
+
+    const remark = formatOverrideRemark('Product Status', row.product_status ?? 'Active', 'End-of-Life', reason, actorName)
+    const updated: ScheduleRowDraft = {
+      ...row,
+      product_status: 'End-of-Life',
+      scheduler_remarks: appendRemark(row.scheduler_remarks ?? [''], remark),
+    }
+
+    const index = rows.findIndex((item) => (row.id ? item.id === row.id : item === row))
+    setRows((prev) => prev.map((item, i) => (i === index ? updated : item)))
+
+    if (row.id) {
+      await logApqrAudit({
+        entity_type: 'scheduler',
+        entity_id: row.id,
+        entity_label: row.apqr_id ?? row.product_code,
+        field_name: 'product_status',
+        old_value: row.product_status ?? 'Active',
+        new_value: 'End-of-Life',
+        action_type: 'updated',
+        description: buildFieldDescription(
+          'updated',
+          row.apqr_id ?? row.product_code,
+          'Product Status',
+          row.product_status ?? 'Active',
+          'End-of-Life',
+        ),
+        reason,
+      })
+    }
+
+    notify('Product marked as End-of-Life.')
+  }
+
+  function loadIntoForm(row: ScheduleRowDraft, editKey: string | null) {
+    setForm({ ...row, client_name: selectedClient?.client_name ?? row.client_name })
+    setEditingKey(editKey)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function handleEditSave(row: ScheduleRowDraft) {
+    const index = rows.findIndex((item) => (row.id ? item.id === row.id : item === row))
+    loadIntoForm(row, index >= 0 ? rowIdentity(row, index) : null)
+  }
+
+  function handleNextCycle(row: ScheduleRowDraft) {
+    const next = generateNextApqrCycle({ ...row, client_name: selectedClient?.client_name ?? '' })
+    loadIntoForm(next, null)
+    notify('Next APQR cycle loaded into the form. Review dates and submit when ready.')
   }
 
   if (clientsLoading) {
@@ -423,16 +474,19 @@ export function ApqrSchedulerPage() {
         </div>
       </section>
 
-      {clientId ? (
+      {clientId && selectedClient ? (
         <>
           {bannerOpen ? (
             <div className="apqr-scheduler-banner" role="status">
               <ApqrIcon name="info" aria-hidden />
-              <p>Commitment Schedule is automatically calculated as 90 days from the end of Review Coverage.</p>
+              <p>
+                Commitment Date is automatically calculated as 90 days from the end of Review Coverage. Stability Pull-Out
+                defaults to 60 days before coverage end. Override any calculated date with a documented reason.
+              </p>
               <button
                 type="button"
                 className="apqr-banner-close"
-                aria-label="Dismiss commitment schedule notice"
+                aria-label="Dismiss scheduling notice"
                 onClick={() => setBannerOpen(false)}
               >
                 <ApqrIcon name="close" aria-hidden />
@@ -440,352 +494,54 @@ export function ApqrSchedulerPage() {
             </div>
           ) : null}
 
-          <section className="panel apqr-scheduler-table-panel">
-            <div className="panel-heading apqr-scheduler-heading">
-              <h2>Scheduler Rows</h2>
-              <div className="apqr-table-toolbar">
-                {(canCreate || canEdit) ? (
-                  <button type="button" className="button secondary" onClick={() => setDraftRow(emptyRow())}>
-                    <ApqrIcon name="plus" aria-hidden />
-                    Add Row
-                  </button>
-                ) : null}
-                {(canCreate || canEdit) && rows.length > 0 ? (
-                  <button type="button" className="button primary" disabled={busy} onClick={() => void handleSave()}>
-                    <ApqrIcon name="save" aria-hidden />
-                    Save Changes
-                  </button>
-                ) : null}
-                {canExport ? (
-                  <button type="button" className="button secondary" onClick={() => exportSchedulerCsv(rows, selectedClient?.client_name ?? 'client')}>
-                    <ApqrIcon name="export" aria-hidden />
-                    Export
-                  </button>
-                ) : null}
-              </div>
-            </div>
+          <ApqrSchedulerFormPanel
+            form={form}
+            clientName={selectedClient.client_name}
+            productSuggestions={productSuggestions}
+            editable={canMutate}
+            busy={busy}
+            modeLabel={editingKey ? `Editing ${form.product_name || 'entry'}` : 'New schedule entry'}
+            actorName={actorName}
+            onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+            onSubmit={handleSubmit}
+            onClear={clearForm}
+          />
 
-            {scheduler.loading ? <ApqrLoading /> : null}
+          {scheduler.loading ? <ApqrLoading /> : null}
 
-            <div className="table-scroll apqr-scheduler-table-scroll">
-              <table className="data-table apqr-scheduler-table compact">
-                <thead>
-                  <tr>
-                    <th>Stability Pull-out Date</th>
-                    <th>Product Name</th>
-                    <th>Product Code</th>
-                    <th>Review Coverage</th>
-                    <th>Commitment Schedule</th>
-                    <th>Commitment Schedule Status</th>
-                    <th>Schedule Status Date</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(canCreate || canEdit) && draftRow ? (
-                    <SchedulerEditableRow
-                      row={draftRow}
-                      productSuggestions={productSuggestions}
-                      editable
-                      onChange={updateDraft}
-                      onConfirm={confirmDraft}
-                      onCancel={clearDraft}
-                    />
-                  ) : null}
+          <ApqrSchedulerScheduleTable
+            rows={rows}
+            clientName={selectedClient.client_name}
+            cycleYear={currentCycleYear()}
+            pagedRows={pagedRows}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageStart={pageStart}
+            pageEnd={pageEnd}
+            totalRows={totalRows}
+            pageSize={pageSize}
+            canExport={canExport}
+            canEdit={canMutate}
+            busy={busy}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            onExport={() => exportSchedulerScheduleCsv(rows, selectedClient.client_name)}
+            onSaveAll={() => void handleSaveAll()}
+            onView={setViewRow}
+            onLoad={(row) => loadIntoForm(row, null)}
+            onEditSave={handleEditSave}
+            onNextCycle={handleNextCycle}
+            onMarkEol={(row) => void handleMarkEol(row)}
+          />
 
-                  {pagedRows.map((row) => {
-                    const globalIndex = rows.findIndex((item) => item === row)
-                    const isEditing = !row.id || editingId === row.id
-                    const editable = Boolean(canCreate || canEdit)
-
-                    if (isEditing) {
-                      return (
-                        <SchedulerEditableRow
-                          key={row.id ?? `row-${globalIndex}`}
-                          row={row}
-                          productSuggestions={productSuggestions}
-                          editable={editable}
-                          onChange={(patch) => updateRow(globalIndex, patch)}
-                          onConfirm={() => {
-                            if (!row.product_name.trim() || !row.product_code.trim()) {
-                              notify('Product name and code are required.')
-                              return
-                            }
-                            if (row.id) setEditingId(null)
-                          }}
-                          onCancel={() => {
-                            if (!row.id) {
-                              void removeRow(globalIndex)
-                              return
-                            }
-                            const original = scheduler.data?.find((entry) => entry.id === row.id)
-                            if (original) updateRow(globalIndex, rowFromEntry(original))
-                            setEditingId(null)
-                          }}
-                          onDelete={() => void removeRow(globalIndex)}
-                          showDelete={Boolean(row.id)}
-                        />
-                      )
-                    }
-
-                    return (
-                      <SchedulerViewRow
-                        key={row.id ?? `row-${globalIndex}`}
-                        row={row}
-                        editable={editable}
-                        onEdit={() => row.id && setEditingId(row.id)}
-                        onDelete={() => void removeRow(globalIndex)}
-                      />
-                    )
-                  })}
-                </tbody>
-              </table>
-              {rows.length === 0 && !draftRow ? (
-                <p className="messages-empty apqr-scheduler-empty">No scheduler rows yet. Use Add Row to register a product.</p>
-              ) : null}
-            </div>
-
-            {totalRows > 0 ? (
-              <div className="apqr-scheduler-pagination">
-                <span>
-                  {pageStart} to {pageEnd} of {totalRows} entries
-                </span>
-                <label>
-                  per page
-                  <select
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value))
-                      setPage(1)
-                    }}
-                  >
-                    {PAGE_SIZE_OPTIONS.map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="apqr-pagination-buttons">
-                  <button type="button" className="button secondary" disabled={currentPage <= 1} onClick={() => setPage((p) => p - 1)}>
-                    Prev
-                  </button>
-                  {Array.from({ length: totalPages }, (_, index) => index + 1)
-                    .filter((n) => n === 1 || n === totalPages || Math.abs(n - currentPage) <= 1)
-                    .map((n, index, list) => {
-                      const prev = list[index - 1]
-                      const gap = prev != null && n - prev > 1
-                      return (
-                        <span key={n} className="apqr-pagination-number-wrap">
-                          {gap ? <span className="apqr-pagination-ellipsis">…</span> : null}
-                          <button
-                            type="button"
-                            className={`button secondary${n === currentPage ? ' is-active' : ''}`}
-                            onClick={() => setPage(n)}
-                          >
-                            {n}
-                          </button>
-                        </span>
-                      )
-                    })}
-                  <button
-                    type="button"
-                    className="button secondary"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setPage((p) => p + 1)}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </section>
+          <ApqrSchedulerViewDialog
+            row={viewRow}
+            clientName={selectedClient.client_name}
+            open={Boolean(viewRow)}
+            onClose={() => setViewRow(null)}
+          />
         </>
       ) : null}
     </ApqrPage>
-  )
-}
-
-function SchedulerViewRow({
-  row,
-  editable,
-  onEdit,
-  onDelete,
-}: {
-  row: RowDraft
-  editable: boolean
-  onEdit: () => void
-  onDelete: () => void
-}) {
-  const commitment = defaultCommitmentSchedule(row.review_coverage_end)
-
-  return (
-    <tr className="apqr-scheduler-view-row">
-      <td className="apqr-scheduler-date-cell">{formatApqrDate(row.stability_pull_out_date)}</td>
-      <td>
-        {row.apqr_id ? (
-          <Link to={`/apqr/form?apqr=${encodeURIComponent(row.apqr_id)}`}>{row.product_name}</Link>
-        ) : (
-          row.product_name
-        )}
-      </td>
-      <td className="apqr-scheduler-code-cell">{row.product_code}</td>
-      <td className="apqr-scheduler-coverage-cell">
-        <span className="apqr-scheduler-coverage">
-          {formatReviewCoverage(row.review_coverage_start, row.review_coverage_end)}
-        </span>
-      </td>
-      <td className="apqr-scheduler-date-cell">{formatApqrDate(commitment)}</td>
-      <td className="apqr-scheduler-status-cell">
-        <ApqrCommitmentStatusBadge status={row.commitment_schedule_status} />
-      </td>
-      <td className="apqr-scheduler-date-cell">{formatApqrDate(row.schedule_status_date)}</td>
-      <td>
-        <div className="apqr-scheduler-row-actions">
-          {editable ? (
-            <>
-              <button type="button" className="button secondary apqr-icon-btn" aria-label="Edit row" onClick={onEdit}>
-                <ApqrIcon name="edit" />
-              </button>
-              <button type="button" className="button secondary apqr-icon-btn" aria-label="Delete row" onClick={onDelete}>
-                <ApqrIcon name="trash" />
-              </button>
-            </>
-          ) : null}
-        </div>
-      </td>
-    </tr>
-  )
-}
-
-function SchedulerEditableRow({
-  row,
-  productSuggestions,
-  editable,
-  onChange,
-  onConfirm,
-  onCancel,
-  onDelete,
-  showDelete = true,
-}: {
-  row: RowDraft
-  productSuggestions: string[]
-  editable: boolean
-  onChange: (patch: Partial<RowDraft>) => void
-  onConfirm: () => void
-  onCancel: () => void
-  onDelete?: () => void
-  showDelete?: boolean
-}) {
-  const commitment = defaultCommitmentSchedule(row.review_coverage_end)
-  const expectedStab = expectedStabilityTabulationCompletionDate(row.stability_pull_out_date)
-  const stabConflict = expectedStab > commitment
-
-  return (
-    <tr className="apqr-scheduler-edit-row">
-      <td>
-        <input
-          type="date"
-          value={row.stability_pull_out_date}
-          disabled={!editable}
-          onChange={(e) => onChange({ stability_pull_out_date: e.target.value })}
-        />
-        {stabConflict ? <span className="form-error">Stability completion exceeds commitment</span> : null}
-      </td>
-      <td>
-        <input
-          list={`apqr-products-${row.id ?? 'draft'}`}
-          value={row.product_name}
-          disabled={!editable}
-          placeholder="Select product"
-          onChange={(e) => onChange({ product_name: e.target.value })}
-        />
-        <datalist id={`apqr-products-${row.id ?? 'draft'}`}>
-          {productSuggestions.map((name) => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
-      </td>
-      <td>
-        <input
-          value={row.product_code}
-          disabled={!editable}
-          placeholder="Code"
-          onChange={(e) => onChange({ product_code: e.target.value.toUpperCase() })}
-        />
-      </td>
-      <td className="apqr-scheduler-coverage-cell">
-        <div className="apqr-review-range apqr-review-range--edit">
-          <input
-            type="date"
-            value={row.review_coverage_start}
-            disabled={!editable}
-            aria-label="Review coverage start"
-            onChange={(e) => onChange({ review_coverage_start: e.target.value })}
-          />
-          <span className="apqr-review-range-sep" aria-hidden>to</span>
-          <input
-            type="date"
-            value={row.review_coverage_end}
-            disabled={!editable}
-            aria-label="Review coverage end"
-            onChange={(e) => onChange({ review_coverage_end: e.target.value })}
-          />
-        </div>
-      </td>
-      <td>
-        <input type="date" value={commitment} readOnly aria-label="Commitment schedule" />
-      </td>
-      <td>
-        <select
-          value={row.commitment_schedule_status}
-          disabled={!editable}
-          onChange={(e) => onChange({ commitment_schedule_status: e.target.value as CommitmentScheduleStatus })}
-        >
-          <option value="Planned">Planned</option>
-          <option value="For Client Approval">For Client Approval</option>
-          <option value="Client Approved">Client Approved</option>
-        </select>
-      </td>
-      <td>
-        <input
-          type="date"
-          value={row.schedule_status_date ?? ''}
-          disabled={!editable}
-          onChange={(e) => onChange({ schedule_status_date: e.target.value || null })}
-        />
-      </td>
-      <td>
-        <div className="apqr-scheduler-row-actions">
-          <button type="button" className="button secondary apqr-icon-btn" aria-label="Confirm row" onClick={onConfirm}>
-            <ApqrIcon name="check" />
-          </button>
-          <button type="button" className="button secondary apqr-icon-btn" aria-label="Cancel edit" onClick={onCancel}>
-            <ApqrIcon name="close" />
-          </button>
-          {onDelete && showDelete ? (
-            <button type="button" className="button secondary apqr-icon-btn" aria-label="Delete row" onClick={onDelete}>
-              <ApqrIcon name="trash" />
-            </button>
-          ) : null}
-        </div>
-      </td>
-    </tr>
-  )
-}
-
-function exportSchedulerCsv(rows: RowDraft[], clientName: string) {
-  exportRows(
-    rows.map((row) => ({
-      'Stability Pull-out Date': row.stability_pull_out_date,
-      'Product Name': row.product_name,
-      'Product Code': row.product_code,
-      'Review Coverage Start': row.review_coverage_start,
-      'Review Coverage End': row.review_coverage_end,
-      'Commitment Schedule': defaultCommitmentSchedule(row.review_coverage_end),
-      'Commitment Schedule Status': row.commitment_schedule_status,
-      'Schedule Status Date': row.schedule_status_date ?? '',
-    })),
-    `apqr-scheduler-${clientName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`,
   )
 }

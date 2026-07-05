@@ -5,7 +5,7 @@ import type { ApqrDatabaseRow } from './types'
 
 function row(partial: Partial<ApqrDatabaseRow>): ApqrDatabaseRow {
   return {
-    apqr_id: 'APQR-2026-0001',
+    apqr_id: 'aB01',
     scheduler_entry_id: 's1',
     record_id: 'r1',
     client_id: 'c1',
@@ -53,7 +53,7 @@ describe('apqrDelivery', () => {
     const monthKey = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, '0')}`
     const trend = buildMonthlyDeliveryTrend([
       row({ final_apqr_delivery_date: `${monthKey}-15`, delivery_classification: 'Delivered On Time' }),
-      row({ apqr_id: 'APQR-2026-0002', final_apqr_delivery_date: `${monthKey}-20`, delivery_classification: 'Delivered Overdue' }),
+      row({ apqr_id: 'cD02', final_apqr_delivery_date: `${monthKey}-20`, delivery_classification: 'Delivered Overdue' }),
     ], 1)
     expect(trend).toHaveLength(1)
     expect(trend[0]?.delivered).toBe(2)

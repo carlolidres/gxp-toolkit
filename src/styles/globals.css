@@ -1103,6 +1103,77 @@ a.button.primary:hover {
 .form-field { display: grid; gap: 7px; margin-bottom: 14px; color: var(--navy); font-size: .76rem; font-weight: 700; }
 .form-field small { color: var(--muted); font-weight: 400; }
 .input, .search-input { width: 100%; min-height: 40px; padding: 0 11px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--app-text); outline: none; }
+
+.app-date-input {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--app-text);
+}
+
+.app-date-input-display {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 36px 0 11px;
+  pointer-events: none;
+  font: inherit;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-date-input-placeholder {
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
+  font-weight: 400;
+}
+
+.app-date-input-native {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font: inherit;
+  outline: none;
+}
+
+.app-date-input-native::-webkit-datetime-edit,
+.app-date-input-native::-webkit-datetime-edit-fields-wrapper,
+.app-date-input-native::-webkit-datetime-edit-text,
+.app-date-input-native::-webkit-datetime-edit-month-field,
+.app-date-input-native::-webkit-datetime-edit-day-field,
+.app-date-input-native::-webkit-datetime-edit-year-field {
+  color: transparent;
+}
+
+.app-date-input-native::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+.app-date-input:focus-within {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(22, 125, 131, 0.1);
+}
+
+.app-date-input:has(.app-date-input-native:disabled) {
+  opacity: 0.72;
+  cursor: not-allowed;
+  background: color-mix(in srgb, var(--surface-muted) 45%, var(--surface));
+}
+
+.app-date-input:has(.app-date-input-native:disabled) .app-date-input-display {
+  color: color-mix(in srgb, var(--app-text) 72%, var(--muted));
+}
 .password-input-wrap { position: relative; display: flex; align-items: center; }
 .password-input-wrap .input { padding-right: 42px; }
 .password-input-wrap .input::-ms-reveal,
@@ -1579,7 +1650,8 @@ tbody tr:hover { background: var(--table-row-hover); }
   white-space: nowrap;
 }
 
-.apqr-date-range {
+.apqr-date-range,
+.apqr-cycle-year-filter {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -1591,6 +1663,32 @@ tbody tr:hover { background: var(--table-row-hover); }
   font-size: 0.8rem;
   color: var(--muted);
   white-space: nowrap;
+}
+
+.apqr-cycle-year-field {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.apqr-cycle-year-field svg {
+  color: var(--teal);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.apqr-cycle-year-field select {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--navy);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 4.5rem;
+  padding: 0 1.25rem 0 0;
+  cursor: pointer;
 }
 
 .apqr-date-field {
@@ -1607,20 +1705,37 @@ tbody tr:hover { background: var(--table-row-hover); }
   pointer-events: none;
 }
 
-.apqr-date-field input[type='date'] {
+.apqr-date-field input[type='date'],
+.apqr-date-field .app-date-input-native {
   border: 0;
   background: transparent;
-  color: var(--navy);
+  color: transparent;
   font: inherit;
   font-size: 0.8rem;
   font-weight: 600;
   min-width: 0;
+  min-height: auto;
   padding: 0;
   cursor: pointer;
   color-scheme: light;
 }
 
-.apqr-date-field input[type='date']::-webkit-calendar-picker-indicator {
+.apqr-date-field .app-date-input {
+  min-height: auto;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.apqr-date-field .app-date-input-display {
+  position: static;
+  padding: 0;
+  color: var(--navy);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.apqr-date-field .app-date-input-native::-webkit-calendar-picker-indicator {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -2517,7 +2632,8 @@ body.is-col-resizing {
     min-width: min(100%, 9rem);
   }
 
-  .apqr-date-range {
+  .apqr-date-range,
+  .apqr-cycle-year-filter {
     flex: 1 1 100%;
     justify-content: space-between;
     flex-wrap: wrap;
@@ -3648,6 +3764,416 @@ body.is-col-resizing .apqr-client-table .apqr-col-resize-handle::after {
   gap: 0;
 }
 
+.apqr-scheduler-form-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: var(--content-gap);
+  overflow: hidden;
+}
+
+.apqr-scheduler-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.apqr-scheduler-form-header h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--app-text);
+}
+
+.apqr-scheduler-form-header h2 svg {
+  flex-shrink: 0;
+  color: var(--teal);
+}
+
+.apqr-scheduler-form-header .help-text {
+  margin: 6px 0 0;
+  max-width: 52ch;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.apqr-scheduler-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-muted) 70%, var(--surface));
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.apqr-scheduler-mode-badge svg {
+  color: var(--teal);
+}
+
+.apqr-scheduler-mode-badge.is-edit {
+  color: var(--app-text);
+  border-color: color-mix(in srgb, var(--teal) 30%, var(--border));
+  background: color-mix(in srgb, var(--teal) 8%, var(--surface));
+}
+
+.apqr-scheduler-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.apqr-scheduler-form-section {
+  padding: 18px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.apqr-scheduler-form-section:first-child {
+  padding-top: 0;
+}
+
+.apqr-scheduler-form-section:last-of-type {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.apqr-scheduler-form-section--computed {
+  padding: 18px 16px;
+  margin: 4px 0 8px;
+  border: 1px solid color-mix(in srgb, var(--teal) 22%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--teal-soft) 28%, var(--surface));
+}
+
+.apqr-scheduler-section-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--app-text);
+}
+
+.apqr-scheduler-section-heading svg {
+  flex-shrink: 0;
+  color: var(--teal);
+}
+
+.apqr-scheduler-section-lead {
+  margin: -6px 0 14px;
+  max-width: 62ch;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.apqr-scheduler-form-grid {
+  display: grid;
+  gap: 14px 16px;
+}
+
+.apqr-scheduler-form-grid--product {
+  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+}
+
+.apqr-scheduler-form-grid--coverage,
+.apqr-scheduler-form-grid--status {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 640px;
+}
+
+.apqr-scheduler-form-grid--dates {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.apqr-scheduler-field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.apqr-scheduler-computed-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--teal) 28%, var(--border));
+  background: color-mix(in srgb, var(--teal) 10%, var(--surface));
+  color: var(--teal);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.apqr-scheduler-field.is-computed .help-text {
+  color: color-mix(in srgb, var(--muted) 88%, var(--teal));
+}
+
+.apqr-scheduler-field .help-text {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.apqr-scheduler-form-panel .apqr-form-field textarea::placeholder,
+.apqr-scheduler-form-panel .apqr-form-field input::placeholder {
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
+  font-weight: 400;
+}
+
+.apqr-scheduler-remarks-fieldset {
+  margin: 20px 0 0;
+  padding: 16px 16px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-muted) 24%, var(--surface));
+}
+
+.apqr-scheduler-remarks-fieldset legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--app-text);
+}
+
+.apqr-scheduler-remarks-fieldset legend svg {
+  color: var(--teal);
+}
+
+.apqr-scheduler-remarks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.apqr-scheduler-remark-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.apqr-scheduler-remark-row textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.apqr-scheduler-add-remark {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.apqr-scheduler-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.apqr-scheduler-form-actions .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding-inline: 14px;
+}
+
+.apqr-scheduler-form-actions .button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.apqr-scheduler-form-actions .button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.apqr-scheduler-form-actions .button:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.apqr-scheduler-table-titles h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.apqr-scheduler-cycle-year {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.apqr-scheduler-eol-pill {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.apqr-scheduler-table .apqr-col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.apqr-scheduler-table .apqr-col-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 20%;
+  right: 3px;
+  width: 2px;
+  height: 60%;
+  border-radius: 1px;
+  background: transparent;
+  transition: background-color 0.12s ease;
+}
+
+.apqr-scheduler-table .apqr-col-resize-handle:hover::after,
+.apqr-scheduler-table .apqr-col-resize-handle:active::after,
+body.is-col-resizing .apqr-scheduler-table .apqr-col-resize-handle::after {
+  background: color-mix(in srgb, var(--teal) 55%, transparent);
+}
+
+.apqr-scheduler-view-dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 16px 48px color-mix(in srgb, var(--app-text) 18%, transparent);
+}
+
+.apqr-scheduler-view-dialog::backdrop {
+  background: color-mix(in srgb, var(--app-text) 35%, transparent);
+}
+
+.apqr-scheduler-view-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.apqr-scheduler-view-dialog-header h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.apqr-scheduler-view-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+  padding: 16px;
+}
+
+.apqr-scheduler-view-dialog-grid > div {
+  min-width: 0;
+}
+
+.apqr-scheduler-view-dialog-grid dt {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.apqr-scheduler-view-dialog-grid dd {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+}
+
+.apqr-scheduler-view-remarks {
+  grid-column: 1 / -1;
+}
+
+.apqr-scheduler-view-remarks ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.apqr-scheduler-table th:last-child,
+.apqr-scheduler-table td:last-child {
+  width: auto;
+  min-width: 11rem;
+}
+
+@media (max-width: 960px) {
+  .apqr-scheduler-form-grid--product,
+  .apqr-scheduler-form-grid--dates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .apqr-scheduler-field--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .apqr-scheduler-form-header {
+    align-items: flex-start;
+  }
+
+  .apqr-scheduler-form-grid--product,
+  .apqr-scheduler-form-grid--coverage,
+  .apqr-scheduler-form-grid--dates,
+  .apqr-scheduler-form-grid--status,
+  .apqr-scheduler-view-dialog-grid {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+
+  .apqr-scheduler-form-section--computed {
+    padding-inline: 12px;
+  }
+
+  .apqr-scheduler-form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .apqr-scheduler-form-actions .button {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
 .apqr-scheduler-heading {
   flex-wrap: nowrap;
   align-items: center;
@@ -4017,6 +4543,7 @@ body.is-col-resizing .apqr-client-table .apqr-col-resize-handle::after {
   gap: 8px;
   min-height: 8.25rem;
   height: 100%;
+  width: 100%;
   padding: 15px 15px 13px 18px;
   border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
   border-radius: 12px;
@@ -4025,6 +4552,10 @@ body.is-col-resizing .apqr-client-table .apqr-col-resize-handle::after {
     0 1px 2px rgba(27, 47, 67, 0.04),
     0 8px 20px rgba(27, 47, 67, 0.04);
   overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
@@ -4052,6 +4583,20 @@ body.is-col-resizing .apqr-client-table .apqr-col-resize-handle::after {
     0 2px 4px rgba(27, 47, 67, 0.05),
     0 12px 26px rgba(27, 47, 67, 0.07);
   transform: translateY(-2px);
+}
+
+.apqr-database-stat.is-active {
+  border-color: color-mix(in srgb, var(--teal) 55%, var(--border));
+  background: color-mix(in srgb, var(--teal) 4%, var(--surface));
+  box-shadow:
+    0 2px 4px rgba(27, 47, 67, 0.06),
+    0 10px 24px rgba(27, 47, 67, 0.08),
+    inset 0 0 0 1px color-mix(in srgb, var(--teal) 18%, transparent);
+}
+
+.apqr-database-stat:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--teal) 65%, transparent);
+  outline-offset: 2px;
 }
 
 .apqr-database-stat-label {
@@ -4205,35 +4750,116 @@ body.is-col-resizing .apqr-client-table .apqr-col-resize-handle::after {
 }
 
 .apqr-database-filters {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
-  gap: 12px;
-  align-items: end;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   margin-bottom: 14px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--surface-muted) 42%, var(--surface));
+  padding: 16px 18px 14px;
+  border: 1px solid color-mix(in srgb, var(--teal) 16%, var(--border));
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--teal) 5%, var(--surface)) 0%, var(--surface) 100%);
+  box-shadow:
+    0 1px 2px rgba(27, 47, 67, 0.04),
+    0 8px 22px rgba(27, 47, 67, 0.04);
+}
+
+.apqr-database-filters-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.apqr-database-filters-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--navy);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.apqr-database-filters-title svg {
+  color: var(--teal);
+}
+
+.apqr-database-filters-active-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.35rem;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--teal) 12%, var(--surface));
+  color: var(--teal);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.apqr-database-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+.apqr-database-filters-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.apqr-database-filter-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.apqr-database-filter-field .apqr-field-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
 .apqr-database-filter-field select {
   width: 100%;
-  min-height: 39px;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
+  min-height: 40px;
+  padding: 8px 34px 8px 11px;
+  border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
+  border-radius: 9px;
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7c93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
   color: var(--app-text);
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  appearance: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.apqr-database-filter-field select:hover {
+  border-color: color-mix(in srgb, var(--teal) 28%, var(--border));
+  background-color: color-mix(in srgb, var(--teal) 2%, var(--surface));
 }
 
 .apqr-database-filter-field select:focus-visible {
   outline: none;
   border-color: color-mix(in srgb, var(--teal) 46%, var(--border));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 14%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 14%, transparent);
 }
 
 .apqr-database-filters label {
@@ -4265,7 +4891,41 @@ body.is-col-resizing .apqr-client-table .apqr-col-resize-handle::after {
 }
 
 .apqr-database-filters-reset {
-  align-self: end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding-inline: 14px;
+  border-radius: 9px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.apqr-database-filters-reset:not(:disabled):hover {
+  border-color: color-mix(in srgb, var(--teal) 34%, var(--border));
+  background: color-mix(in srgb, var(--teal) 8%, var(--surface));
+  color: var(--teal);
+}
+
+.apqr-database-filters-reset:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.apqr-database-filters-reset:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--teal) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.apqr-database-filters-reset:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
 }
 
 .apqr-database-columns-popover .apqr-columns-popover-title {
@@ -4307,27 +4967,44 @@ body.is-col-resizing .apqr-client-table .apqr-col-resize-handle::after {
 
 .apqr-database-table-scroll {
   overflow: auto;
-  max-height: min(62vh, 640px);
+  /* Freeze-pane viewport: sticky header + 10 rows (measured up to ~81px with status pills) */
+  max-height: min(85vh, calc(2rem + 10 * 5.1rem));
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
+  /* ponytail: scroll region for freeze-pane header row */
+  overscroll-behavior: contain;
 }
 
 .apqr-database-table {
   margin: 0;
   table-layout: fixed;
   width: 100%;
+  min-width: 960px;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .apqr-database-table thead th {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 3;
   padding: 8px 10px;
   font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
   background: var(--table-header-bg);
+  background-clip: padding-box;
   box-shadow: 0 1px 0 var(--border);
   overflow: hidden;
+  vertical-align: middle;
+}
+
+.apqr-database-table thead th.apqr-database-actions-col {
+  z-index: 4;
+  background: var(--table-header-bg);
 }
 
 .apqr-database-table .apqr-th-label {
@@ -4531,19 +5208,18 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
 }
 
 @media (max-width: 1100px) {
-  .apqr-database-filters {
+  .apqr-database-filters-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .apqr-database-filters-reset {
-    grid-column: 1 / -1;
-    justify-self: start;
   }
 }
 
 @media (max-width: 720px) {
-  .apqr-database-filters {
+  .apqr-database-filters-grid {
     grid-template-columns: 1fr;
+  }
+
+  .apqr-database-filters {
+    padding: 14px 14px 12px;
   }
 }
 
@@ -5206,10 +5882,11 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   min-width: 0;
 }
 
-.apqr-form-field input,
+.apqr-form-field input:not(.app-date-input-native),
 .apqr-form-field select,
 .apqr-form-field textarea,
-.apqr-form-field .apqr-combobox {
+.apqr-form-field .apqr-combobox,
+.apqr-form-field .app-date-input {
   width: 100%;
   min-height: 39px;
   padding: 8px 10px;
@@ -5222,9 +5899,49 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.apqr-form-field input:disabled,
+.apqr-form-field input:not(.app-date-input-native),
+.apqr-form-field select,
+.apqr-form-field textarea,
+.apqr-form-field .apqr-combobox,
+.apqr-form-field .app-date-input {
+  align-self: start;
+}
+
+.apqr-form-field .app-date-input {
+  position: relative;
+  padding: 0;
+  min-height: 39px;
+  height: 39px;
+}
+
+.apqr-form-field .app-date-input-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0 36px 0 10px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: none;
+}
+
+.apqr-form-field .app-date-input-display {
+  padding: 0 36px 0 10px;
+}
+
+.apqr-form-field .app-date-input:focus-within {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 18%, transparent);
+}
+
+.apqr-form-field input:not(.app-date-input-native):disabled,
 .apqr-form-field select:disabled,
-.apqr-form-field textarea:disabled {
+.apqr-form-field textarea:disabled,
+.apqr-form-field .app-date-input:has(.app-date-input-native:disabled) {
   opacity: 0.72;
   cursor: not-allowed;
   background: color-mix(in srgb, var(--surface-muted) 45%, var(--surface));
@@ -5239,7 +5956,7 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   box-shadow: none;
 }
 
-.apqr-form-field input:focus-visible,
+.apqr-form-field input:not(.app-date-input-native):focus-visible,
 .apqr-form-field select:focus-visible,
 .apqr-form-field textarea:focus-visible {
   outline: none;
@@ -5731,17 +6448,13 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .apqr-database-filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .apqr-database-filters-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 720px) {
   .apqr-database-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .apqr-database-filters {
     grid-template-columns: 1fr;
   }
 }

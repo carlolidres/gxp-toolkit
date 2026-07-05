@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import { formatAppDate } from '../../utils/dateUtils'
 import type { EdocDocumentStatus, EdocPriority } from '../../features/edoc/types'
 
 const statusLabels: Record<EdocDocumentStatus, string> = {
@@ -92,9 +93,6 @@ export function EdocEmpty({ title, description }: { title: string; description: 
 }
 
 export function formatEdocDate(value: string | null): string {
-  if (!value) return 'Not set'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString()
+  return formatAppDate(value, 'Not set')
 }
 

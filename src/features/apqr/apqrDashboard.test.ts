@@ -1,18 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  apqrCycleYearOptions,
   buildTriageDistribution,
   buildUpcomingActions,
+  defaultApqrCycleYear,
   defaultApqrReviewCycle,
   filterRowsByReviewCycle,
+  formatApqrCycleYearLabel,
   formatMetricTrend,
   formatReviewCycleLabel,
+  isStandardApqrCycleCoverage,
+  resolveApqrIdYear,
+  reviewCycleFromYear,
 } from './apqrDashboard'
 import type { ApqrDatabaseRow } from './types'
 
 function row(partial: Partial<ApqrDatabaseRow>): ApqrDatabaseRow {
   return {
-    apqr_id: 'APQR-2026-0001',
+    apqr_id: 'aB01',
     scheduler_entry_id: 's1',
     record_id: 'r1',
     client_id: 'c1',
@@ -54,6 +60,49 @@ describe('apqrDashboard', () => {
     const cycle = defaultApqrReviewCycle(new Date('2026-07-04T12:00:00Z'))
     expect(cycle).toEqual({ start: '2025-11-01', end: '2026-10-31' })
     expect(formatReviewCycleLabel(cycle.start, cycle.end)).toContain('Nov 2025')
+    expect(defaultApqrCycleYear(new Date('2026-07-04T12:00:00Z'))).toBe(2026)
+    expect(reviewCycleFromYear(2027)).toEqual({ start: '2026-11-01', end: '2027-10-31' })
+    expect(formatApqrCycleYearLabel(2026)).toContain('Oct 2026')
+  })
+
+  it('builds cycle year options from data and defaults', () => {
+    const rows = [
+      row({ apqr_id: 'A' }),
+      row({
+        apqr_id: 'B',
+        review_coverage_start: '2024-11-01',
+        review_coverage_end: '2025-10-31',
+      }),
+    ]
+    const options = apqrCycleYearOptions(rows, new Date('2026-07-04T12:00:00Z'))
+    expect(options).toContain(2025)
+    expect(options).toContain(2026)
+    expect(options[0]).toBeGreaterThan(options[options.length - 1]!)
+  })
+
+  it('resolves APQR ID year from calendar year of entry, not review coverage', () => {
+    const today = new Date('2026-07-04T12:00:00Z')
+    expect(
+      resolveApqrIdYear(
+        { review_coverage_start: '2024-11-01', review_coverage_end: '2025-10-31' },
+        today,
+      ),
+    ).toBe(2026)
+    expect(
+      resolveApqrIdYear(
+        { review_coverage_start: '2025-11-01', review_coverage_end: '2026-10-31' },
+        today,
+      ),
+    ).toBe(2026)
+    expect(
+      resolveApqrIdYear(
+        { review_coverage_start: '2026-11-01', review_coverage_end: '2027-10-31' },
+        today,
+      ),
+    ).toBe(2026)
+    expect(defaultApqrCycleYear(today)).toBe(2026)
+    expect(isStandardApqrCycleCoverage('2025-11-01', '2026-10-31')).toBe(true)
+    expect(isStandardApqrCycleCoverage('2025-01-01', '2026-12-31')).toBe(false)
   })
 
   it('filters rows by overlapping review coverage', () => {

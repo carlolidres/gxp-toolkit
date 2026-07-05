@@ -1,5 +1,7 @@
 import { useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 
+import { AppDateInput } from './AppDateInput'
+
 function EyeOpenIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -58,7 +60,7 @@ export function PasswordInput({ className, ...props }: InputHTMLAttributes<HTMLI
 }
 
 export function DateInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className="input" type="date" {...props} />
+  return <AppDateInput {...props} />
 }
 
 export function SelectInput({ children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {

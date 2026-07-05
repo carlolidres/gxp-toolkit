@@ -8,6 +8,7 @@ import {
   getDueMonth,
   getDueYear,
 } from '../../lib/vmpMasterlistSchedule'
+import { formatAppDate } from '../../utils/dateUtils'
 import { VmpIcon } from './VmpFormFields'
 
 type DrawerTab = 'Overview' | 'Documents' | 'Schedule' | 'Status' | 'Audit'
@@ -66,7 +67,7 @@ function DrawerBody({
       <div className="vmp-detail-grid">
         <DetailRow label="Protocol Tracer" value={record.protocolTracer} />
         <DetailRow label="Report Tracer" value={record.reportTracer} />
-        <DetailRow label="Report Approval Date" value={record.reportApprovalDate} />
+        <DetailRow label="Report Approval Date" value={formatAppDate(record.reportApprovalDate, '')} />
       </div>
     )
   }
@@ -75,7 +76,7 @@ function DrawerBody({
     return (
       <div className="vmp-detail-grid">
         <DetailRow label="Review / Revalidation Frequency" value={record.reviewFrequency} />
-        <DetailRow label="Next Due Date" value={record.nextDueDate} />
+        <DetailRow label="Next Due Date" value={formatAppDate(record.nextDueDate, '')} />
         <DetailRow label="Derived Due Month" value={getDueMonth(record.nextDueDate)} />
         <DetailRow label="Derived Due Year" value={getDueYear(record.nextDueDate)} />
         <DetailRow label="Days Remaining" value={daysRemaining === null ? '' : String(daysRemaining)} />

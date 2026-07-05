@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
+import { AppDateInput } from '../forms/AppDateInput'
+
 const formIconPaths: Record<string, string> = {
   document: 'M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm7 0v5h5M9 13h6M9 17h4',
   save: 'M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z M12 11v6M9 14h6',
@@ -103,6 +105,20 @@ export function FormInput({
   readOnly?: boolean
   helper?: string
 }) {
+  if (type === 'date') {
+    return (
+      <label className="vmp-field">
+        <FieldLabel label={label} required={required} />
+        <AppDateInput
+          value={value}
+          readOnly={readOnly}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        {helper ? <small className="vmp-field-helper">{helper}</small> : null}
+      </label>
+    )
+  }
+
   return (
     <label className="vmp-field">
       <FieldLabel label={label} required={required} />

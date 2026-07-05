@@ -177,11 +177,23 @@ export function ApqrIcon({ name, ...props }: { name: string } & SVGProps<SVGSVGE
   if (name === 'clear') {
     return (
       <svg {...shared}>
-        <path d="M3 6h18" />
-        <path d="M8 6V4h8v2" />
-        <path d="M9 10v7" />
-        <path d="M15 10v7" />
-        <path d="M10 6l1 14h2l1-14" />
+        <path d="M16 4 9 11" />
+        <path d="M3 20h9" />
+        <path d="M4 16v4" />
+        <path d="M6 15v5" />
+        <path d="M8 14v6" />
+        <path d="M10 13v7" />
+        <path d="M12 14v6" />
+      </svg>
+    )
+  }
+  if (name === 'reset') {
+    return (
+      <svg {...shared}>
+        <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+        <path d="M21 3v5h-5" />
+        <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+        <path d="M8 16H3v5" />
       </svg>
     )
   }
@@ -376,6 +388,34 @@ export function ApqrIcon({ name, ...props }: { name: string } & SVGProps<SVGSVGE
         <path d="M12 3 2.5 20h19L12 3Z" />
         <path d="M12 9v5" />
         <path d="M12 17h.01" />
+      </svg>
+    )
+  }
+  if (name === 'cycle') {
+    return (
+      <svg {...shared}>
+        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+        <path d="M16 16h5v5" />
+      </svg>
+    )
+  }
+  if (name === 'load') {
+    return (
+      <svg {...shared}>
+        <path d="M12 3v12" />
+        <path d="m8 11 4 4 4-4" />
+        <path d="M4 21h16" />
+      </svg>
+    )
+  }
+  if (name === 'package') {
+    return (
+      <svg {...shared}>
+        <path d="M12 3 2 8l10 5 10-5-10-5Z" />
+        <path d="M2 8v8l10 5 10-5V8" />
+        <path d="M12 13v8" />
       </svg>
     )
   }

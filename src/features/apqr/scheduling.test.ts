@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addCalendarDays,
   classifyDelivery,
+  defaultApqrGenerationDate,
   defaultCommitmentSchedule,
   defaultStabilityPullOutDate,
   expectedStabilityTabulationCompletionDate,
@@ -11,6 +12,10 @@ import {
 describe('apqr scheduling', () => {
   it('computes default stability pull-out 60 days before coverage end', () => {
     expect(defaultStabilityPullOutDate('2026-12-31')).toBe('2026-11-01')
+  })
+
+  it('computes APQR generation date 30 days after coverage end', () => {
+    expect(defaultApqrGenerationDate('2026-12-31')).toBe('2027-01-30')
   })
 
   it('computes commitment schedule 90 days after coverage end', () => {

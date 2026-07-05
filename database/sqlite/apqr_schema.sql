@@ -39,6 +39,12 @@ CREATE TABLE IF NOT EXISTS apqr_scheduler_entries (
                                       CHECK (commitment_schedule_status IN ('Planned', 'For Client Approval', 'Client Approved')),
   schedule_status_date              TEXT,
   stability_pull_out_adjustment_reason TEXT,
+  product_status                    TEXT NOT NULL DEFAULT 'Active'
+                                      CHECK (product_status IN ('Active', 'End-of-Life')),
+  scheduler_remarks                 TEXT,
+  apqr_generation_date              TEXT,
+  commitment_schedule_adjustment_reason TEXT,
+  apqr_generation_adjustment_reason TEXT,
   is_active                         INTEGER NOT NULL DEFAULT 1,
   archived_at                       TEXT,
   archive_reason                    TEXT,

@@ -1,10 +1,13 @@
 import seedBundle from '../../data/apqrSeedData.json'
 import { getSupabaseClient, isSupabaseConfigured } from '../../lib/supabase'
+import { formatAppDate, formatAppDateTime } from '../../utils/dateUtils'
 import {
   auditFieldChanges,
   buildFieldDescription,
   logApqrAudit,
 } from './apqrAudit'
+import { resolveApqrIdYear } from './apqrDashboard'
+import { generateUniqueApqrId } from './apqrId'
 import {
   deliveryFieldsFromInput,
   nextFollowUpDueDate,
@@ -13,11 +16,13 @@ import {
   assignCommitmentPriority,
   classifyDelivery,
   countMissingCritical,
+  defaultApqrGenerationDate,
   defaultCommitmentSchedule,
   defaultStabilityPullOutDate,
   expectedStabilityTabulationCompletionDate,
   PRIORITY_SORT,
 } from './scheduling'
+import { serializeSchedulerRemarks } from './schedulerForm'
 import type {
   ApqrClient,
   ApqrClientInput,
@@ -196,29 +201,182 @@ export function buildDashboardMetrics(
   }
 }
 
-async function trySupabase<T>(fn: () => Promise<T>): Promise<T | null> {
+function supabaseClientOrNull() {
   if (!isSupabaseConfigured()) return null
-  const sb = getSupabaseClient()
-  if (!sb) return null
-  try {
-    return await fn()
-  } catch {
-    return null
+  return getSupabaseClient()
+}
+
+function supabaseErrorMessage(context: string, error: { message: string } | null): string {
+  return `${context}: ${error?.message ?? 'Unknown database error'}`
+}
+
+let apqrDataSynced = false
+
+async function syncApqrFromSupabase(): Promise<void> {
+  const sb = supabaseClientOrNull()
+  if (!sb) return
+
+  const [clientsRes, schedulerRes, recordsRes, followUpsRes] = await Promise.all([
+    sb.from('apqr_clients').select('*').eq('status', 'active').order('code'),
+    sb.from('apqr_scheduler_entries').select('*'),
+    sb.from('apqr_records').select('*'),
+    sb.from('apqr_follow_ups').select('*').order('recorded_at', { ascending: false }),
+  ])
+
+  if (clientsRes.error) throw new Error(supabaseErrorMessage('Failed to load APQR clients', clientsRes.error))
+  if (schedulerRes.error) throw new Error(supabaseErrorMessage('Failed to load APQR scheduler entries', schedulerRes.error))
+  if (recordsRes.error) throw new Error(supabaseErrorMessage('Failed to load APQR records', recordsRes.error))
+  if (followUpsRes.error) throw new Error(supabaseErrorMessage('Failed to load APQR follow-ups', followUpsRes.error))
+
+  clients = (clientsRes.data ?? []) as ApqrClient[]
+  schedulerEntries = (schedulerRes.data ?? []).map((entry) => ({
+    ...(entry as ApqrSchedulerEntry),
+    is_active: Boolean((entry as ApqrSchedulerEntry).is_active ?? true),
+  }))
+  records = (recordsRes.data ?? []) as ApqrRecord[]
+  followUps = (followUpsRes.data ?? []) as ApqrFollowUp[]
+  apqrDataSynced = true
+}
+
+async function ensureApqrDataLoaded(): Promise<void> {
+  if (!isSupabaseConfigured() || apqrDataSynced) return
+  await syncApqrFromSupabase()
+}
+
+async function resyncAfterPersistFailure(): Promise<void> {
+  if (!isSupabaseConfigured()) return
+  apqrDataSynced = false
+  await syncApqrFromSupabase()
+}
+
+function clientRow(client: ApqrClient) {
+  return {
+    id: client.id,
+    code: client.code,
+    account_manager: client.account_manager,
+    client_name: client.client_name,
+    qa: client.qa,
+    technical: client.technical,
+    regulatory: client.regulatory,
+    apqr_package: client.apqr_package,
+    status: client.status,
+    created_at: client.created_at,
+    updated_at: client.updated_at,
   }
 }
 
+function schedulerRow(entry: ApqrSchedulerEntry) {
+  return {
+    id: entry.id,
+    apqr_id: entry.apqr_id,
+    client_id: entry.client_id,
+    stability_pull_out_date: entry.stability_pull_out_date,
+    product_name: entry.product_name,
+    product_code: entry.product_code,
+    product_status: entry.product_status ?? 'Active',
+    review_coverage_start: entry.review_coverage_start,
+    review_coverage_end: entry.review_coverage_end,
+    review_coverage_adjustment_reason: entry.review_coverage_adjustment_reason,
+    commitment_schedule: entry.commitment_schedule,
+    commitment_schedule_adjustment_reason: entry.commitment_schedule_adjustment_reason ?? null,
+    apqr_generation_date: entry.apqr_generation_date ?? null,
+    apqr_generation_adjustment_reason: entry.apqr_generation_adjustment_reason ?? null,
+    commitment_schedule_status: entry.commitment_schedule_status,
+    schedule_status_date: entry.schedule_status_date,
+    stability_pull_out_adjustment_reason: entry.stability_pull_out_adjustment_reason,
+    scheduler_remarks: entry.scheduler_remarks ?? null,
+    is_active: entry.is_active,
+    archived_at: entry.archived_at,
+    archive_reason: entry.archive_reason,
+    created_at: entry.created_at,
+    updated_at: entry.updated_at,
+  }
+}
+
+function recordRow(record: ApqrRecord) {
+  return {
+    id: record.id,
+    scheduler_entry_id: record.scheduler_entry_id,
+    department: record.department,
+    stability_tabulation_status: record.stability_tabulation_status,
+    stability_tabulation_status_date: record.stability_tabulation_status_date,
+    no_ongoing_stability_justification: record.no_ongoing_stability_justification,
+    billing_reference_number: record.billing_reference_number,
+    apqr_report_status: record.apqr_report_status,
+    sent_by: record.sent_by,
+    date_sent: record.date_sent,
+    apr_reference_number: record.apr_reference_number,
+    number_of_batches: record.number_of_batches,
+    zero_batch_explanation: record.zero_batch_explanation,
+    date_client_signed: record.date_client_signed,
+    final_apqr_delivery_date: record.final_apqr_delivery_date,
+    delivery_classification: record.delivery_classification,
+    days_early_or_overdue: record.days_early_or_overdue,
+    delay_category: record.delay_category,
+    delay_reason: record.delay_reason,
+    delay_reason_change_note: record.delay_reason_change_note,
+    expected_final_delivery_date: record.expected_final_delivery_date,
+    remarks: record.remarks,
+    next_follow_up_due_date: record.next_follow_up_due_date,
+    record_status: record.record_status,
+    created_at: record.created_at,
+    updated_at: record.updated_at,
+  }
+}
+
+async function persistClient(client: ApqrClient, mode: 'insert' | 'update'): Promise<void> {
+  const sb = supabaseClientOrNull()
+  if (!sb) return
+
+  const row = clientRow(client)
+  const { error } =
+    mode === 'insert'
+      ? await sb.from('apqr_clients').insert(row)
+      : await sb.from('apqr_clients').update(row).eq('id', client.id)
+
+  if (error) throw new Error(supabaseErrorMessage('Failed to save client', error))
+}
+
+async function persistSchedulerEntry(entry: ApqrSchedulerEntry, mode: 'insert' | 'update'): Promise<void> {
+  const sb = supabaseClientOrNull()
+  if (!sb) return
+
+  const row = schedulerRow(entry)
+  const { error } =
+    mode === 'insert'
+      ? await sb.from('apqr_scheduler_entries').insert(row)
+      : await sb.from('apqr_scheduler_entries').update(row).eq('id', entry.id)
+
+  if (error) throw new Error(supabaseErrorMessage('Failed to save scheduler entry', error))
+}
+
+async function persistRecord(record: ApqrRecord, mode: 'insert' | 'update'): Promise<void> {
+  const sb = supabaseClientOrNull()
+  if (!sb) return
+
+  const row = recordRow(record)
+  const { error } =
+    mode === 'insert'
+      ? await sb.from('apqr_records').insert(row)
+      : await sb.from('apqr_records').update(row).eq('id', record.id)
+
+  if (error) throw new Error(supabaseErrorMessage('Failed to save APQR record', error))
+}
+
+async function nextApqrId(year: number): Promise<string> {
+  const sb = supabaseClientOrNull()
+  if (!sb) {
+    await ensureApqrDataLoaded()
+    return generateUniqueApqrId(schedulerEntries.map((entry) => entry.apqr_id))
+  }
+
+  const { data, error } = await sb.rpc('apqr_next_id', { p_year: year })
+  if (error || !data) throw new Error(supabaseErrorMessage('Failed to generate APQR ID', error))
+  return String(data)
+}
+
 export async function listClients(): Promise<ApqrClient[]> {
-  const remote = await trySupabase(async () => {
-    const sb = getSupabaseClient()!
-    const { data, error } = await sb.from('apqr_clients').select('*').eq('status', 'active').order('code')
-    if (error) throw error
-    if (data?.length) {
-      clients = data as ApqrClient[]
-      return clients
-    }
-    return null
-  })
-  if (remote) return remote
+  await ensureApqrDataLoaded()
   return [...clients].sort((a, b) => a.code.localeCompare(b.code))
 }
 
@@ -250,6 +408,12 @@ export async function saveClient(input: ApqrClientInput, existingId?: string): P
         { key: 'apqr_package', label: 'APQR Package' },
       ],
     )
+    try {
+      await persistClient(updated, 'update')
+    } catch (err) {
+      await resyncAfterPersistFailure()
+      throw err
+    }
     return updated
   }
 
@@ -272,17 +436,24 @@ export async function saveClient(input: ApqrClientInput, existingId?: string): P
     description: buildFieldDescription('created', `client ${created.code}`, 'Client Name', null, created.client_name),
     new_value: created.client_name,
   })
+  try {
+    await persistClient(created, 'insert')
+  } catch (err) {
+    await resyncAfterPersistFailure()
+    throw err
+  }
   return created
 }
 
 export async function listSchedulerForClient(clientId: string): Promise<ApqrSchedulerEntry[]> {
+  await ensureApqrDataLoaded()
   return schedulerEntries.filter((s) => s.client_id === clientId && s.is_active)
 }
 
 export async function saveSchedulerRows(
   clientId: string,
   rows: ApqrSchedulerRowInput[],
-  existingIds: string[] = [],
+  existingIds: (string | undefined)[] = [],
 ): Promise<void> {
   const client = clientById(clientId)
   if (!client) throw new Error('Client not found')
@@ -307,7 +478,14 @@ export async function saveSchedulerRows(
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i]
     const productCode = row.product_code.trim().toUpperCase()
-    const commitment = defaultCommitmentSchedule(row.review_coverage_end)
+    const defaultCommitment = defaultCommitmentSchedule(row.review_coverage_end)
+    const defaultGeneration = defaultApqrGenerationDate(row.review_coverage_end)
+    const commitment = row.commitment_schedule_adjustment_reason
+      ? (row.commitment_schedule ?? defaultCommitment)
+      : defaultCommitment
+    const apqrGeneration = row.apqr_generation_adjustment_reason
+      ? (row.apqr_generation_date ?? defaultGeneration)
+      : defaultGeneration
     const existingId = existingIds[i]
 
     if (existingId) {
@@ -317,18 +495,25 @@ export async function saveSchedulerRows(
       const statusChanged = previous.commitment_schedule_status !== row.commitment_schedule_status
       schedulerEntries[idx] = {
         ...previous,
-        stability_pull_out_date: row.stability_pull_out_date,
+        stability_pull_out_date: row.stability_pull_out_adjustment_reason
+          ? row.stability_pull_out_date
+          : defaultStabilityPullOutDate(row.review_coverage_end),
         product_name: row.product_name.trim(),
         product_code: productCode,
+        product_status: row.product_status ?? previous.product_status ?? 'Active',
         review_coverage_start: row.review_coverage_start,
         review_coverage_end: row.review_coverage_end,
         review_coverage_adjustment_reason: row.review_coverage_adjustment_reason ?? null,
         commitment_schedule: commitment,
+        commitment_schedule_adjustment_reason: row.commitment_schedule_adjustment_reason ?? null,
+        apqr_generation_date: apqrGeneration,
+        apqr_generation_adjustment_reason: row.apqr_generation_adjustment_reason ?? null,
         commitment_schedule_status: row.commitment_schedule_status,
         schedule_status_date:
           row.schedule_status_date ??
           (statusChanged ? ts.slice(0, 10) : previous.schedule_status_date),
         stability_pull_out_adjustment_reason: row.stability_pull_out_adjustment_reason ?? null,
+        scheduler_remarks: serializeSchedulerRemarks(row.scheduler_remarks),
         updated_at: ts,
       }
       await auditFieldChanges(
@@ -340,35 +525,50 @@ export async function saveSchedulerRows(
         [
           { key: 'product_name', label: 'Product Name' },
           { key: 'product_code', label: 'Product Code' },
+          { key: 'product_status', label: 'Product Status' },
           { key: 'stability_pull_out_date', label: 'Stability Pull-Out Date' },
           { key: 'review_coverage_start', label: 'Review Coverage Start' },
           { key: 'review_coverage_end', label: 'Review Coverage End' },
           { key: 'commitment_schedule', label: 'Commitment Schedule' },
+          { key: 'apqr_generation_date', label: 'APQR Generation Report Date' },
           { key: 'commitment_schedule_status', label: 'Commitment Schedule Status' },
         ],
       )
+      try {
+        await persistSchedulerEntry(schedulerEntries[idx], 'update')
+      } catch (err) {
+        await resyncAfterPersistFailure()
+        throw err
+      }
       continue
     }
 
     seq += 1
-    const year = row.review_coverage_end.slice(0, 4)
+    const year = resolveApqrIdYear(row)
     const schedId = `apqr-sched-${String(seq).padStart(5, '0')}`
-    const apqrId = `APQR-${year}-${String(seq).padStart(4, '0')}`
+    const apqrId = await nextApqrId(year)
 
     const entry: ApqrSchedulerEntry = {
       id: schedId,
       apqr_id: apqrId,
       client_id: clientId,
-      stability_pull_out_date: row.stability_pull_out_date || defaultStabilityPullOutDate(row.review_coverage_end),
+      stability_pull_out_date: row.stability_pull_out_adjustment_reason
+        ? row.stability_pull_out_date || defaultStabilityPullOutDate(row.review_coverage_end)
+        : defaultStabilityPullOutDate(row.review_coverage_end),
       product_name: row.product_name.trim(),
       product_code: productCode,
+      product_status: row.product_status ?? 'Active',
       review_coverage_start: row.review_coverage_start,
       review_coverage_end: row.review_coverage_end,
       review_coverage_adjustment_reason: row.review_coverage_adjustment_reason ?? null,
       commitment_schedule: commitment,
+      commitment_schedule_adjustment_reason: row.commitment_schedule_adjustment_reason ?? null,
+      apqr_generation_date: apqrGeneration,
+      apqr_generation_adjustment_reason: row.apqr_generation_adjustment_reason ?? null,
       commitment_schedule_status: row.commitment_schedule_status,
       schedule_status_date: row.schedule_status_date ?? ts.slice(0, 10),
       stability_pull_out_adjustment_reason: row.stability_pull_out_adjustment_reason ?? null,
+      scheduler_remarks: serializeSchedulerRemarks(row.scheduler_remarks),
       is_active: true,
       archived_at: null,
       archive_reason: null,
@@ -376,7 +576,7 @@ export async function saveSchedulerRows(
       updated_at: ts,
     }
     schedulerEntries.push(entry)
-    records.push({
+    const createdRecord: ApqrRecord = {
       id: `apqr-rec-${String(seq).padStart(5, '0')}`,
       scheduler_entry_id: schedId,
       department: null,
@@ -403,7 +603,8 @@ export async function saveSchedulerRows(
       record_status: 'active',
       created_at: ts,
       updated_at: ts,
-    })
+    }
+    records.push(createdRecord)
     await logApqrAudit({
       entity_type: 'scheduler',
       entity_id: entry.id,
@@ -412,6 +613,18 @@ export async function saveSchedulerRows(
       description: buildFieldDescription('created', entry.apqr_id, 'Product Name', null, entry.product_name),
       new_value: entry.product_name,
     })
+    try {
+      await persistSchedulerEntry(entry, 'insert')
+      await persistRecord(createdRecord, 'insert')
+    } catch (err) {
+      await resyncAfterPersistFailure()
+      throw err
+    }
+  }
+
+  if (isSupabaseConfigured()) {
+    apqrDataSynced = false
+    await syncApqrFromSupabase()
   }
 }
 
@@ -443,9 +656,17 @@ export async function archiveSchedulerEntry(schedulerId: string, reason: string)
     reason: trimmed,
     new_value: trimmed,
   })
+
+  try {
+    await persistSchedulerEntry(schedulerEntries[idx], 'update')
+  } catch (err) {
+    await resyncAfterPersistFailure()
+    throw err
+  }
 }
 
 export async function getRecordByApqrId(apqrId: string) {
+  await ensureApqrDataLoaded()
   const sched = schedulerEntries.find((s) => s.apqr_id === apqrId && s.is_active)
   if (!sched) return null
   const client = clientById(sched.client_id)
@@ -470,6 +691,10 @@ export async function saveRecord(apqrId: string, input: ApqrRecordInput): Promis
 
   if (input.number_of_batches === 0 && !input.zero_batch_explanation?.trim()) {
     throw new Error('A remark is required when Number of Batches is zero.')
+  }
+
+  if (input.date_client_signed && input.apqr_report_status !== 'Client Approved') {
+    throw new Error('Date Client Signed can only be set when APQR Report Status is Client Approved.')
   }
 
   if (input.apqr_report_status === 'Client Approved' && !input.date_client_signed) {
@@ -534,9 +759,16 @@ export async function saveRecord(apqrId: string, input: ApqrRecordInput): Promis
       { key: 'expected_final_delivery_date', label: 'Expected Final Delivery Date' },
     ],
   )
+  try {
+    await persistRecord(updated, 'update')
+  } catch (err) {
+    await resyncAfterPersistFailure()
+    throw err
+  }
 }
 
 export async function listFollowUps(recordId: string): Promise<ApqrFollowUp[]> {
+  await ensureApqrDataLoaded()
   return followUps
     .filter((f) => f.record_id === recordId)
     .sort((a, b) => b.recorded_at.localeCompare(a.recorded_at))
@@ -579,7 +811,7 @@ export async function addFollowUp(
   if (isSupabaseConfigured()) {
     const sb = getSupabaseClient()
     if (sb) {
-      await sb.from('apqr_follow_ups').insert({
+      const { error: followError } = await sb.from('apqr_follow_ups').insert({
         id: entry.id,
         record_id: entry.record_id,
         follow_up_date: entry.follow_up_date,
@@ -587,6 +819,8 @@ export async function addFollowUp(
         recorded_by: entry.recorded_by,
         recorded_at: entry.recorded_at,
       })
+      if (followError) throw new Error(supabaseErrorMessage('Failed to save follow-up', followError))
+      await persistRecord(records[recordIdx], 'update')
     }
   }
 
@@ -624,13 +858,14 @@ export async function updateFollowUp(
   if (isSupabaseConfigured()) {
     const sb = getSupabaseClient()
     if (sb) {
-      await sb
+      const { error } = await sb
         .from('apqr_follow_ups')
         .update({
           follow_up_date: input.follow_up_date,
           follow_up_remarks: input.follow_up_remarks.trim(),
         })
         .eq('id', followUpId)
+      if (error) throw new Error(supabaseErrorMessage('Failed to update follow-up', error))
     }
   }
 }
@@ -657,7 +892,8 @@ export async function deleteFollowUp(apqrId: string, followUpId: string): Promis
   if (isSupabaseConfigured()) {
     const sb = getSupabaseClient()
     if (sb) {
-      await sb.from('apqr_follow_ups').delete().eq('id', followUpId)
+      const { error } = await sb.from('apqr_follow_ups').delete().eq('id', followUpId)
+      if (error) throw new Error(supabaseErrorMessage('Failed to delete follow-up', error))
     }
   }
 }
@@ -713,9 +949,7 @@ export async function getDashboardMetrics(): Promise<ApqrDashboardMetrics> {
 }
 
 export function formatApqrDate(iso: string | null | undefined): string {
-  if (!iso) return '—'
-  const d = new Date(`${iso}T12:00:00Z`)
-  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(d)
+  return formatAppDate(iso)
 }
 
 export function formatReviewCoverage(start: string, end: string): string {
@@ -723,15 +957,7 @@ export function formatReviewCoverage(start: string, end: string): string {
 }
 
 export function formatApqrDateTime(iso: string | null | undefined): string {
-  if (!iso) return '—'
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  }).format(new Date(iso))
+  return formatAppDateTime(iso)
 }
 
 export { schedById, clientById }

@@ -1,10 +1,12 @@
 import { buildDashboardMetrics } from './apqrService'
 import { addCalendarDays, assignCommitmentPriority, daysRemainingOrOverdue } from './scheduling'
+import { formatAppDate } from '../../utils/dateUtils'
 import type {
   ApqrDashboardMetrics,
   ApqrDatabaseRow,
   ApqrMetricTrend,
   ApqrPriority,
+  ApqrSchedulerRowInput,
   ApqrTriageSlice,
   ApqrUpcomingAction,
 } from './types'
@@ -35,6 +37,52 @@ export function defaultApqrReviewCycle(today = new Date()): { start: string; end
   const startYear = month >= 10 ? year : year - 1
   const endYear = startYear + 1
   return { start: `${startYear}-11-01`, end: `${endYear}-10-31` }
+}
+
+/** Nov–Oct review window label for a cycle year (dashboard filter range). */
+export function reviewCycleFromYear(cycleYear: number): { start: string; end: string } {
+  return { start: `${cycleYear - 1}-11-01`, end: `${cycleYear}-10-31` }
+}
+
+/** Operational APQR cycle year = calendar year when the entry is created (not review coverage). */
+export function defaultApqrCycleYear(today = new Date()): number {
+  return today.getUTCFullYear()
+}
+
+/** Legacy APQR-YYYY-xxxx IDs only; short IDs use review coverage for cycle year. */
+export function apqrIdYear(apqrId: string): number | null {
+  const match = /^APQR-(\d{4})-/.exec(apqrId)
+  return match ? Number(match[1]) : null
+}
+
+export function apqrCycleYearFromCoverage(endDate: string): number {
+  return Number(endDate.slice(0, 4))
+}
+
+/** Standard Nov 1 – Oct 31 review coverage for the given cycle year. */
+export function isStandardApqrCycleCoverage(start: string, end: string): boolean {
+  const cycleYear = apqrCycleYearFromCoverage(end)
+  const canonical = reviewCycleFromYear(cycleYear)
+  return start === canonical.start && end === canonical.end
+}
+
+/** Cycle year when creating a scheduler row (calendar year at save time). */
+export function resolveApqrIdYear(
+  _row: Pick<ApqrSchedulerRowInput, 'review_coverage_start' | 'review_coverage_end'>,
+  today = new Date(),
+): number {
+  return defaultApqrCycleYear(today)
+}
+
+export function apqrCycleYearOptions(rows: ApqrDatabaseRow[], today = new Date()): number[] {
+  const current = defaultApqrCycleYear(today)
+  const years = new Set<number>([current - 1, current, current + 1, current + 2])
+  for (const row of rows) {
+    years.add(apqrCycleYearFromCoverage(row.review_coverage_end))
+    const legacyYear = apqrIdYear(row.apqr_id)
+    if (legacyYear) years.add(legacyYear)
+  }
+  return [...years].sort((a, b) => b - a)
 }
 
 export function filterRowsByReviewCycle(
@@ -205,9 +253,10 @@ export function buildUpcomingActions(rows: ApqrDatabaseRow[], limit = 6): ApqrUp
 }
 
 export function formatReviewCycleLabel(start: string, end: string): string {
-  const fmt = (iso: string) =>
-    new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(
-      new Date(`${iso}T12:00:00Z`),
-    )
-  return `${fmt(start)} – ${fmt(end)}`
+  return `${formatAppDate(start)} – ${formatAppDate(end)}`
+}
+
+export function formatApqrCycleYearLabel(cycleYear: number): string {
+  const { start, end } = reviewCycleFromYear(cycleYear)
+  return formatReviewCycleLabel(start, end)
 }
