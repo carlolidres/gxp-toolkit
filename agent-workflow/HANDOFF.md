@@ -1,10 +1,10 @@
 # Current Handoff
 
-Last Updated: `2026-07-04`
-Version: `v31`
+Last Updated: `2026-07-05`
+Version: `v32`
 Branch: `main` / `master`
-Commit: `9b4ab46` — v31: APQR module with empty seed data and Supabase migrations
-Deployment: `DEPLOYED` — GitHub Pages run 28708424556 (retry succeeded); Supabase migrations up to date; APQR data cleared
+Commit: `bda33f3` — v32: APQR short IDs, scheduler refactor, audit grants, and shared date input
+Deployment: `DEPLOYED` — GitHub Pages run 28743613502 (retry succeeded after 28743581200 transient failure); Supabase migrations up to date
 
 ## Current Status
 
@@ -41,9 +41,9 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 
 | Check | Status | Result |
 |---|---|---|
-| `npm run build` | `PASSED` | 2026-07-04 (APQR seed cleared) |
-| `npm run test` | `MIXED` | 85/87 — 2 unrelated timeouts (`greeting`, `apqrDelivery`); `apqrDashboard` 5/5 |
-| `supabase db push` | `PASSED` | APQR migrations applied |
+| `npm run build` | `PASSED` | 2026-07-05 (v32 pre-push) |
+| `npm run test` | `PASSED` | 105/105 (2026-07-05) |
+| `supabase db push` | `PASSED` | Remote up to date (20260705120000–20260705223000) |
 | `npm run apqr:seed-supabase` | `PASSED` | Remote APQR data cleared (DELETE-only script) |
 | `npm run apqr:seed-permissions` | `PASSED` | Admin + edoc-creator APQR menus |
 
