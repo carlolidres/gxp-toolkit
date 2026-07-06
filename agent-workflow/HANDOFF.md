@@ -3,8 +3,8 @@
 Last Updated: `2026-07-06`
 Version: `v33`
 Branch: `main` / `master`
-Commit: `bda33f3` — v32: APQR short IDs, scheduler refactor, audit grants, and shared date input
-Deployment: `DEPLOYED` — GitHub Pages run 28743613502 (retry succeeded after 28743581200 transient failure); Supabase migrations up to date
+Commit: `edab6dd` — v33: version history drawer, APQR notifications, and report status updates
+Deployment: `DEPLOYED` — GitHub Pages run 28783203449 (2026-07-06); Supabase migrations up to date
 
 ## Current Status
 
