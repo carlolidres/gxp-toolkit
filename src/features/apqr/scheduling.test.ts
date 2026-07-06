@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   addCalendarDays,
+  assignCommitmentPriority,
   classifyDelivery,
   defaultApqrGenerationDate,
   defaultCommitmentSchedule,
@@ -30,5 +31,23 @@ describe('apqr scheduling', () => {
     expect(classifyDelivery('2027-03-31', '2027-03-30')).toBe('Delivered On Time')
     expect(classifyDelivery('2027-03-31', '2027-04-01')).toBe('Delivered Overdue')
     expect(classifyDelivery('2027-03-31', null, '2027-04-01')).toBe('Currently Overdue and Undelivered')
+  })
+
+  it('returns NA delivery and low priority for cancelled report status', () => {
+    expect(classifyDelivery('2027-03-31', null, '2027-04-01', 'Cancelled')).toBe('NA')
+    expect(
+      assignCommitmentPriority({
+        commitment_schedule: '2027-03-31',
+        final_apqr_delivery_date: null,
+        date_client_signed: null,
+        apqr_report_status: 'Cancelled',
+        commitment_schedule_status: 'Planned',
+        department: null,
+        number_of_batches: null,
+        apr_reference_number: null,
+        billing_reference_number: null,
+        apqr_package: 'Billable',
+      }),
+    ).toBe('Low Priority')
   })
 })

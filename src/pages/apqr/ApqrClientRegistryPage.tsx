@@ -6,7 +6,7 @@ import { ApqrContactRoleEditor } from '../../components/apqr/ApqrContactRoleEdit
 import { ApqrSearchableCombobox } from '../../components/apqr/ApqrSearchableCombobox'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { useColumnResize } from '../../hooks/useColumnResize'
-import { useMenuPermission } from '../../hooks/usePermissions'
+import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { listAccountManagerSuggestions, saveClient } from '../../features/apqr/apqrService'
 import {
   mergeAccountManagerSuggestions,

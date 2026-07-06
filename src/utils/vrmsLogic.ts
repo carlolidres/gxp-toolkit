@@ -398,7 +398,7 @@ export function applySaveDocument(
     email: payload.email ?? existing?.email ?? '',
     dateSent: payload.dateSent ?? existing?.dateSent ?? '',
     reportProtocol: payload.reportProtocol || existing?.reportProtocol || '',
-    batchNo: payload.batchNo || existing?.batchNo || '',
+    batchNo: normalizeOptionalField(payload.batchNo ?? existing?.batchNo),
     clientName: payload.clientName || existing?.clientName || '',
     department: payload.department || existing?.department || '',
     preparedBy: payload.preparedBy || existing?.preparedBy || '',

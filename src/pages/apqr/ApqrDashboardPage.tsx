@@ -37,8 +37,9 @@ import {
 } from '../../features/apqr/apqrService'
 import type { ApqrDashboardMetrics, ApqrDatabaseRow, ApqrMetricTrend } from '../../features/apqr/types'
 import { useColumnResize } from '../../hooks/useColumnResize'
-import { useMenuPermission } from '../../hooks/usePermissions'
+import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { useApqrDatabase } from '../../features/apqr/useApqrData'
+import { apqrPriorityDisplay } from '../../features/apqr/scheduling'
 import { exportRows } from '../../utils/exportUtils'
 
 type ColumnKey =
@@ -389,7 +390,7 @@ export function ApqrDashboardPage() {
 }
 
 function renderTriageCell(key: ColumnKey, row: ApqrDatabaseRow) {
-  if (key === 'priority') return <ApqrPriorityBadge priority={row.priority} />
+  if (key === 'priority') return <ApqrPriorityBadge {...apqrPriorityDisplay(row)} />
   if (key === 'apqr_id') {
     return <Link to={`/apqr/form?apqr=${encodeURIComponent(row.apqr_id)}`}>{row.apqr_id}</Link>
   }
@@ -674,16 +675,7 @@ function DeliveryTrendChart({ data }: { data: ReturnType<typeof buildMonthlyDeli
               dot={{ r: 3.5, fill: palette.secondary, stroke: '#ffffff', strokeWidth: 1.5 }}
               activeDot={{ r: 5, fill: palette.secondary, stroke: '#ffffff', strokeWidth: 2 }}
               isAnimationActive={false}
-            >
-              <LabelList
-                dataKey="delivered"
-                position="top"
-                offset={8}
-                fill={palette.axis}
-                fontSize={10}
-                fontWeight={600}
-              />
-            </Line>
+            />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

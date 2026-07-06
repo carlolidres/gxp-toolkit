@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 
 import { VrmsPage } from '../../components/vrms/VrmsPage'
 import { useToast } from '../../components/feedback/ToastProvider'
-import { useMenuPermission } from '../../hooks/usePermissions'
+import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { useVrmsApp } from '../../context/VrmsAppContext'
 import { VRMS_DEFAULT_REGISTRY } from '../../lib/vrmsDefaults'
 import type { VrmsRegistryType } from '../../types/vrms'

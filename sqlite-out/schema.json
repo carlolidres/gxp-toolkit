@@ -2,7 +2,7 @@
   "meta": {
     "project": "gxp-toolkit",
     "source": "database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql",
-    "generatedAt": "2026-07-04T09:23:54.908Z",
+    "generatedAt": "2026-07-06T09:06:54.224Z",
     "schemaVersion": null,
     "tableCount": 30,
     "edgeCount": 74,
@@ -3970,7 +3970,7 @@
     {
       "id": "apqr_scheduler_entries",
       "type": "table",
-      "columnCount": 20,
+      "columnCount": 25,
       "primaryKeys": [
         "id"
       ],
@@ -4114,6 +4114,56 @@
           "references": null
         },
         {
+          "name": "product_status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Active'",
+          "check": "product_status IN ('Active', 'End-of-Life')",
+          "references": null
+        },
+        {
+          "name": "scheduler_remarks",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "apqr_generation_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "commitment_schedule_adjustment_reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "apqr_generation_adjustment_reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
           "name": "is_active",
           "type": "INTEGER",
           "notNull": true,
@@ -4190,6 +4240,13 @@
           "expression": "commitment_schedule_status IN ('Planned', 'For Client Approval', 'Client Approved')",
           "columns": [
             "commitment_schedule_status"
+          ]
+        },
+        {
+          "table": "apqr_scheduler_entries",
+          "expression": "product_status IN ('Active', 'End-of-Life')",
+          "columns": [
+            "product_status"
           ]
         }
       ],
@@ -4322,7 +4379,7 @@
           "primaryKey": false,
           "unique": false,
           "default": null,
-          "check": "apqr_report_status IS NULL OR apqr_report_status IN (\n                                          'Draft Sent', 'For Client Approval', 'Client Approved'\n                                        )",
+          "check": null,
           "references": null
         },
         {
@@ -4402,7 +4459,7 @@
           "primaryKey": false,
           "unique": false,
           "default": null,
-          "check": "delivery_classification IS NULL OR delivery_classification IN (\n                                          'Delivered On Time', 'Delivered Overdue', 'Currently Overdue and Undelivered'\n                                        )",
+          "check": "delivery_classification IS NULL OR delivery_classification IN (\n                                          'Delivered On Time', 'Delivered Overdue', 'Currently Overdue and Undelivered', 'NA'\n                                        )",
           "references": null
         },
         {
@@ -4526,14 +4583,7 @@
         },
         {
           "table": "apqr_records",
-          "expression": "apqr_report_status IS NULL OR apqr_report_status IN (\n                                          'Draft Sent', 'For Client Approval', 'Client Approved'\n                                        )",
-          "columns": [
-            "apqr_report_status"
-          ]
-        },
-        {
-          "table": "apqr_records",
-          "expression": "delivery_classification IS NULL OR delivery_classification IN (\n                                          'Delivered On Time', 'Delivered Overdue', 'Currently Overdue and Undelivered'\n                                        )",
+          "expression": "delivery_classification IS NULL OR delivery_classification IN (\n                                          'Delivered On Time', 'Delivered Overdue', 'Currently Overdue and Undelivered', 'NA'\n                                        )",
           "columns": [
             "delivery_classification"
           ]
@@ -4655,7 +4705,7 @@
     {
       "id": "apqr_audit_events",
       "type": "table",
-      "columnCount": 10,
+      "columnCount": 13,
       "primaryKeys": [
         "id"
       ],
@@ -4685,6 +4735,16 @@
           "name": "entity_id",
           "type": "TEXT",
           "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "entity_label",
+          "type": "TEXT",
+          "notNull": false,
           "primaryKey": false,
           "unique": false,
           "default": null,
@@ -4732,6 +4792,16 @@
           "references": null
         },
         {
+          "name": "description",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
           "name": "reason",
           "type": "TEXT",
           "notNull": false,
@@ -4745,6 +4815,16 @@
           "name": "performed_by",
           "type": "TEXT",
           "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "performed_by_name",
+          "type": "TEXT",
+          "notNull": true,
           "primaryKey": false,
           "unique": false,
           "default": null,

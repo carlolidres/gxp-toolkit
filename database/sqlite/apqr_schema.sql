@@ -71,10 +71,7 @@ CREATE TABLE IF NOT EXISTS apqr_records (
   stability_tabulation_status_date    TEXT,
   no_ongoing_stability_justification TEXT,
   billing_reference_number            TEXT,
-  apqr_report_status                  TEXT
-                                        CHECK (apqr_report_status IS NULL OR apqr_report_status IN (
-                                          'Draft Sent', 'For Client Approval', 'Client Approved'
-                                        )),
+  apqr_report_status                  TEXT,
   sent_by                             TEXT,
   date_sent                           TEXT,
   apr_reference_number                TEXT UNIQUE,
@@ -84,7 +81,7 @@ CREATE TABLE IF NOT EXISTS apqr_records (
   final_apqr_delivery_date            TEXT,
   delivery_classification             TEXT
                                         CHECK (delivery_classification IS NULL OR delivery_classification IN (
-                                          'Delivered On Time', 'Delivered Overdue', 'Currently Overdue and Undelivered'
+                                          'Delivered On Time', 'Delivered Overdue', 'Currently Overdue and Undelivered', 'NA'
                                         )),
   days_early_or_overdue               INTEGER,
   delay_category                      TEXT,

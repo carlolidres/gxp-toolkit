@@ -11,6 +11,7 @@ export type DeliveryClassification =
   | 'Delivered On Time'
   | 'Delivered Overdue'
   | 'Currently Overdue and Undelivered'
+  | 'NA'
 
 export type ApqrDepartment =
   | 'Dry'
@@ -67,7 +68,7 @@ export interface ApqrRecord {
   stability_tabulation_status_date: string | null
   no_ongoing_stability_justification: string | null
   billing_reference_number: string | null
-  apqr_report_status: ApqrReportStatus | null
+  apqr_report_status: ApqrReportStatus | string | null
   sent_by: string | null
   date_sent: string | null
   apr_reference_number: string | null
@@ -116,7 +117,7 @@ export interface ApqrDatabaseRow {
   stability_tabulation_status: StabilityTabulationStatus | null
   commitment_schedule: string
   commitment_schedule_status: CommitmentScheduleStatus
-  apqr_report_status: ApqrReportStatus | null
+  apqr_report_status: ApqrReportStatus | string | null
   apr_reference_number: string | null
   number_of_batches: number | null
   billing_reference_number: string | null
@@ -213,7 +214,7 @@ export interface ApqrRecordInput {
   stability_tabulation_status?: StabilityTabulationStatus | null
   no_ongoing_stability_justification?: string | null
   billing_reference_number?: string | null
-  apqr_report_status?: ApqrReportStatus | null
+  apqr_report_status?: ApqrReportStatus | string | null
   sent_by?: string | null
   date_sent?: string | null
   apr_reference_number?: string | null

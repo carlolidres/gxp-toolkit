@@ -12,7 +12,7 @@ import {
 } from '../../components/apqr/ApqrComponents'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { useAuth } from '../../hooks/useAuth'
-import { useMenuPermission } from '../../hooks/usePermissions'
+import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { expectedStabilityTabulationCompletionDate } from '../../features/apqr/scheduling'
 import {
   DELAY_CATEGORIES,
@@ -24,12 +24,14 @@ import {
   listDatabaseRows,
   listDepartmentSuggestions,
   listFollowUps,
+  listReportStatusSuggestions,
   listSentBySuggestions,
   requiresDelayInfo,
   saveRecord,
   updateFollowUp,
 } from '../../features/apqr/apqrService'
 import { rememberDepartment } from '../../features/apqr/departmentSuggestions'
+import { rememberReportStatus } from '../../features/apqr/reportStatusSuggestions'
 import { rememberSentBy } from '../../features/apqr/sentBySuggestions'
 import { CONTACT_EMAIL_RE, parseContactSegments, parseContacts } from '../../features/apqr/apqrContacts'
 import { useApqrRecord } from '../../features/apqr/useApqrData'
@@ -59,7 +61,7 @@ export function ApqrFormPage() {
   const [department, setDepartment] = useState('')
   const [stabStatus, setStabStatus] = useState<StabilityTabulationStatus | ''>('')
   const [noStabJustification, setNoStabJustification] = useState('')
-  const [reportStatus, setReportStatus] = useState<ApqrReportStatus | ''>('')
+  const [reportStatus, setReportStatus] = useState('')
   const [sentBy, setSentBy] = useState('')
   const [dateSent, setDateSent] = useState('')
   const [aprRef, setAprRef] = useState('')
@@ -76,6 +78,7 @@ export function ApqrFormPage() {
   const [followUpRemarks, setFollowUpRemarks] = useState('')
   const [savedSenders, setSavedSenders] = useState<string[]>([])
   const [savedDepartments, setSavedDepartments] = useState<string[]>([])
+  const [savedReportStatuses, setSavedReportStatuses] = useState<string[]>([])
 
   const showDelayPrompt = useMemo(() => {
     if (!data?.sched || !finalDelivery) return false
@@ -104,6 +107,17 @@ export function ApqrFormPage() {
     return [...standard, ...extras]
   }, [department, savedDepartments])
 
+  const reportStatusOptions = useMemo(() => {
+    const names = new Set<string>(REPORT_STATUSES)
+    if (reportStatus.trim()) names.add(reportStatus.trim())
+    savedReportStatuses.forEach((status) => names.add(status))
+    const standard = REPORT_STATUSES.filter((entry) => names.has(entry))
+    const extras = [...names]
+      .filter((entry) => !REPORT_STATUSES.includes(entry as ApqrReportStatus))
+      .sort((a, b) => a.localeCompare(b))
+    return [...standard, ...extras]
+  }, [reportStatus, savedReportStatuses])
+
   const senderOptions = useMemo(() => {
     const names = new Set<string>()
     if (user?.name) names.add(user.name)
@@ -118,6 +132,7 @@ export function ApqrFormPage() {
   useEffect(() => {
     void listSentBySuggestions().then(setSavedSenders)
     void listDepartmentSuggestions().then(setSavedDepartments)
+    void listReportStatusSuggestions().then(setSavedReportStatuses)
   }, [apqrId])
 
   const expectedStab = useMemo(() => {
@@ -210,6 +225,10 @@ export function ApqrFormPage() {
       if (department.trim()) {
         rememberDepartment(department)
         setSavedDepartments(await listDepartmentSuggestions())
+      }
+      if (reportStatus.trim()) {
+        rememberReportStatus(reportStatus)
+        setSavedReportStatuses(await listReportStatusSuggestions())
       }
       notify('Successfully Saved')
       await reload()
@@ -437,22 +456,18 @@ export function ApqrFormPage() {
                 />
               </Field>
               <Field label="APQR Report Status" required>
-                <select
+                <ApqrSearchableCombobox
+                  id="apqr-report-status"
                   value={reportStatus}
+                  options={reportStatusOptions}
                   disabled={!canEdit}
-                  onChange={(e) => {
-                    const next = e.target.value as ApqrReportStatus | ''
+                  placeholder="Type or select report status…"
+                  onChange={(next) => {
                     setReportStatus(next)
                     if (next !== 'Client Approved') setDateSigned('')
                   }}
-                >
-                  <option value="">Select…</option>
-                  {REPORT_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
+                  onCommit={rememberReportStatus}
+                />
               </Field>
               <Field label="Sent By" required>
                 <ApqrSearchableCombobox

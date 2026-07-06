@@ -21,7 +21,7 @@ export const VRMS_ROUTING_FORM_FIELDS: VrmsFormField[] = [
   { key: 'email', label: 'Email', type: 'email', naOptional: true },
   { key: 'dateSent', label: 'Date Sent', type: 'date' },
   { key: 'reportProtocol', label: 'Report/Protocol', required: true, registryType: 'Report / Protocol' },
-  { key: 'batchNo', label: 'Batch No.', required: true },
+  { key: 'batchNo', label: 'Batch No.', required: true, naOptional: true },
   { key: 'clientName', label: 'Client Name', required: true, registryType: 'Client' },
   { key: 'department', label: 'Department', required: true, wide: true, registryType: 'Department' },
   { key: 'preparedBy', label: 'Prepared By', required: true, registryType: 'Prepared by' },

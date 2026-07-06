@@ -7,7 +7,7 @@ import { useToast } from '../../components/feedback/ToastProvider'
 import { VrmsPage } from '../../components/vrms/VrmsPage'
 import { useVmpApp } from '../../context/VmpAppContext'
 import { useVrmsApp } from '../../context/VrmsAppContext'
-import { useMenuPermission } from '../../hooks/usePermissions'
+import { useMenuPermission } from '../../hooks/useMenuPermission'
 import type { VmpFieldType } from '../../lib/vmpFieldOptions'
 import {
   applyCascadeOnChange,

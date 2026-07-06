@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { VrmsPage } from '../../components/vrms/VrmsPage'
-import { useMenuPermission } from '../../hooks/usePermissions'
+import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { useVrmsApp } from '../../context/VrmsAppContext'
 import { VRMS_DATABASE_COLUMNS } from '../../lib/vrmsFormConfig'
 import { VrmsDataTable } from '../../components/vrms/VrmsDataTable'

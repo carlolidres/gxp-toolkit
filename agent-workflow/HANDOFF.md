@@ -1,12 +1,14 @@
 # Current Handoff
 
-Last Updated: `2026-07-05`
-Version: `v32`
+Last Updated: `2026-07-06`
+Version: `v33`
 Branch: `main` / `master`
 Commit: `bda33f3` — v32: APQR short IDs, scheduler refactor, audit grants, and shared date input
 Deployment: `DEPLOYED` — GitHub Pages run 28743613502 (retry succeeded after 28743581200 transient failure); Supabase migrations up to date
 
 ## Current Status
+
+**Topbar version history drawer** — info icon left of bell opens right-side release notes drawer with curated version timeline and developer attribution (Carlo M. Lidres). Topbar actions modernized: clustered icon/account groups, divider, focus-visible states, improved profile typography.
 
 **APQR fixture data cleared** — clients, scheduler entries, records, follow-ups, audit events, and ID sequences removed from seed files, mock JSON, and linked Supabase. Menu permissions unchanged.
 

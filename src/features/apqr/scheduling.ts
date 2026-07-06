@@ -2,6 +2,10 @@ import type { ApqrDatabaseRow, ApqrPriority, DeliveryClassification } from './ty
 
 const MS_PER_DAY = 86_400_000
 
+export function isCancelledReportStatus(status: string | null | undefined): boolean {
+  return status?.trim().toLowerCase() === 'cancelled'
+}
+
 export function addCalendarDays(isoDate: string, days: number): string {
   const d = new Date(`${isoDate}T12:00:00Z`)
   d.setUTCDate(d.getUTCDate() + days)
@@ -39,7 +43,9 @@ export function classifyDelivery(
   commitmentSchedule: string,
   finalDeliveryDate: string | null,
   todayIso = new Date().toISOString().slice(0, 10),
+  apqrReportStatus?: string | null,
 ): DeliveryClassification | null {
+  if (isCancelledReportStatus(apqrReportStatus)) return 'NA'
   if (finalDeliveryDate) {
     return finalDeliveryDate <= commitmentSchedule ? 'Delivered On Time' : 'Delivered Overdue'
   }
@@ -67,6 +73,7 @@ export function assignCommitmentPriority(
   >,
   todayIso = new Date().toISOString().slice(0, 10),
 ): ApqrPriority {
+  if (isCancelledReportStatus(row.apqr_report_status)) return 'Low Priority'
   if (isCompleted(row)) return 'Completed'
 
   const days = daysRemainingOrOverdue(row.commitment_schedule, todayIso)
@@ -129,6 +136,15 @@ export function countMissingCritical(
   if (row.apqr_package === 'Billable' && !row.billing_reference_number) count += 1
   if (!row.commitment_schedule) count += 1
   return count
+}
+
+export function apqrPriorityDisplay(
+  row: Pick<ApqrDatabaseRow, 'priority' | 'apqr_report_status'>,
+): { priority: ApqrPriority; label: string } {
+  if (isCancelledReportStatus(row.apqr_report_status)) {
+    return { priority: 'Low Priority', label: 'Low' }
+  }
+  return { priority: row.priority, label: row.priority }
 }
 
 export const PRIORITY_SORT: Record<ApqrPriority, number> = {

@@ -1,10 +1,10 @@
-# SQLite Schema Report — GxP Toolkit (2026-07-04)
+# SQLite Schema Report — GxP Toolkit (2026-07-06)
 
 ## Summary
 - Source: `database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql`
 - Schema version: **unknown**
 - Tables: **30** · Foreign keys: **74** · Indexes: **26**
-- Generated: 2026-07-04T09:23:54.908Z
+- Generated: 2026-07-06T09:06:54.224Z
 
 ## Agent Usage
 
@@ -550,6 +550,11 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `commitment_schedule_status` | TEXT | NO |  |  | 'Planned' | `commitment_schedule_status IN ('Planned'…` |  |
 | `schedule_status_date` | TEXT | YES |  |  |  |  |  |
 | `stability_pull_out_adjustment_reason` | TEXT | YES |  |  |  |  |  |
+| `product_status` | TEXT | NO |  |  | 'Active' | `product_status IN ('Active', 'End-of-Lif…` |  |
+| `scheduler_remarks` | TEXT | YES |  |  |  |  |  |
+| `apqr_generation_date` | TEXT | YES |  |  |  |  |  |
+| `commitment_schedule_adjustment_reason` | TEXT | YES |  |  |  |  |  |
+| `apqr_generation_adjustment_reason` | TEXT | YES |  |  |  |  |  |
 | `is_active` | INTEGER | NO |  |  | 1 |  |  |
 | `archived_at` | TEXT | YES |  |  |  |  |  |
 | `archive_reason` | TEXT | YES |  |  |  |  |  |
@@ -566,6 +571,7 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 
 **CHECK constraints:**
 - `commitment_schedule_status IN ('Planned', 'For Client Approval', 'Client Approve…`
+- `product_status IN ('Active', 'End-of-Life')`
 
 ### `apqr_records`
 
@@ -578,7 +584,7 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `stability_tabulation_status_date` | TEXT | YES |  |  |  |  |  |
 | `no_ongoing_stability_justification` | TEXT | YES |  |  |  |  |  |
 | `billing_reference_number` | TEXT | YES |  |  |  |  |  |
-| `apqr_report_status` | TEXT | YES |  |  |  | `apqr_report_status IS NULL OR apqr_repor…` |  |
+| `apqr_report_status` | TEXT | YES |  |  |  |  |  |
 | `sent_by` | TEXT | YES |  |  |  |  |  |
 | `date_sent` | TEXT | YES |  |  |  |  |  |
 | `apr_reference_number` | TEXT | YES |  | YES |  |  |  |
@@ -606,8 +612,6 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 **CHECK constraints:**
 - `stability_tabulation_status IS NULL OR stability_tabulation_status IN (
         …`
-- `apqr_report_status IS NULL OR apqr_report_status IN (
-                          …`
 - `delivery_classification IS NULL OR delivery_classification IN (
                 …`
 - `record_status IN ('active', 'archived')`
@@ -633,12 +637,15 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `id` | TEXT | YES | YES |  |  |  |  |
 | `entity_type` | TEXT | NO |  |  |  |  |  |
 | `entity_id` | TEXT | NO |  |  |  |  |  |
+| `entity_label` | TEXT | YES |  |  |  |  |  |
 | `field_name` | TEXT | YES |  |  |  |  |  |
 | `old_value` | TEXT | YES |  |  |  |  |  |
 | `new_value` | TEXT | YES |  |  |  |  |  |
 | `action_type` | TEXT | NO |  |  |  |  |  |
+| `description` | TEXT | NO |  |  |  |  |  |
 | `reason` | TEXT | YES |  |  |  |  |  |
 | `performed_by` | TEXT | YES |  |  |  |  |  |
+| `performed_by_name` | TEXT | NO |  |  |  |  |  |
 | `performed_at` | TEXT | NO |  |  |  |  |  |
 
 **Indexes:**
@@ -1189,6 +1196,11 @@ erDiagram
     text commitment_schedule_status
     text schedule_status_date
     text stability_pull_out_adjustment_reason
+    text product_status
+    text scheduler_remarks
+    text apqr_generation_date
+    text commitment_schedule_adjustment_reason
+    text apqr_generation_adjustment_reason
     integer is_active
     text archived_at
     text archive_reason
@@ -1238,12 +1250,15 @@ erDiagram
     text id PK
     text entity_type
     text entity_id
+    text entity_label
     text field_name
     text old_value
     text new_value
     text action_type
+    text description
     text reason
     text performed_by
+    text performed_by_name
     text performed_at
   }
   apqr_id_sequences {

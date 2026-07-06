@@ -4,10 +4,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { VrmsPage } from '../../components/vrms/VrmsPage'
 import { NaOptionalInput, NaOptionalTextarea } from '../../components/forms/NaOptionalField'
 import { useToast } from '../../components/feedback/ToastProvider'
-import { useMenuPermission } from '../../hooks/usePermissions'
+import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { useVrmsApp } from '../../context/VrmsAppContext'
 import { VRMS_ROUTING_FORM_FIELDS } from '../../lib/vrmsFormConfig'
-import { NA_OPTIONAL_VALUE } from '../../lib/naOptionalField'
+import { NA_OPTIONAL_VALUE, isNaOptionalValue } from '../../lib/naOptionalField'
 import { formatVrmsDateTime, getStatusKey, normalizeOptionalField, validateRoutingPayload } from '../../utils/vrmsLogic'
 import type { RoutingDocument, SaveRoutingDocumentPayload, VrmsSignatory } from '../../types/vrms'
 
@@ -34,7 +34,7 @@ function documentToFormState(doc: RoutingDocument) {
     email: doc.email,
     dateSent: doc.dateSent,
     reportProtocol: doc.reportProtocol,
-    batchNo: doc.batchNo,
+    batchNo: isNaOptionalValue(doc.batchNo) ? NA_OPTIONAL_VALUE : doc.batchNo,
     clientName: doc.clientName,
     department: doc.department,
     preparedBy: doc.preparedBy,
@@ -57,7 +57,7 @@ const initialForm = {
   email: NA_OPTIONAL_VALUE,
   dateSent: '',
   reportProtocol: '',
-  batchNo: '',
+  batchNo: NA_OPTIONAL_VALUE,
   clientName: '',
   department: '',
   preparedBy: '',
@@ -77,6 +77,7 @@ function buildRoutingPayload(
     ...form,
     ilTag: normalizeOptionalField(form.ilTag),
     email: normalizeOptionalField(form.email),
+    batchNo: normalizeOptionalField(form.batchNo),
     remarks: normalizeOptionalField(form.remarks),
     signatories: isCancelled ? [] : signatories,
     __originalTracker: form.routingTracker,

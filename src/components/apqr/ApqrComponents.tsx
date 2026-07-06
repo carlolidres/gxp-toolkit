@@ -69,8 +69,8 @@ export function ApqrError({ message }: { message: string }) {
   return <p className="form-error" role="alert">{message}</p>
 }
 
-export function ApqrPriorityBadge({ priority }: { priority: ApqrPriority }) {
-  return <span className={`status-pill ${priorityTone[priority] ?? 'neutral'}`}>{priority}</span>
+export function ApqrPriorityBadge({ priority, label }: { priority: ApqrPriority; label?: string }) {
+  return <span className={`status-pill ${priorityTone[priority] ?? 'neutral'}`}>{label ?? priority}</span>
 }
 
 const commitmentTone: Record<CommitmentScheduleStatus, string> = {
@@ -87,6 +87,7 @@ const deliveryTone: Record<DeliveryClassification, string> = {
   'Delivered On Time': 'success',
   'Delivered Overdue': 'warning',
   'Currently Overdue and Undelivered': 'danger',
+  NA: 'neutral',
 }
 
 export function ApqrDeliveryBadge({
@@ -111,9 +112,10 @@ const reportStatusTone: Record<ApqrReportStatus, string> = {
   'Client Approved': 'success',
 }
 
-export function ApqrReportStatusBadge({ status }: { status: ApqrReportStatus | null }) {
+export function ApqrReportStatusBadge({ status }: { status: ApqrReportStatus | string | null }) {
   if (!status) return <>—</>
-  return <span className={`status-pill ${reportStatusTone[status]}`}>{status}</span>
+  const tone = reportStatusTone[status as ApqrReportStatus] ?? 'neutral'
+  return <span className={`status-pill ${tone}`}>{status}</span>
 }
 
 const packageTone: Record<ApqrPackage, string> = {

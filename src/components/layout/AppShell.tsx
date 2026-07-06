@@ -11,8 +11,11 @@ import { useAuth } from '../../hooks/useAuth'
 import { usePermissions } from '../../hooks/usePermissions'
 import { useTheme } from '../../hooks/useTheme'
 import { MessagesModal } from '../feedback/MessagesModal'
+import { ApqrNotificationsModal } from '../feedback/ApqrNotificationsModal'
+import { VersionHistoryDrawer } from '../feedback/VersionHistoryDrawer'
 import { GxpLogo } from '../brand/GxpLogo'
 import { useFeedbackMessages } from '../../hooks/useFeedbackMessages'
+import { useApqrNotifications } from '../../hooks/useApqrNotifications'
 import { SidebarNavList } from './SidebarNavList'
 
 type IconProps = SVGProps<SVGSVGElement>
@@ -66,15 +69,6 @@ function IconEdoc(props: IconProps) {
   )
 }
 
-function IconSearch(props: IconProps) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true" {...props}>
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
-    </svg>
-  )
-}
-
 function IconGift(props: IconProps) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true" {...props}>
@@ -101,20 +95,30 @@ function IconMoon(props: IconProps) {
   )
 }
 
-function IconGlobe(props: IconProps) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true" {...props}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3 12h18M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18" />
-    </svg>
-  )
-}
-
 function IconMessage(props: IconProps) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true" {...props}>
       <path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-6.2A8 8 0 1 1 21 12Z" />
       <path d="M8 10h8M8 14h5" />
+    </svg>
+  )
+}
+
+function IconBell(props: IconProps) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true" {...props}>
+      <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  )
+}
+
+function IconInfo(props: IconProps) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true" {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5" />
+      <circle cx="12" cy="8" r="0.75" fill="currentColor" stroke="none" />
     </svg>
   )
 }
@@ -140,9 +144,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [messagesOpen, setMessagesOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false)
   const { user, logout, usesSupabase } = useAuth()
   const { messages, loading, unreadCount, isAdmin, refresh, acknowledgeUnread } = useFeedbackMessages()
   const { accessibleNavigationGroups, permissionsReady, canViewMenu } = usePermissions()
+  const showApqrNotifications = canViewMenu('apqr-dashboard') || canViewMenu('apqr-scheduler')
+  const { summary: apqrNotifications, loading: apqrNotificationsLoading, pendingCount: apqrPendingCount, refresh: refreshApqrNotifications } =
+    useApqrNotifications(showApqrNotifications)
   const { isDark, toggleTheme } = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
@@ -240,53 +249,74 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="topbar-greeting-title">{current}</span>
             </p>
           </div>
-          <div className="topbar-actions">
-            <button
-              type="button"
-              className="topbar-icon-circle"
-              aria-label="Search workspace"
-              disabled={!canViewMenu('database')}
-              onClick={() => { closeMobileNav(); navigate('/database') }}
-            >
-              <IconSearch />
-            </button>
-            <button
-              type="button"
-              className="topbar-icon-circle"
-              aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-              onClick={toggleTheme}
-            >
-              {isDark ? <IconSun /> : <IconMoon />}
-            </button>
-            <button type="button" className="topbar-icon-circle" aria-label="Workspace overview" onClick={() => navigate('/')}>
-              <IconGlobe />
-            </button>
-            <button
-              type="button"
-              className={[
-                'topbar-icon-circle',
-                isAdmin && unreadCount > 0 ? 'topbar-icon-unread' : '',
-              ].filter(Boolean).join(' ')}
-              aria-label={isAdmin && unreadCount > 0 ? `Messages (${unreadCount} unread)` : 'Messages'}
-              onClick={() => openMessages()}
-            >
-              <IconMessage />
-            </button>
-            <button
-              type="button"
-              className="topbar-profile-chip"
-              aria-label="Account settings"
-              onClick={() => { closeMobileNav(); navigate('/account') }}
-            >
-              <span className="topbar-profile-avatar">{user?.initials}</span>
-              <span className="topbar-profile-text">
-                <strong>{user?.name}</strong>
-                <span>{user?.role}</span>
-              </span>
-            </button>
-            <button type="button" className="topbar-icon-circle topbar-icon-quiet" aria-label="Log out" onClick={() => void logout()}>
-              <IconLogout />
-            </button>
+          <div className="topbar-actions" role="toolbar" aria-label="Application actions">
+            <div className="topbar-actions-cluster" role="group" aria-label="Quick actions">
+              <button
+                type="button"
+                className="topbar-icon-circle"
+                aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+                onClick={toggleTheme}
+              >
+                {isDark ? <IconSun /> : <IconMoon />}
+              </button>
+              <button
+                type="button"
+                className={[
+                  'topbar-icon-circle',
+                  isAdmin && unreadCount > 0 ? 'topbar-icon-unread' : '',
+                ].filter(Boolean).join(' ')}
+                aria-label={isAdmin && unreadCount > 0 ? `Messages (${unreadCount} unread)` : 'Messages'}
+                onClick={() => openMessages()}
+              >
+                <IconMessage />
+              </button>
+              <button
+                type="button"
+                className="topbar-icon-circle"
+                aria-label="Version history and release notes"
+                aria-expanded={versionHistoryOpen}
+                onClick={() => openVersionHistory()}
+              >
+                <IconInfo />
+              </button>
+              {showApqrNotifications ? (
+                <button
+                  type="button"
+                  className={[
+                    'topbar-icon-circle',
+                    'topbar-icon-with-badge',
+                    apqrPendingCount > 0 ? 'topbar-icon-unread' : '',
+                  ].filter(Boolean).join(' ')}
+                  aria-label={apqrPendingCount > 0 ? `APQR notifications (${apqrPendingCount} pending)` : 'APQR notifications'}
+                  onClick={() => openNotifications()}
+                >
+                  <IconBell />
+                  {apqrPendingCount > 0 ? (
+                    <span className="topbar-icon-badge" aria-hidden="true">
+                      {apqrPendingCount > 9 ? '9+' : apqrPendingCount}
+                    </span>
+                  ) : null}
+                </button>
+              ) : null}
+            </div>
+            <span className="topbar-actions-divider" aria-hidden="true" />
+            <div className="topbar-actions-cluster" role="group" aria-label="Account">
+              <button
+                type="button"
+                className="topbar-profile-chip"
+                aria-label="Account settings"
+                onClick={() => { closeMobileNav(); navigate('/account') }}
+              >
+                <span className="topbar-profile-avatar">{user?.initials}</span>
+                <span className="topbar-profile-text">
+                  <strong>{user?.name}</strong>
+                  <span>{user?.role}</span>
+                </span>
+              </button>
+              <button type="button" className="topbar-icon-circle topbar-icon-quiet" aria-label="Log out" onClick={() => void logout()}>
+                <IconLogout />
+              </button>
+            </div>
           </div>
         </header>
         <main>{children}</main>
@@ -305,11 +335,32 @@ export function AppShell({ children }: { children: ReactNode }) {
         onRefresh={refresh}
         onAcknowledgeUnread={acknowledgeUnread}
       />
+      <ApqrNotificationsModal
+        isOpen={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+        summary={apqrNotifications}
+        loading={apqrNotificationsLoading}
+      />
+      <VersionHistoryDrawer
+        isOpen={versionHistoryOpen}
+        onClose={() => setVersionHistoryOpen(false)}
+      />
     </div>
   )
 
   function openMessages() {
     closeMobileNav()
     setMessagesOpen(true)
+  }
+
+  function openNotifications() {
+    closeMobileNav()
+    setNotificationsOpen(true)
+    void refreshApqrNotifications()
+  }
+
+  function openVersionHistory() {
+    closeMobileNav()
+    setVersionHistoryOpen(true)
   }
 }

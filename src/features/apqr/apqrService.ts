@@ -37,6 +37,7 @@ import type {
 import { mergeSentBySuggestions } from './sentBySuggestions'
 import { mergeDepartmentSuggestions } from './departmentSuggestions'
 import { mergeAccountManagerSuggestions } from './accountManagerSuggestions'
+import { mergeReportStatusSuggestions } from './reportStatusSuggestions'
 
 interface SeedBundle {
   clients: ApqrClient[]
@@ -107,6 +108,7 @@ export function buildDatabaseRows(): ApqrDatabaseRow[] {
         sched.commitment_schedule,
         record?.final_apqr_delivery_date ?? null,
         today,
+        record?.apqr_report_status ?? null,
       )
 
       const row: ApqrDatabaseRow = {
@@ -706,6 +708,7 @@ export async function saveRecord(apqrId: string, input: ApqrRecordInput): Promis
     input.final_apqr_delivery_date ?? null,
     input.delay_category ?? null,
     input.delay_reason ?? null,
+    input.apqr_report_status ?? null,
   )
 
   const idx = records.findIndex((r) => r.id === match.record!.id)
@@ -932,6 +935,15 @@ export async function listDepartmentSuggestions(): Promise<string[]> {
     if (record.department?.trim()) fromData.add(record.department.trim())
   }
   return mergeDepartmentSuggestions([...fromData])
+}
+
+export async function listReportStatusSuggestions(): Promise<string[]> {
+  await listClients()
+  const fromData = new Set<string>()
+  for (const record of records) {
+    if (record.apqr_report_status?.trim()) fromData.add(record.apqr_report_status.trim())
+  }
+  return mergeReportStatusSuggestions([...fromData])
 }
 
 export async function listAccountManagerSuggestions(): Promise<string[]> {

@@ -17,8 +17,9 @@ import {
   reviewCycleFromYear,
 } from '../../features/apqr/apqrDashboard'
 import type { ApqrDatabaseRow, ApqrDepartment, ApqrPriority, DeliveryClassification } from '../../features/apqr/types'
+import { apqrPriorityDisplay } from '../../features/apqr/scheduling'
 import { useColumnResize } from '../../hooks/useColumnResize'
-import { useMenuPermission } from '../../hooks/usePermissions'
+import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { useApqrDatabase } from '../../features/apqr/useApqrData'
 import { exportRows } from '../../utils/exportUtils'
 
@@ -491,7 +492,7 @@ export function ApqrDatabasePage() {
                   <Link className="apqr-database-card-id" to={`/apqr/form?apqr=${encodeURIComponent(row.apqr_id)}`}>
                     {row.apqr_id}
                   </Link>
-                  <ApqrPriorityBadge priority={row.priority} />
+                  <ApqrPriorityBadge {...apqrPriorityDisplay(row)} />
                 </header>
                 <p className="apqr-database-card-client">{row.client_name}</p>
                 <p className="apqr-database-card-product">{row.product_name}</p>
@@ -573,7 +574,7 @@ function renderDatabaseCell(key: ColumnKey, row: ApqrDatabaseRow) {
       />
     )
   }
-  return <ApqrPriorityBadge priority={row.priority} />
+  return <ApqrPriorityBadge {...apqrPriorityDisplay(row)} />
 }
 
 function RowActions({ row, canEditForm }: { row: ApqrDatabaseRow; canEditForm: boolean }) {

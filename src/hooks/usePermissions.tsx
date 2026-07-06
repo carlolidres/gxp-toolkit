@@ -103,19 +103,3 @@ export function usePermissions(): PermissionsContextValue {
   if (!context) throw new Error('usePermissions must be used inside PermissionsProvider')
   return context
 }
-
-export function useMenuPermission(menuId: string) {
-  const { can, canViewMenu } = usePermissions()
-
-  return useMemo(
-    () => ({
-      canView: canViewMenu(menuId),
-      canCreate: can('create', menuId),
-      canEdit: can('edit', menuId),
-      canDelete: can('delete', menuId),
-      canApprove: can('approve', menuId),
-      canExport: can('export', menuId),
-    }),
-    [can, canViewMenu, menuId],
-  )
-}

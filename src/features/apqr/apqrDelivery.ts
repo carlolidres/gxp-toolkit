@@ -1,5 +1,5 @@
 import type { ApqrDatabaseRow } from './types'
-import { classifyDelivery, calendarDaysBetween } from './scheduling'
+import { classifyDelivery, calendarDaysBetween, isCancelledReportStatus } from './scheduling'
 
 export interface MonthlyDeliveryPoint {
   label: string
@@ -72,7 +72,12 @@ export function deliveryFieldsFromInput(
   finalDeliveryDate: string | null,
   delayCategory: string | null,
   delayReason: string | null,
+  apqrReportStatus?: string | null,
 ) {
+  if (isCancelledReportStatus(apqrReportStatus)) {
+    return { delivery_classification: 'NA' as const, days_early_or_overdue: null }
+  }
+
   const delivery_classification = classifyDelivery(commitmentSchedule, finalDeliveryDate)
   const days_early_or_overdue =
     finalDeliveryDate != null ? calendarDaysBetween(commitmentSchedule, finalDeliveryDate) : null

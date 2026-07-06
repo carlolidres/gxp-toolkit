@@ -11,7 +11,7 @@ import {
   formatEdocDate,
 } from '../../components/edoc/EdocComponents'
 import { DataTable } from '../../components/data-display/DataTable'
-import { useMenuPermission } from '../../hooks/usePermissions'
+import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { useEdocDocuments } from '../../features/edoc/useEdocData'
 import type { EdocDocumentListItem } from '../../features/edoc/types'
 

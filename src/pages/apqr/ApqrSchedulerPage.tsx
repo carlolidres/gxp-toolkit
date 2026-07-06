@@ -18,7 +18,7 @@ import {
 } from '../../components/apqr/ApqrSchedulerScheduleTable'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { useAuth } from '../../hooks/useAuth'
-import { useMenuPermission } from '../../hooks/usePermissions'
+import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { logApqrAudit, buildFieldDescription } from '../../features/apqr/apqrAudit'
 import {
   appendRemark,
