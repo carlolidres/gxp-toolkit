@@ -3220,13 +3220,15 @@ body.is-col-resizing {
 }
 
 .apqr-registry-form-contacts-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  align-items: start;
 }
 
 .apqr-contact-role-editor {
   display: grid;
   gap: 10px;
   min-width: 0;
+  align-self: start;
 }
 
 .apqr-contact-role-label {
@@ -3240,6 +3242,10 @@ body.is-col-resizing {
 .apqr-contact-role-entries {
   display: grid;
   gap: 12px;
+  max-height: clamp(12rem, 38vh, 28rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .apqr-contact-entry-card {
@@ -3685,9 +3691,13 @@ body.is-col-resizing .apqr-client-table .apqr-col-resize-handle::after {
 
 @media (max-width: 720px) {
   .apqr-registry-form-top,
-  .apqr-registry-form-contacts-grid,
   .apqr-registry-filters {
     grid-template-columns: 1fr;
+  }
+
+  .apqr-contact-role-entries {
+    max-height: none;
+    overflow-y: visible;
   }
 
   .apqr-registry-form-header {
