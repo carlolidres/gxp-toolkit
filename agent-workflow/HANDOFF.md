@@ -1,10 +1,10 @@
 # Current Handoff
 
-Last Updated: `2026-07-06`
-Version: `v33`
+Last Updated: `2026-07-07`
+Version: `v33.2`
 Branch: `main` / `master`
-Commit: `edab6dd` — v33: version history drawer, APQR notifications, and report status updates
-Deployment: `DEPLOYED` — GitHub Pages run 28783203449 (2026-07-06); Supabase migrations up to date
+Commit: `2812667` — v33.2: fix APQR contact role columns deforming when adding contacts
+Deployment: `DEPLOYED` — GitHub Pages run 28867825053 (2026-07-07); Supabase migrations up to date
 
 ## Current Status
 
@@ -71,7 +71,7 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 
 ## Recently Completed (this session)
 
-- APQR ID format changed to 4-character mixed-case alphanumeric (e.g. `aB12`); migration `20260705223000_apqr_migrate_legacy_ids.sql` rewrites legacy `APQR-YYYY-xxxx` rows; re-run `npm run apqr:migrate-legacy-ids` if needed
+- APQR Client Registry contact roles grid: independent column heights (`align-items: start`), per-column scroll, responsive `auto-fit` columns — deployed v33.2
 - APQR seed cleared: `database/sqlite/apqr_seed.sql`, `supabase/scripts/seed_apqr_data.sql`, `src/data/apqrSeedData.json`; linked Supabase wiped via `npm run apqr:seed-supabase`
 - `database/sqlite/edoc_schema.sql` — 19 eDoc tables mirroring Supabase migration
 - `database/sqlite/edoc_seed.sql` — pilot org/document/route fixtures
