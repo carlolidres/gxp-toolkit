@@ -1,12 +1,16 @@
 # Current Handoff
 
 Last Updated: `2026-07-08`
-Version: `v33.3`
+Version: `v33.4`
 Branch: `main` / `master`
-Commit: `a2978a0` — v33.3: enable RLS on public.schema_migrations
-Deployment: `DEPLOYED` — GitHub Pages run 28867825053 (2026-07-07); Supabase migration `20260708193000_schema_migrations_rls` applied to `ydndeoacgfnxjqwwnswh`
+Commit: `8b20ff4` — v33.4: modernize admin, auth, VMP form, and messages UI
+Deployment: `PENDING` — push to `master` triggers GitHub Pages workflow
 
 ## Current Status
+
+**UI modernization batch (v33.4)** — Tailwind CSS + Lucide refresh across User Management, login/sign-up auth cards, VMP Masterlist Form, and Messages modal; removed sidebar environment indicator. VMP form adds editable combobox suggestions for group/subcategory and responsible owner.
+
+**User Management UI modernization** — `/admin/users` refreshed with Tailwind CSS + Lucide icons: scrollable user list with role badges and count pill, selected-user summary card, unsaved-changes indicator, improved form controls and info callouts, permission matrix with group/menu/action icons, sticky menu column, focus-visible states, responsive single-column layout on small screens. All save/reset/password/permission logic unchanged.
 
 **Supabase security — `schema_migrations` RLS** — enabled RLS on `public.schema_migrations`, revoked `anon`/`authenticated` grants. Tooling-only table; no client API access. Linter ERROR `rls_disabled_in_public` cleared (INFO `rls_enabled_no_policy` is intentional deny-by-default).
 
@@ -45,15 +49,16 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 
 | Check | Status | Result |
 |---|---|---|
-| `npm run build` | `PASSED` | 2026-07-05 (v32 pre-push) |
-| `npm run test` | `PASSED` | 105/105 (2026-07-05) |
+| `npm run build` | `PASSED` | 2026-07-08 — User Management UI refresh |
+| `npm run test` | `PASSED` | 119/119 (2026-07-08) |
 | `supabase db push` | `PASSED` | Remote up to date (20260705120000–20260705223000) |
 | `npm run apqr:seed-supabase` | `PASSED` | Remote APQR data cleared (DELETE-only script) |
 | `npm run apqr:seed-permissions` | `PASSED` | Admin + edoc-creator APQR menus |
 
 ## Next Action
 
-1. Browser smoke on `/apqr/database` (summary cards, filters, columns, list/grid, pagination).
+1. Browser smoke on `/admin/users` (user selection, role change, permission toggles, save/reset, password reset).
+2. Browser smoke on `/apqr/database` (summary cards, filters, columns, list/grid, pagination).
 2. Browser smoke on `/apqr/registry` (form layout, filters, pagination, edit flow).
 2. Re-run `npm run test` if greeting/apqrDelivery timeouts recur.
 3. Deploy frontend when ready.
@@ -73,6 +78,7 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 
 ## Recently Completed (this session)
 
+- User Management page modernized: Tailwind layout, Lucide icons, role badges, permission matrix icons/sticky menu column — `UserManagementPage.tsx`, `PermissionMatrix.tsx`, `user-management.css`
 - APQR Client Registry contact roles grid: independent column heights (`align-items: start`), per-column scroll, responsive `auto-fit` columns — deployed v33.2
 - APQR seed cleared: `database/sqlite/apqr_seed.sql`, `supabase/scripts/seed_apqr_data.sql`, `src/data/apqrSeedData.json`; linked Supabase wiped via `npm run apqr:seed-supabase`
 - `database/sqlite/edoc_schema.sql` — 19 eDoc tables mirroring Supabase migration

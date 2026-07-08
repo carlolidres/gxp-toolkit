@@ -1751,6 +1751,132 @@
   background: color-mix(in srgb, var(--teal) 12%, transparent);
 }
 
+.vmp-editable-combobox {
+  position: relative;
+}
+
+.vmp-editable-combobox-input-wrap {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.vmp-editable-combobox.is-open .vmp-editable-combobox-input-wrap {
+  border-color: color-mix(in srgb, var(--teal) 55%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 14%, transparent);
+}
+
+.vmp-editable-combobox-input-wrap input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 10px 12px;
+}
+
+.vmp-editable-combobox-input-wrap input:focus {
+  outline: none;
+}
+
+.vmp-editable-combobox-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  border: 0;
+  border-left: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 88%, var(--border));
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.vmp-editable-combobox-toggle:hover:not(:disabled) {
+  color: var(--text);
+  background: color-mix(in srgb, var(--teal) 8%, var(--surface));
+}
+
+.vmp-editable-combobox-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.vmp-editable-combobox-menu {
+  position: fixed;
+  z-index: 1200;
+  max-height: 240px;
+  overflow: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.vmp-editable-combobox-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vmp-editable-combobox-option-main {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.vmp-editable-combobox-option-main svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.vmp-editable-combobox-option.is-active .vmp-editable-combobox-option-main,
+.vmp-editable-combobox-option-main:hover {
+  background: color-mix(in srgb, var(--teal) 12%, transparent);
+}
+
+.vmp-editable-combobox-option.is-create .vmp-editable-combobox-option-main {
+  color: var(--teal);
+}
+
+.vmp-editable-combobox-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.vmp-editable-combobox-remove:hover {
+  color: var(--danger-text, #b42318);
+  background: color-mix(in srgb, var(--danger-text, #b42318) 10%, transparent);
+}
+
+.vmp-editable-combobox-remove svg {
+  width: 14px;
+  height: 14px;
+}
+
 .vmp-field-error {
   color: var(--danger-text, #b42318);
   font-size: 0.85rem;

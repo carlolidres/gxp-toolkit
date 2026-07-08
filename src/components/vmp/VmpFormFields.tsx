@@ -1,7 +1,20 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import {
+  Calendar,
+  ClipboardList,
+  FileText,
+  Info,
+  Link2,
+  type LucideIcon,
+} from 'lucide-react'
 
 import { AppDateInput } from '../forms/AppDateInput'
+import {
+  VMP_FIELD_CLASS,
+  VMP_FIELD_WIDE_CLASS,
+  VMP_INPUT_CLASS,
+} from '../../pages/vmp/vmp-form-shared'
 
 const formIconPaths: Record<string, string> = {
   document: 'M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm7 0v5h5M9 13h6M9 17h4',
@@ -33,11 +46,23 @@ export function VmpIcon({ name }: { name: string }) {
   )
 }
 
+const SECTION_ICONS: Record<string, LucideIcon> = {
+  document: FileText,
+  link: Link2,
+  calendar: Calendar,
+  'clipboard-list': ClipboardList,
+}
+
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
   return (
-    <span className="vmp-field-label">
+    <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
       {label}
-      {required ? <span className="vmp-required" aria-hidden="true"> *</span> : null}
+      {required ? (
+        <span className="text-[var(--danger-text)]" aria-hidden="true">
+          {' '}
+          *
+        </span>
+      ) : null}
     </span>
   )
 }
@@ -51,37 +76,53 @@ export function VmpFormSectionHeader({
   description: string
   icon?: string
 }) {
+  const Icon = SECTION_ICONS[icon] ?? ClipboardList
   return (
-    <div className="vmp-section-head">
-      <div className="vmp-section-head-icon" aria-hidden="true">
-        <VmpIcon name={icon} />
+    <header className="flex items-start gap-3 border-b border-[var(--border)] bg-[var(--surface-muted)] px-5 py-4 sm:gap-3.5 sm:px-6">
+      <span
+        className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--teal-soft)] text-[var(--teal)]"
+        aria-hidden="true"
+      >
+        <Icon className="size-5" strokeWidth={2} />
+      </span>
+      <div className="min-w-0">
+        <h2 className="text-base font-semibold leading-snug text-[var(--navy)]">{title}</h2>
+        <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">{description}</p>
       </div>
-      <div className="vmp-section-head-copy">
-        <h2>{title}</h2>
-        <p>{description}</p>
-      </div>
-    </div>
+    </header>
   )
 }
 
 export function VmpInfoCallout({ children }: { children: ReactNode }) {
   return (
-    <div className="vmp-info-callout" role="note">
-      <span className="vmp-info-callout-icon" aria-hidden="true">
-        <VmpIcon name="info" />
+    <div
+      className="mx-5 mb-5 flex items-start gap-3 rounded-lg border border-[color-mix(in_srgb,var(--info-text)_22%,var(--border))] bg-[var(--alert-info-bg)] px-4 py-3 sm:mx-6"
+      role="note"
+    >
+      <span
+        className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--badge-info-bg)] text-[var(--info-text)]"
+        aria-hidden="true"
+      >
+        <Info className="size-4" strokeWidth={2} />
       </span>
-      <p>{children}</p>
+      <p className="text-sm font-medium leading-relaxed text-[var(--info-text)]">{children}</p>
     </div>
   )
 }
 
 export function VmpModeBanner({ children }: { children: ReactNode }) {
   return (
-    <div className="vmp-mode-banner" role="status">
-      <span className="vmp-mode-banner-icon" aria-hidden="true">
+    <div
+      className="mb-1 flex items-center gap-3 rounded-xl border border-[color-mix(in_srgb,var(--teal)_34%,var(--border))] bg-gradient-to-r from-[var(--teal-soft)] via-[color-mix(in_srgb,var(--teal-soft)_55%,var(--surface))] to-[var(--surface)] px-4 py-3.5 text-sm font-semibold text-[var(--navy)]"
+      role="status"
+    >
+      <span
+        className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--surface)_82%,var(--teal-soft))] text-[var(--teal)]"
+        aria-hidden="true"
+      >
         <VmpIcon name="draft" />
       </span>
-      <span className="vmp-mode-banner-text">{children}</span>
+      <span>{children}</span>
     </div>
   )
 }
@@ -95,6 +136,7 @@ export function FormInput({
   placeholder,
   readOnly = false,
   helper,
+  wide = false,
 }: {
   label: string
   value: string
@@ -104,32 +146,34 @@ export function FormInput({
   placeholder?: string
   readOnly?: boolean
   helper?: string
+  wide?: boolean
 }) {
   if (type === 'date') {
     return (
-      <label className="vmp-field">
+      <label className={wide ? VMP_FIELD_WIDE_CLASS : VMP_FIELD_CLASS}>
         <FieldLabel label={label} required={required} />
         <AppDateInput
           value={value}
           readOnly={readOnly}
           onChange={(event) => onChange(event.target.value)}
         />
-        {helper ? <small className="vmp-field-helper">{helper}</small> : null}
+        {helper ? <small className="text-xs leading-relaxed text-[var(--muted)]">{helper}</small> : null}
       </label>
     )
   }
 
   return (
-    <label className="vmp-field">
+    <label className={wide ? VMP_FIELD_WIDE_CLASS : VMP_FIELD_CLASS}>
       <FieldLabel label={label} required={required} />
       <input
         type={type}
+        className={VMP_INPUT_CLASS}
         value={value}
         readOnly={readOnly}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
       />
-      {helper ? <small className="vmp-field-helper">{helper}</small> : null}
+      {helper ? <small className="text-xs leading-relaxed text-[var(--muted)]">{helper}</small> : null}
     </label>
   )
 }
@@ -150,9 +194,14 @@ export function FormTextarea({
   wide?: boolean
 }) {
   return (
-    <label className={`vmp-field${wide ? ' wide' : ''}`}>
+    <label className={wide ? VMP_FIELD_WIDE_CLASS : VMP_FIELD_CLASS}>
       <FieldLabel label={label} required={required} />
-      <textarea value={value} rows={rows} onChange={(event) => onChange(event.target.value)} />
+      <textarea
+        className={`${VMP_INPUT_CLASS} min-h-24 resize-y`}
+        value={value}
+        rows={rows}
+        onChange={(event) => onChange(event.target.value)}
+      />
     </label>
   )
 }
@@ -194,9 +243,14 @@ export function FormSelect({
   }
 
   return (
-    <label className="vmp-field">
+    <label className={VMP_FIELD_CLASS}>
       <FieldLabel label={label} required={required} />
       <select
+        className={`${VMP_INPUT_CLASS} appearance-none bg-[length:16px] bg-[position:right_12px_center] bg-no-repeat pr-9`}
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7c8f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+        }}
         value={value}
         disabled={loading}
         aria-busy={loading}
@@ -210,7 +264,7 @@ export function FormSelect({
           </option>
         ))}
       </select>
-      {error ? <small className="vmp-field-error">{error}</small> : null}
+      {error ? <small className="text-xs text-[var(--danger-text)]">{error}</small> : null}
     </label>
   )
 }
@@ -316,10 +370,11 @@ export function FormSearchableSelect({
     ) : null
 
   return (
-    <div className="vmp-field vmp-searchable-select" ref={rootRef}>
+    <div className={`${VMP_FIELD_CLASS} vmp-searchable-select relative`} ref={rootRef}>
       <FieldLabel label={label} required={required} />
       <input
         ref={inputRef}
+        className={VMP_INPUT_CLASS}
         role="combobox"
         aria-expanded={open}
         aria-controls={listId}
@@ -358,7 +413,7 @@ export function FormSearchableSelect({
         }}
       />
       {typeof document !== 'undefined' && optionsList ? createPortal(optionsList, document.body) : null}
-      {error ? <small className="vmp-field-error">{error}</small> : null}
+      {error ? <small className="text-xs text-[var(--danger-text)]">{error}</small> : null}
     </div>
   )
 }

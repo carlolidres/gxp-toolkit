@@ -1,0 +1,62 @@
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+@source "./MessagesModal.tsx";
+
+.modal--messages {
+  width: min(720px, 100%);
+}
+
+.modal--messages .modal-body {
+  padding: 0;
+}
+
+.messages-modal-panel {
+  scrollbar-gutter: stable;
+}
+
+.messages-modal-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-modal-panel::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted) 35%, transparent);
+  border-radius: 999px;
+}
+
+.messages-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.messages-status-badge--unread {
+  color: var(--teal);
+  background: var(--teal-soft);
+  border-color: color-mix(in srgb, var(--teal) 35%, var(--border));
+}
+
+.messages-status-badge--read {
+  color: var(--muted);
+  background: var(--badge-neutral-bg);
+}
+
+.messages-status-badge--addressed {
+  color: var(--success-text);
+  background: var(--badge-success-bg);
+  border-color: color-mix(in srgb, var(--success-text) 25%, var(--border));
+}
+
+.messages-status-badge--rejected {
+  color: var(--danger-text);
+  background: var(--badge-danger-bg);
+  border-color: color-mix(in srgb, var(--danger-text) 25%, var(--border));
+}

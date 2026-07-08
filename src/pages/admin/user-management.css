@@ -1,0 +1,36 @@
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+@source "./UserManagementPage.tsx";
+@source "../../components/permissions/PermissionMatrix.tsx";
+
+.user-mgmt-perm-check {
+  accent-color: var(--teal);
+}
+
+.user-mgmt-perm-check:focus-visible {
+  outline: 2px solid var(--glow-ring);
+  outline-offset: 2px;
+}
+
+.user-mgmt-user-list-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.user-mgmt-user-list-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted) 35%, transparent);
+  border-radius: 999px;
+}
+
+.user-mgmt-perm-table-wrap {
+  scrollbar-gutter: stable;
+}
+
+.user-mgmt-perm-table-wrap::-webkit-scrollbar {
+  height: 6px;
+}
+
+.user-mgmt-perm-table-wrap::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted) 35%, transparent);
+  border-radius: 999px;
+}

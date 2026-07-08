@@ -1,12 +1,25 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import {
+  AlertCircle,
+  CheckCircle2,
+  KeyRound,
+  Loader2,
+  Lock,
+  LogIn,
+  Mail,
+  Shield,
+  UserPlus,
+} from 'lucide-react'
 
-import { FormField, PasswordInput, SelectInput, TextInput } from '../components/forms/FormControls'
+import { PasswordInput, SelectInput, TextInput } from '../components/forms/FormControls'
 import { GxpLogo } from '../components/brand/GxpLogo'
 import { APP_NAME } from '../config/appNavigation'
 import { useAuth } from '../hooks/useAuth'
 import { consumeLoginFlash } from '../lib/authSessionStore'
 import { getAuthErrorMessage } from '../lib/authMessages'
+import { AUTH_CARD_CLASS, AUTH_INPUT_CLASS, AuthField } from './auth-form-shared'
+import './login-page.css'
 
 export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -27,7 +40,16 @@ export function LoginPage() {
   }, [authReady, isAuthenticated])
 
   if (!authReady) {
-    return <p className="auth-loading">Restoring session…</p>
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center gap-3 text-[var(--muted)]"
+        role="status"
+        aria-live="polite"
+      >
+        <Loader2 className="size-5 animate-spin text-[var(--teal)]" aria-hidden="true" />
+        <span>Restoring session…</span>
+      </div>
+    )
   }
 
   if (isAuthenticated) {
@@ -97,60 +119,147 @@ export function LoginPage() {
           <span>{usesSupabase ? 'Email and password sign-in' : 'Backend-agnostic by design'}</span>
         </div>
       </section>
+
       <section className="login-panel">
-        <form className="login-card" onSubmit={handleSubmit} autoComplete="off">
-          <span className="eyebrow">Welcome back</span>
-          <h2>Sign in to {APP_NAME}</h2>
-          <p>{usesSupabase ? 'Use your email and password.' : 'Any password works in this mock environment.'}</p>
-          <FormField label="Email">
-            <TextInput
-              name="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              autoComplete="email"
-            />
-          </FormField>
-          <FormField label="Password">
-            <PasswordInput
-              name="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              autoComplete="current-password"
-            />
-          </FormField>
-          {!usesSupabase ? (
-            <FormField label="Example role">
-              <SelectInput name="role" defaultValue="Admin">
-                <option>Admin</option>
-                <option>Manager</option>
-                <option>Editor</option>
-                <option>Viewer</option>
-              </SelectInput>
-            </FormField>
+        <form
+          className={AUTH_CARD_CLASS}
+          onSubmit={handleSubmit}
+          autoComplete="off"
+          aria-labelledby="login-title"
+        >
+          <header className="mb-6 space-y-2">
+            <span className="eyebrow">Welcome back</span>
+            <h2 id="login-title" className="text-2xl font-bold tracking-tight text-[var(--navy)] sm:text-[1.65rem]">
+              Sign in to {APP_NAME}
+            </h2>
+            <p className="text-sm leading-relaxed text-[var(--muted)]">
+              {usesSupabase ? 'Use your email and password.' : 'Any password works in this mock environment.'}
+            </p>
+          </header>
+
+          <div className="flex flex-col gap-4">
+            <AuthField label="Email" icon={<Mail className="size-3.5 text-[var(--teal)]" aria-hidden="true" />}>
+              <TextInput
+                name="email"
+                type="email"
+                className={AUTH_INPUT_CLASS}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                autoComplete="email"
+                placeholder="you@company.com"
+              />
+            </AuthField>
+
+            <AuthField label="Password" icon={<Lock className="size-3.5 text-[var(--teal)]" aria-hidden="true" />}>
+              <PasswordInput
+                name="password"
+                className={AUTH_INPUT_CLASS}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder="Enter your password"
+              />
+            </AuthField>
+
+            {!usesSupabase ? (
+              <AuthField label="Example role" icon={<Shield className="size-3.5 text-[var(--teal)]" aria-hidden="true" />}>
+                <SelectInput name="role" defaultValue="Admin" className={AUTH_INPUT_CLASS}>
+                  <option>Admin</option>
+                  <option>Manager</option>
+                  <option>Editor</option>
+                  <option>Viewer</option>
+                </SelectInput>
+              </AuthField>
+            ) : null}
+          </div>
+
+          {error ? (
+            <p
+              className="mt-4 flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_10%,var(--surface))] px-3 py-2.5 text-sm text-[var(--danger)]"
+              role="alert"
+            >
+              <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <span>{error}</span>
+            </p>
           ) : null}
-          {error ? <p className="form-error">{error}</p> : null}
-          <button className="button primary wide" disabled={isLoading}>
+
+          <button
+            type="submit"
+            className="button primary wide mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow-ring)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <LogIn className="size-4" aria-hidden="true" />
+            )}
             {isLoading ? 'Signing in…' : 'Sign in'}
           </button>
-          {!usesSupabase ? <small>Use role selection to test protected UI patterns.</small> : null}
-          <div className="auth-footer">
-            <button type="button" className="auth-footer-link" disabled={resetLoading} onClick={() => void sendPasswordReset()}>
+
+          {!usesSupabase ? (
+            <p className="mt-3 text-center text-xs text-[var(--muted)]">
+              Use role selection to test protected UI patterns.
+            </p>
+          ) : null}
+
+          <div className="mt-5 flex items-center justify-between gap-3 border-t border-[var(--border)] pt-4">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-md px-1 py-1 text-sm font-semibold text-[var(--teal)] transition-colors hover:text-[color-mix(in_srgb,var(--teal)_80%,var(--navy))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={resetLoading}
+              onClick={() => void sendPasswordReset()}
+            >
+              {resetLoading ? (
+                <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+              ) : (
+                <KeyRound className="size-3.5" aria-hidden="true" />
+              )}
               {resetLoading ? 'Resetting password…' : 'Forgot password?'}
             </button>
-            <button type="button" className="auth-footer-link" onClick={() => navigate('/signup')}>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-md px-1 py-1 text-sm font-semibold text-[var(--teal)] transition-colors hover:text-[color-mix(in_srgb,var(--teal)_80%,var(--navy))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow-ring)]"
+              onClick={() => navigate('/signup')}
+            >
+              <UserPlus className="size-3.5" aria-hidden="true" />
               Sign-up
             </button>
           </div>
-          {resetError ? <p className="form-error">{resetError}</p> : null}
-          {resetStatus ? <p className="form-success">{resetStatus}</p> : null}
+
+          {resetError ? (
+            <p
+              className="mt-4 flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_10%,var(--surface))] px-3 py-2.5 text-sm text-[var(--danger)]"
+              role="alert"
+            >
+              <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <span>{resetError}</span>
+            </p>
+          ) : null}
+
+          {resetStatus ? (
+            <p
+              className="mt-4 flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--teal)_40%,var(--border))] bg-[color-mix(in_srgb,var(--teal)_10%,var(--surface))] px-3 py-2.5 text-sm text-[var(--teal)]"
+              role="status"
+            >
+              <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <span>{resetStatus}</span>
+            </p>
+          ) : null}
+
           {resetTemporaryPassword ? (
-            <div className="temp-password-panel" role="status">
-              <span className="temp-password-label">Temporary password</span>
-              <code className="temp-password-value">{resetTemporaryPassword}</code>
-              <small>Use this password to sign in. You must choose a new password before accessing the app.</small>
+            <div
+              className="mt-4 space-y-2 rounded-lg border border-[color-mix(in_srgb,var(--teal)_35%,var(--border))] bg-[color-mix(in_srgb,var(--teal)_8%,var(--surface))] px-4 py-3"
+              role="status"
+            >
+              <span className="text-xs font-bold uppercase tracking-wide text-[var(--teal)]">Temporary password</span>
+              <code className="block break-all text-lg font-bold tracking-wide text-[var(--navy)]">
+                {resetTemporaryPassword}
+              </code>
+              <p className="text-xs leading-relaxed text-[var(--muted)]">
+                Use this password to sign in. You must choose a new password before accessing the app.
+              </p>
             </div>
           ) : null}
         </form>

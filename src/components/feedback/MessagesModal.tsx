@@ -1,4 +1,16 @@
 import { useEffect, useState } from 'react'
+import {
+  Bug,
+  Check,
+  Clock3,
+  Inbox,
+  Lightbulb,
+  Loader2,
+  MessageSquarePlus,
+  Tag,
+  UserRound,
+  X,
+} from 'lucide-react'
 
 import { Modal } from './Modal'
 import { FormField, SelectInput, Textarea } from '../forms/FormControls'
@@ -6,6 +18,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useToast } from './ToastProvider'
 import { feedbackService } from '../../services/feedbackService'
 import type { FeedbackCategory, FeedbackMessage } from '../../types/feedback'
+import './messages-modal.css'
 
 const CATEGORY_LABELS: Record<FeedbackCategory, string> = {
   improvement: 'Suggest an improvement',
@@ -24,6 +37,11 @@ function formatTimestamp(value: string | undefined) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleString()
+}
+
+function CategoryIcon({ category }: { category: FeedbackCategory }) {
+  const className = 'size-3.5 shrink-0 text-[var(--muted)]'
+  return category === 'bug' ? <Bug className={className} aria-hidden /> : <Lightbulb className={className} aria-hidden />
 }
 
 export function MessagesModal({
@@ -88,6 +106,7 @@ export function MessagesModal({
     <Modal
       isOpen={isOpen}
       title={isAdmin ? 'Messages' : 'Message administrator'}
+      className="modal--messages"
       onClose={onClose}
       footer={
         <>
@@ -100,91 +119,174 @@ export function MessagesModal({
         </>
       }
     >
-      <div className="messages-compose">
-        <FormField label="Purpose">
-          <SelectInput value={category} onChange={(event) => setCategory(event.target.value as FeedbackCategory)}>
-            <option value="improvement">{CATEGORY_LABELS.improvement}</option>
-            <option value="bug">{CATEGORY_LABELS.bug}</option>
-          </SelectInput>
-        </FormField>
-        <FormField label="Message">
-          <Textarea
-            value={content}
-            rows={5}
-            placeholder="Describe your suggestion or the bug you encountered."
-            onChange={(event) => setContent(event.target.value)}
-          />
-        </FormField>
-      </div>
+      <div className="messages-modal-panel flex flex-col gap-6 p-5 sm:p-6">
+        <section
+          aria-labelledby="messages-compose-title"
+          className="rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 sm:p-5"
+        >
+          <div className="mb-4 flex items-center gap-2.5">
+            <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--teal-soft)] text-[var(--teal)]">
+              <MessageSquarePlus className="size-4" aria-hidden />
+            </span>
+            <div>
+              <h3 id="messages-compose-title" className="text-sm font-semibold text-[var(--app-text)]">
+                {isAdmin ? 'New message' : 'Send feedback'}
+              </h3>
+              <p className="text-xs text-[var(--muted)]">Share improvements or report issues to the administrator.</p>
+            </div>
+          </div>
 
-      {isAdmin ? (
-        <div className="messages-inbox">
-          <h3>Inbox</h3>
-          {loading ? <p className="messages-empty">Loading messages…</p> : null}
-          {!loading && messages.length === 0 ? <p className="messages-empty">No messages yet.</p> : null}
-          <ul className="messages-list">
-            {messages.map((message) => (
-              <li key={message.id} className="messages-item">
-                <MessageMeta message={message} />
-                <p className="messages-content">{message.content}</p>
-                {(message.status === 'unread' || message.status === 'read') && (
-                  <div className="messages-actions">
-                    <button
-                      type="button"
-                      className="button small"
-                      disabled={updatingId === message.id}
-                      onClick={() => void handleStatus(message.id, 'addressed')}
-                    >
-                      Addressed
-                    </button>
-                    <button
-                      type="button"
-                      className="button small secondary"
-                      disabled={updatingId === message.id}
-                      onClick={() => void handleStatus(message.id, 'rejected')}
-                    >
-                      Rejected
-                    </button>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : messages.length > 0 ? (
-        <section className="messages-history">
-          <h3>Your previous messages</h3>
-          <ul className="messages-list">
-            {messages.map((message) => (
-              <li key={message.id} className="messages-item">
-                <MessageMeta message={message} />
-                <p className="messages-content">{message.content}</p>
-              </li>
-            ))}
-          </ul>
+          <div className="grid gap-4">
+            <FormField label="Purpose">
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]">
+                  <CategoryIcon category={category} />
+                </span>
+                <SelectInput
+                  className="!pl-9"
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value as FeedbackCategory)}
+                >
+                  <option value="improvement">{CATEGORY_LABELS.improvement}</option>
+                  <option value="bug">{CATEGORY_LABELS.bug}</option>
+                </SelectInput>
+              </div>
+            </FormField>
+            <FormField label="Message">
+              <Textarea
+                value={content}
+                rows={5}
+                placeholder="Describe your suggestion or the bug you encountered."
+                onChange={(event) => setContent(event.target.value)}
+              />
+            </FormField>
+          </div>
         </section>
-      ) : null}
+
+        {isAdmin ? (
+          <section aria-labelledby="messages-inbox-title" className="min-w-0">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--surface-subtle)] text-[var(--blue)]">
+                  <Inbox className="size-4" aria-hidden />
+                </span>
+                <h3 id="messages-inbox-title" className="text-sm font-semibold text-[var(--app-text)]">
+                  Inbox
+                </h3>
+              </div>
+              {!loading && messages.length > 0 ? (
+                <span className="rounded-full bg-[var(--badge-neutral-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)]">
+                  {messages.length} {messages.length === 1 ? 'message' : 'messages'}
+                </span>
+              ) : null}
+            </div>
+
+            {loading ? (
+              <p className="flex items-center gap-2 text-sm text-[var(--muted)]" role="status">
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Loading messages…
+              </p>
+            ) : null}
+            {!loading && messages.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-muted)] px-4 py-8 text-center text-sm text-[var(--muted)]">
+                No messages yet.
+              </p>
+            ) : null}
+
+            <ul className="m-0 grid list-none gap-3 p-0">
+              {messages.map((message) => (
+                <li
+                  key={message.id}
+                  className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow)] transition-[box-shadow,border-color] hover:border-[color-mix(in_srgb,var(--teal)_25%,var(--border))] hover:shadow-md"
+                >
+                  <MessageMeta message={message} />
+                  <p className="mt-3 mb-0 whitespace-pre-wrap text-sm leading-relaxed text-[var(--app-text)]">{message.content}</p>
+                  {(message.status === 'unread' || message.status === 'read') && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="button small inline-flex items-center gap-1.5"
+                        disabled={updatingId === message.id}
+                        onClick={() => void handleStatus(message.id, 'addressed')}
+                      >
+                        {updatingId === message.id ? (
+                          <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                        ) : (
+                          <Check className="size-3.5" aria-hidden />
+                        )}
+                        Addressed
+                      </button>
+                      <button
+                        type="button"
+                        className="button small secondary inline-flex items-center gap-1.5"
+                        disabled={updatingId === message.id}
+                        onClick={() => void handleStatus(message.id, 'rejected')}
+                      >
+                        <X className="size-3.5" aria-hidden />
+                        Rejected
+                      </button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : messages.length > 0 ? (
+          <section aria-labelledby="messages-history-title" className="min-w-0">
+            <div className="mb-3 flex items-center gap-2.5">
+              <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--surface-subtle)] text-[var(--blue)]">
+                <Inbox className="size-4" aria-hidden />
+              </span>
+              <h3 id="messages-history-title" className="text-sm font-semibold text-[var(--app-text)]">
+                Your previous messages
+              </h3>
+            </div>
+            <ul className="m-0 grid list-none gap-3 p-0">
+              {messages.map((message) => (
+                <li
+                  key={message.id}
+                  className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow)]"
+                >
+                  <MessageMeta message={message} />
+                  <p className="mt-3 mb-0 whitespace-pre-wrap text-sm leading-relaxed text-[var(--app-text)]">{message.content}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </div>
     </Modal>
   )
 }
 
 function MessageMeta({ message }: { message: FeedbackMessage }) {
   return (
-    <div className="messages-meta">
-      <div className="messages-meta-row">
-        <strong>{message.senderName}</strong>
-        <span className={`messages-status messages-status-${message.status}`}>{STATUS_LABELS[message.status]}</span>
+    <div className="grid gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <UserRound className="size-4 shrink-0 text-[var(--muted)]" aria-hidden />
+          <strong className="truncate text-sm font-semibold text-[var(--app-text)]">{message.senderName}</strong>
+        </div>
+        <span className={`messages-status-badge messages-status-badge--${message.status}`}>
+          {STATUS_LABELS[message.status]}
+        </span>
       </div>
-      <div className="messages-meta-row messages-meta-muted">
-        <span>{CATEGORY_LABELS[message.category]}</span>
-        <span>{formatTimestamp(message.submittedAt)}</span>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-[var(--muted)]">
+        <span className="inline-flex items-center gap-1.5">
+          <Tag className="size-3.5 shrink-0" aria-hidden />
+          {CATEGORY_LABELS[message.category]}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Clock3 className="size-3.5 shrink-0" aria-hidden />
+          <time dateTime={message.submittedAt}>{formatTimestamp(message.submittedAt)}</time>
+        </span>
       </div>
       {message.statusUpdatedAt ? (
-        <div className="messages-meta-row messages-meta-muted">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-[var(--muted)]">
           <span>
             Updated by {message.statusUpdatedByName ?? 'Administrator'}
           </span>
-          <span>{formatTimestamp(message.statusUpdatedAt)}</span>
+          <time dateTime={message.statusUpdatedAt}>{formatTimestamp(message.statusUpdatedAt)}</time>
         </div>
       ) : null}
     </div>

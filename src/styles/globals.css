@@ -583,14 +583,6 @@ code { background: var(--code-bg); padding: 2px 6px; border-radius: 5px; }
 .sidebar-profile-meta span { display: block; margin: 0; color: var(--sidebar-text-strong); font-size: 0.8rem; line-height: 1.25; }
 .sidebar-profile-meta span { color: var(--sidebar-muted); font-size: 0.7rem; font-weight: 400; }
 
-.sidebar-environment {
-  padding: 6px 10px 2px;
-  color: var(--sidebar-muted);
-  font-size: 0.68rem;
-}
-
-.environment-dot { display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: #5ed1a5; }
-
 .app-main {
   margin-left: var(--sidebar-width);
   min-height: 100vh;
@@ -802,77 +794,6 @@ main {
 
 .apqr-notifications-link {
   font-size: 0.78rem;
-}
-
-.messages-compose,
-.messages-inbox {
-  display: grid;
-  gap: 16px;
-}
-
-.messages-inbox h3,
-.messages-history h3 {
-  margin: 0 0 8px;
-  font-size: 0.9rem;
-}
-
-.messages-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 12px;
-}
-
-.messages-item {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px;
-  background: var(--surface);
-}
-
-.messages-meta {
-  display: grid;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-
-.messages-meta-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-}
-
-.messages-meta-muted {
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-
-.messages-status {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-}
-
-.messages-status-unread { color: var(--teal); border-color: color-mix(in srgb, var(--teal) 35%, var(--border)); }
-.messages-status-read { color: var(--muted); }
-.messages-status-addressed { color: #1f7a4d; border-color: color-mix(in srgb, #1f7a4d 35%, var(--border)); }
-.messages-status-rejected { color: #b42318; border-color: color-mix(in srgb, #b42318 35%, var(--border)); }
-
-.messages-content {
-  margin: 0;
-  white-space: pre-wrap;
-}
-
-.messages-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
 }
 
 .messages-empty {
@@ -1382,10 +1303,10 @@ tbody tr:hover { background: var(--table-row-hover); }
 }
 .toast { min-width: min(260px, 100%); max-width: 100%; padding: 13px 16px; border-radius: 8px; background: var(--navy); color: #fff; box-shadow: var(--shadow); font-size: .78rem; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 50; padding: clamp(12px, 3vw, 20px); display: grid; place-items: center; background: rgba(12, 31, 48, .56); }
-.modal { width: min(640px, 100%); max-height: 90vh; overflow: auto; background: var(--surface); border-radius: 12px; box-shadow: 0 30px 80px rgba(0,0,0,.22); color: var(--app-text); }
-.modal > header, .modal > footer { padding: 17px 20px; display: flex; justify-content: space-between; gap: 10px; align-items: center; border-bottom: 1px solid var(--border); }
+.modal { width: min(640px, 100%); max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); border-radius: 12px; box-shadow: 0 30px 80px rgba(0,0,0,.22); color: var(--app-text); }
+.modal > header, .modal > footer { flex-shrink: 0; padding: 17px 20px; display: flex; justify-content: space-between; gap: 10px; align-items: center; border-bottom: 1px solid var(--border); background: var(--surface); }
 .modal > footer { justify-content: flex-end; border-top: 1px solid var(--border); border-bottom: 0; }
-.modal-body { padding: 20px; }
+.modal-body { flex: 1; min-height: 0; overflow-y: auto; padding: 20px; }
 
 /* Version history drawer */
 .version-drawer-root {

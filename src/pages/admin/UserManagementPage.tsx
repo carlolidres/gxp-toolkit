@@ -1,4 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
+import {
+  Info,
+  KeyRound,
+  Loader2,
+  RotateCcw,
+  Save,
+  Shield,
+  UserCheck,
+  UserCog,
+  Users,
+  UserX,
+} from 'lucide-react'
 
 import { PermissionMatrix } from '../../components/permissions/PermissionMatrix'
 import { VrmsPage } from '../../components/vrms/VrmsPage'
@@ -9,8 +21,16 @@ import { getRoleDefaultPermissions, normalizeUserPermissions, permissionsAreEqua
 import { userManagementService } from '../../services/userManagementService'
 import type { UserRole } from '../../types/auth'
 import type { ManagedUser, UserPermissions } from '../../types/permissions'
+import './user-management.css'
 
 const roleOptions: UserRole[] = ['Admin', 'Manager', 'Editor', 'Viewer']
+
+const ROLE_BADGE: Record<UserRole, string> = {
+  Admin: 'border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-800/40 dark:bg-violet-950/30 dark:text-violet-200',
+  Manager: 'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800/40 dark:bg-blue-950/30 dark:text-blue-200',
+  Editor: 'border-[color-mix(in_srgb,var(--teal)_25%,var(--border))] bg-[var(--teal-soft)] text-[var(--teal)]',
+  Viewer: 'border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted)]',
+}
 
 export function UserManagementPage() {
   const { user: currentUser } = useAuth()
@@ -118,7 +138,14 @@ export function UserManagementPage() {
   if (loading) {
     return (
       <div className="page">
-        <div className="vrms-loading">Loading users…</div>
+        <div
+          className="flex min-h-[240px] flex-col items-center justify-center gap-3 text-[var(--muted)]"
+          role="status"
+          aria-live="polite"
+        >
+          <Loader2 className="size-6 animate-spin text-[var(--teal)]" aria-hidden="true" />
+          <span>Loading users…</span>
+        </div>
       </div>
     )
   }
@@ -130,52 +157,129 @@ export function UserManagementPage() {
       description="Assign sidebar menu access and action permissions. Options update automatically when navigation changes."
       actions={
         selectedUser ? (
-          <div className="user-mgmt-actions">
-            <button type="button" className="vrms-btn-secondary" disabled={!isDirty || saving} onClick={handleReset}>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              className="vrms-btn-secondary inline-flex items-center gap-2"
+              disabled={!isDirty || saving}
+              onClick={handleReset}
+            >
+              <RotateCcw className="size-4 shrink-0" aria-hidden="true" />
               Reset
             </button>
-            <button type="button" className="vrms-btn-primary" disabled={!isDirty || saving} onClick={() => void handleSave()}>
+            <button
+              type="button"
+              className="vrms-btn-primary inline-flex items-center gap-2"
+              disabled={!isDirty || saving}
+              onClick={() => void handleSave()}
+            >
+              {saving ? (
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+              ) : (
+                <Save className="size-4 shrink-0" aria-hidden="true" />
+              )}
               {saving ? 'Saving…' : 'Save changes'}
             </button>
           </div>
         ) : null
       }
     >
-      <div className="user-mgmt-layout">
-        <aside className="user-mgmt-list vrms-panel">
-          <h2>Users</h2>
-          <ul className="user-mgmt-user-list">
-            {users.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  className={item.id === selectedId ? 'user-mgmt-user active' : 'user-mgmt-user'}
-                  onClick={() => setSelectedId(item.id)}
-                >
-                  <span className="user-mgmt-user-avatar">{item.initials}</span>
-                  <span className="user-mgmt-user-meta">
-                    <strong>{item.name}</strong>
-                    <span>{item.email}</span>
-                    <span>
-                      {item.role}
-                      {!item.active ? ' · Inactive' : ''}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(260px,300px)_minmax(0,1fr)] lg:items-start">
+        <aside className="flex flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
+          <header className="flex items-center justify-between gap-2 border-b border-[var(--border)] px-4 py-3.5">
+            <div className="flex items-center gap-2">
+              <Users className="size-4 text-[var(--teal)]" aria-hidden="true" />
+              <h2 className="text-sm font-semibold text-[var(--app-text)]">Users</h2>
+            </div>
+            <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-[var(--surface-muted)] px-2 py-0.5 text-xs font-semibold tabular-nums text-[var(--muted)]">
+              {users.length}
+            </span>
+          </header>
+
+          <ul
+            className="user-mgmt-user-list-scroll m-0 max-h-[min(70vh,720px)] list-none overflow-y-auto p-2"
+            role="listbox"
+            aria-label="Select a user"
+          >
+            {users.map((item) => {
+              const selected = item.id === selectedId
+              return (
+                <li key={item.id} role="presentation">
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow-ring)] ${
+                      selected
+                        ? 'border-[color-mix(in_srgb,var(--teal)_35%,var(--border))] bg-[var(--teal-soft)] shadow-sm'
+                        : 'border-transparent hover:border-[var(--border)] hover:bg-[var(--surface-muted)]'
+                    }`}
+                    onClick={() => setSelectedId(item.id)}
+                  >
+                    <span
+                      className={`grid size-10 shrink-0 place-items-center rounded-full text-xs font-bold ${
+                        selected
+                          ? 'bg-[var(--teal)] text-[var(--on-primary)]'
+                          : 'bg-[var(--accent-soft)] text-[var(--accent)]'
+                      }`}
+                      aria-hidden="true"
+                    >
+                      {item.initials}
                     </span>
-                  </span>
-                </button>
-              </li>
-            ))}
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="truncate text-sm font-semibold text-[var(--app-text)]">{item.name}</span>
+                      <span className="truncate text-xs text-[var(--muted)]">{item.email}</span>
+                      <span className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                        <span
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide ${ROLE_BADGE[item.role]}`}
+                        >
+                          {item.role}
+                        </span>
+                        {!item.active ? (
+                          <span className="inline-flex items-center gap-0.5 text-[0.65rem] font-medium text-[var(--danger-text)]">
+                            <UserX className="size-3" aria-hidden="true" />
+                            Inactive
+                          </span>
+                        ) : null}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         </aside>
 
-        <section className="user-mgmt-editor">
+        <section className="flex min-w-0 flex-col gap-4">
           {selectedUser ? (
             <>
-              <div className="vrms-panel user-mgmt-summary">
-                <div className="user-mgmt-summary-grid">
-                  <div>
-                    <label htmlFor="user-role">Role</label>
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow)] sm:p-5">
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border)] pb-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[var(--teal-soft)] text-sm font-bold text-[var(--teal)]">
+                      {selectedUser.initials}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-semibold text-[var(--app-text)]">{selectedUser.name}</p>
+                      <p className="truncate text-sm text-[var(--muted)]">{selectedUser.email}</p>
+                    </div>
+                  </div>
+                  {isDirty ? (
+                    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                      Unsaved changes
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="user-role" className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                      <UserCog className="size-3.5" aria-hidden="true" />
+                      Role
+                    </label>
                     <select
                       id="user-role"
+                      className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--app-text)] shadow-sm transition-colors focus-visible:border-[var(--teal)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow-ring)]"
                       value={draftRole}
                       onChange={(event) => handleRoleChange(event.target.value as UserRole)}
                     >
@@ -186,39 +290,69 @@ export function UserManagementPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="user-mgmt-active">
-                    <label htmlFor="user-active">Account status</label>
-                    <label className="permission-matrix-check user-mgmt-active-toggle">
+
+                  <div className="flex flex-col gap-1.5">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                      {draftActive ? (
+                        <UserCheck className="size-3.5" aria-hidden="true" />
+                      ) : (
+                        <UserX className="size-3.5" aria-hidden="true" />
+                      )}
+                      Account status
+                    </span>
+                    <label className="inline-flex min-h-[42px] cursor-pointer items-center gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 transition-colors hover:bg-[var(--surface-subtle)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--glow-ring)]">
                       <input
                         id="user-active"
                         type="checkbox"
+                        className="user-mgmt-perm-check size-4 rounded border-[var(--border)]"
                         checked={draftActive}
                         onChange={(event) => setDraftActive(event.target.checked)}
                       />
-                      <span>{draftActive ? 'Active' : 'Inactive'}</span>
+                      <span className="text-sm font-medium text-[var(--app-text)]">
+                        {draftActive ? 'Active' : 'Inactive'}
+                      </span>
                     </label>
                   </div>
-                  <div className="user-mgmt-reset-password">
-                      <label>Password reset</label>
-                      <button
-                        type="button"
-                        className="vrms-btn-secondary"
-                        disabled={resettingPassword}
-                        onClick={() => void handleResetUserPassword()}
-                      >
-                        {resettingPassword ? 'Resetting…' : 'Reset to default password'}
-                      </button>
-                    </div>
+
+                  <div className="flex flex-col gap-1.5 sm:col-span-2 xl:col-span-1">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                      <KeyRound className="size-3.5" aria-hidden="true" />
+                      Password reset
+                    </span>
+                    <button
+                      type="button"
+                      className="vrms-btn-secondary inline-flex w-full items-center justify-center gap-2 sm:w-auto"
+                      disabled={resettingPassword}
+                      onClick={() => void handleResetUserPassword()}
+                    >
+                      {resettingPassword ? (
+                        <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <KeyRound className="size-4 shrink-0" aria-hidden="true" />
+                      )}
+                      {resettingPassword ? 'Resetting…' : 'Reset to default password'}
+                    </button>
+                  </div>
                 </div>
-                {draftRole === 'Admin' ? (
-                  <p className="user-mgmt-note">
-                    Administrators receive full access to every menu and action defined in the navigation registry.
-                  </p>
-                ) : (
-                  <p className="user-mgmt-note">
-                    Permissions below are derived from the current sidebar menus. Adding or renaming a menu updates these options automatically.
-                  </p>
-                )}
+
+                <p className="mt-4 flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--teal)_20%,var(--border))] bg-[var(--alert-info-bg)] px-3 py-2.5 text-sm text-[var(--muted)]">
+                  {draftRole === 'Admin' ? (
+                    <>
+                      <Shield className="mt-0.5 size-4 shrink-0 text-[var(--teal)]" aria-hidden="true" />
+                      <span>
+                        Administrators receive full access to every menu and action defined in the navigation registry.
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Info className="mt-0.5 size-4 shrink-0 text-[var(--teal)]" aria-hidden="true" />
+                      <span>
+                        Permissions below are derived from the current sidebar menus. Adding or renaming a menu updates
+                        these options automatically.
+                      </span>
+                    </>
+                  )}
+                </p>
               </div>
 
               <PermissionMatrix
@@ -228,8 +362,12 @@ export function UserManagementPage() {
               />
             </>
           ) : (
-            <div className="vrms-panel">
-              <p className="vrms-muted">Select a user to manage permissions.</p>
+            <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-muted)] px-6 py-12 text-center">
+              <Users className="size-10 text-[var(--muted)] opacity-60" aria-hidden="true" />
+              <p className="text-sm font-medium text-[var(--app-text)]">Select a user to manage permissions</p>
+              <p className="max-w-sm text-sm text-[var(--muted)]">
+                Choose a user from the list to configure their role, account status, and module permissions.
+              </p>
             </div>
           )}
         </section>

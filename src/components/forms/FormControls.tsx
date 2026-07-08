@@ -63,8 +63,8 @@ export function DateInput(props: InputHTMLAttributes<HTMLInputElement>) {
   return <AppDateInput {...props} />
 }
 
-export function SelectInput({ children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className="input" {...props}>{children}</select>
+export function SelectInput({ children, className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select className={className ? `input ${className}` : 'input'} {...props}>{children}</select>
 }
 
 export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {

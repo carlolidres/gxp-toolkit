@@ -1,0 +1,38 @@
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+@source "./VmpMasterlistFormPage.tsx";
+@source "../../components/vmp/VmpFormFields.tsx";
+@source "../../components/vmp/VmpEditableCombobox.tsx";
+
+.vmp-form-page--modern .vmp-editable-combobox-input-wrap,
+.vmp-form-page--modern .vmp-searchable-select input {
+  min-height: 42px;
+}
+
+.vmp-form-page--modern .vmp-editable-combobox-input-wrap {
+  border-radius: 0.5rem;
+  border-color: var(--border);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 4%, transparent);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.vmp-form-page--modern .vmp-editable-combobox.is-open .vmp-editable-combobox-input-wrap {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px var(--glow-ring);
+}
+
+.vmp-form-page--modern .vmp-editable-combobox-input-wrap input {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.vmp-form-page--modern .app-date-input-wrap input {
+  min-height: 42px;
+  border-radius: 0.5rem;
+}
+
+.vmp-form-page--modern .vmp-searchable-options,
+.vmp-form-page--modern .vmp-editable-combobox-menu {
+  border-radius: 0.5rem;
+}

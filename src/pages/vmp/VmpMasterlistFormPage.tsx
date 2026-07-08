@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { AlertCircle, CheckCircle2, Eraser, FilePen, Loader2, Save, X } from 'lucide-react'
 
-import { FormInput, FormSelect, FormTextarea, VmpFormSectionHeader, VmpIcon, VmpModeBanner } from '../../components/vmp/VmpFormFields'
+import { FormInput, FormSelect, FormTextarea, VmpFormSectionHeader, VmpModeBanner } from '../../components/vmp/VmpFormFields'
+import { FormEditableCombobox } from '../../components/vmp/VmpEditableCombobox'
 import { VmpQcInstrumentsSection } from '../../components/vmp/VmpQcInstrumentsSection'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { VrmsPage } from '../../components/vrms/VrmsPage'
@@ -42,6 +44,20 @@ import {
   type VmpMasterlistRecord,
 } from '../../lib/vmpMasterlist'
 import { resolveVmpActorEmail } from '../../services/vmpMasterlistService'
+import {
+  type GroupSuggestionScope,
+  mergeGroupSubcategorySuggestions,
+  readGroupSubcategorySuggestions,
+  rememberGroupSubcategory,
+  forgetGroupSubcategory,
+} from '../../lib/vmpGroupSubcategorySuggestions'
+import {
+  readResponsibleOwnerSuggestions,
+  rememberResponsibleOwner,
+  forgetResponsibleOwner,
+} from '../../lib/vmpResponsibleOwnerSuggestions'
+import { VMP_FORM_GRID_CLASS, VMP_SECTION_CARD_CLASS } from './vmp-form-shared'
+import './vmp-form-page.css'
 
 function recordsEqual(a: VmpMasterlistRecord, b: VmpMasterlistRecord): boolean {
   return JSON.stringify(a) === JSON.stringify(b)
@@ -68,8 +84,21 @@ export function VmpMasterlistFormPage() {
   const [customReviewUnit, setCustomReviewUnit] = useState('years')
   const [customReviewInterval, setCustomReviewInterval] = useState('')
   const [departmentOtherDraft, setDepartmentOtherDraft] = useState('')
-  const [groupOtherDraft, setGroupOtherDraft] = useState('')
   const [roomLineOtherDraft, setRoomLineOtherDraft] = useState('')
+  const [responsibleOwnerOptions, setResponsibleOwnerOptions] = useState<string[]>(() =>
+    readResponsibleOwnerSuggestions(),
+  )
+  const [groupSubcategoryOptions, setGroupSubcategoryOptions] = useState<string[]>([])
+
+  const savedResponsibleOwners = useMemo(() => new Set(readResponsibleOwnerSuggestions()), [responsibleOwnerOptions])
+
+  const refreshResponsibleOwnerOptions = useCallback(() => {
+    setResponsibleOwnerOptions(readResponsibleOwnerSuggestions())
+  }, [])
+
+  useEffect(() => {
+    refreshResponsibleOwnerOptions()
+  }, [refreshResponsibleOwnerOptions])
 
   const registryDepartments = appData?.registries.Department ?? []
   const validationArea = formRecord?.validationArea
@@ -94,14 +123,33 @@ export function VmpMasterlistFormPage() {
   const roomLineField = useMemo(() => resolveRoomLineField(cascadeContext, fieldOptions), [cascadeContext, fieldOptions])
   const showQcInstruments = useMemo(() => isQcInstrumentSectionVisible(cascadeContext), [cascadeContext])
 
+  const groupSuggestionScope = useMemo<GroupSuggestionScope>(
+    () => ({
+      validationArea: formRecord?.validationArea ?? 'Equipment',
+      department: formRecord?.department,
+    }),
+    [formRecord?.department, formRecord?.validationArea],
+  )
+
+  const savedGroupSubcategories = useMemo(
+    () => new Set(readGroupSubcategorySuggestions(groupSuggestionScope)),
+    [groupSubcategoryOptions, groupSuggestionScope],
+  )
+
+  const refreshGroupSubcategoryOptions = useCallback(() => {
+    setGroupSubcategoryOptions(mergeGroupSubcategorySuggestions(groupSuggestionScope, groupField.options))
+  }, [groupField.options, groupSuggestionScope])
+
+  useEffect(() => {
+    refreshGroupSubcategoryOptions()
+  }, [refreshGroupSubcategoryOptions])
+
   const departmentSelectValue = formRecord ? getControlledSelectValue(formRecord.department, departmentField.options) : ''
-  const groupSelectValue = formRecord ? getControlledSelectValue(formRecord.group, groupField.options) : ''
   const roomLineSelectValue = formRecord ? getControlledSelectValue(formRecord.roomLine, roomLineField.options) : ''
 
   const departmentOtherValue = formRecord
     ? departmentOtherDraft || getOtherOptionValue(formRecord.department, departmentField.options)
     : ''
-  const groupOtherValue = formRecord ? groupOtherDraft || getOtherOptionValue(formRecord.group, groupField.options) : ''
   const roomLineOtherValue = formRecord
     ? roomLineOtherDraft || getOtherOptionValue(formRecord.roomLine, roomLineField.options)
     : ''
@@ -262,9 +310,24 @@ export function VmpMasterlistFormPage() {
     return trimmed
   }
 
+  async function ensureGroupOption(value: string, options: readonly string[]): Promise<string> {
+    const trimmed = value.trim()
+    if (!trimmed) return ''
+    if (options.includes(trimmed)) return trimmed
+    const duplicate = findDuplicateOption(trimmed, options)
+    if (duplicate) return duplicate
+    await addFieldOption({
+      fieldType: 'group',
+      context: cascadeContext,
+      displayValue: trimmed,
+      actor,
+    })
+    return trimmed
+  }
+
   function validateRecord(record: VmpMasterlistRecord): string | null {
     if (!record.itemName.trim()) {
-      return 'Item / System / Area Name is required before saving.'
+      return 'Description is required before saving.'
     }
     if (!record.recordId.trim()) {
       return 'Record ID could not be generated. Select a Validation Area and try again.'
@@ -329,7 +392,7 @@ export function VmpMasterlistFormPage() {
         !groupField.visible
           ? ''
           : groupField.useDropdown
-            ? await ensureCustomOption('group', groupSelectValue, groupOtherValue, groupField.options)
+            ? await ensureGroupOption(formRecord.group, groupField.options)
             : formRecord.group
       const resolvedRoomLine = roomLineField.useDropdown
         ? await ensureCustomOption('room_line', roomLineSelectValue, roomLineOtherValue, roomLineField.options)
@@ -369,8 +432,15 @@ export function VmpMasterlistFormPage() {
         expectedVersion: isEditMode ? baseline?.version : undefined,
         previousInstruments: baseline?.qcInstruments ?? [],
       })
+      if (payload.responsibleOwner.trim()) {
+        rememberResponsibleOwner(payload.responsibleOwner)
+        refreshResponsibleOwnerOptions()
+      }
+      if (payload.group.trim() && groupField.useDropdown) {
+        rememberGroupSubcategory(groupSuggestionScope, payload.group)
+        refreshGroupSubcategoryOptions()
+      }
       setDepartmentOtherDraft('')
-      setGroupOtherDraft('')
       setRoomLineOtherDraft('')
       setSaveSuccess(saved)
       setBaseline(structuredClone(saved))
@@ -389,7 +459,6 @@ export function VmpMasterlistFormPage() {
     setFormRecord(draft)
     setBaseline(structuredClone(draft))
     setDepartmentOtherDraft('')
-    setGroupOtherDraft('')
     setRoomLineOtherDraft('')
     setFormMessage('')
     setSaveSuccess(null)
@@ -407,7 +476,6 @@ export function VmpMasterlistFormPage() {
     setFormRecord(draft)
     setBaseline(structuredClone(draft))
     setDepartmentOtherDraft('')
-    setGroupOtherDraft('')
     setRoomLineOtherDraft('')
     setSaveSuccess(null)
     setFormMessage('')
@@ -420,6 +488,30 @@ export function VmpMasterlistFormPage() {
       <VrmsPage eyebrow="Validation Master Plan" title="VMP / Masterlist Form" description="Create or update validation masterlist records.">
         <p className="vrms-muted">{editRecordId && !existing ? 'Record not found.' : 'Loading form…'}</p>
       </VrmsPage>
+    )
+  }
+
+  function renderGroupSubcategoryField(required = false) {
+    if (!groupField.visible || !groupField.useDropdown) return null
+    return (
+      <FormEditableCombobox
+        label={groupField.label}
+        required={required}
+        value={formRecord!.group}
+        options={groupSubcategoryOptions}
+        removableOptions={savedGroupSubcategories}
+        loading={optionsLoading}
+        placeholder="Type or select group / subcategory…"
+        onChange={(value) => updateCascadeField('group', value)}
+        onCommit={(value) => {
+          rememberGroupSubcategory(groupSuggestionScope, value)
+          refreshGroupSubcategoryOptions()
+        }}
+        onRemoveOption={(value) => {
+          forgetGroupSubcategory(groupSuggestionScope, value)
+          refreshGroupSubcategoryOptions()
+        }}
+      />
     )
   }
 
@@ -438,20 +530,37 @@ export function VmpMasterlistFormPage() {
         <VmpModeBanner>New record · Draft mode</VmpModeBanner>
       ) : null}
 
-      {optionsLoading ? <p className="vmp-options-loading">Loading field options…</p> : null}
+      {optionsLoading ? (
+        <p className="flex items-center gap-2 text-sm text-[var(--muted)]" role="status">
+          <Loader2 className="size-4 animate-spin text-[var(--teal)]" aria-hidden="true" />
+          Loading field options…
+        </p>
+      ) : null}
       {optionsError ? (
-        <p className="vmp-form-error" role="alert">
-          {optionsError}
+        <p
+          className="flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--danger-text)_28%,var(--border))] bg-[var(--badge-danger-bg)] px-3 py-2.5 text-sm font-semibold text-[var(--danger-text)]"
+          role="alert"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span>{optionsError}</span>
         </p>
       ) : null}
 
       {saveSuccess ? (
-        <section className="vrms-panel vmp-success-panel" aria-live="polite">
-          <strong>Record saved successfully.</strong>
-          <p>
-            {saveSuccess.recordId} — {saveSuccess.itemName}
-          </p>
-          <div className="vmp-form-actions-inline">
+        <section
+          className="rounded-xl border border-[color-mix(in_srgb,var(--teal)_35%,var(--border))] bg-[color-mix(in_srgb,var(--teal)_8%,var(--surface))] p-5 shadow-[var(--shadow)]"
+          aria-live="polite"
+        >
+          <div className="flex items-start gap-2">
+            <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-[var(--teal)]" aria-hidden="true" />
+            <div className="min-w-0">
+              <strong className="block text-[var(--navy)]">Record saved successfully.</strong>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                {saveSuccess.recordId} — {saveSuccess.itemName}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2.5">
             <Link className="vrms-btn-primary" to={`/vmp/database?recordId=${encodeURIComponent(saveSuccess.recordId)}`}>
               View in Database
             </Link>
@@ -463,20 +572,27 @@ export function VmpMasterlistFormPage() {
       ) : null}
 
       <form
-        className="vmp-form-page"
+        className="vmp-form-page vmp-form-page--modern flex flex-col gap-5"
         aria-label="Masterlist Form"
         onSubmit={(event) => {
           event.preventDefault()
           void handleSave('saved')
         }}
       >
-        <section className="vrms-panel vmp-form-section">
+        <section className={VMP_SECTION_CARD_CLASS}>
           <VmpFormSectionHeader
             title="Record Classification and Identification"
             description="Select the validation area and related classification fields, then identify the applicable item, system, area, asset, responsible owner, and criticality for this record."
             icon="clipboard-list"
           />
-          <div className="vmp-form-grid">
+          <div className={VMP_FORM_GRID_CLASS}>
+            <FormInput
+              label="Description"
+              required
+              wide
+              value={formRecord.itemName}
+              onChange={(value) => setFormRecord((current) => current && { ...current, itemName: value })}
+            />
             <FormSelect
               label="Validation Area"
               required
@@ -494,26 +610,7 @@ export function VmpMasterlistFormPage() {
 
             {isFacilities ? (
               <>
-                <FormSelect
-                  label={groupField.label}
-                  required
-                  value={groupSelectValue}
-                  options={groupField.options}
-                  searchable={groupField.searchable}
-                  loading={optionsLoading}
-                  onChange={(value) => updateCascadeField('group', value)}
-                />
-                {groupSelectValue === VMP_OTHER_OPTION ? (
-                  <FormInput
-                    label={otherSpecifyLabel(groupField.label)}
-                    required
-                    value={groupOtherValue}
-                    onChange={(value) => {
-                      setGroupOtherDraft(value)
-                      updateCascadeField('group', value || VMP_OTHER_OPTION)
-                    }}
-                  />
-                ) : null}
+                {renderGroupSubcategoryField(true)}
                 {departmentField.visible ? (
                   <>
                     <FormSelect
@@ -563,30 +660,7 @@ export function VmpMasterlistFormPage() {
                     }}
                   />
                 ) : null}
-                {groupField.useDropdown ? (
-                  <>
-                    <FormSelect
-                      label={groupField.label}
-                      required={groupField.options.length > 0}
-                      value={groupSelectValue}
-                      options={groupField.options}
-                      searchable={groupField.searchable}
-                      loading={optionsLoading}
-                      onChange={(value) => updateCascadeField('group', value)}
-                    />
-                    {groupSelectValue === VMP_OTHER_OPTION ? (
-                      <FormInput
-                        label={otherSpecifyLabel(groupField.label)}
-                        required
-                        value={groupOtherValue}
-                        onChange={(value) => {
-                          setGroupOtherDraft(value)
-                          updateCascadeField('group', value || VMP_OTHER_OPTION)
-                        }}
-                      />
-                    ) : null}
-                  </>
-                ) : null}
+                {renderGroupSubcategoryField(groupField.options.length > 0)}
                 <FormInput
                   label="IL-tag No."
                   value={formRecord.assetTagNo}
@@ -660,38 +734,10 @@ export function VmpMasterlistFormPage() {
                     }
                   />
                 ) : null}
-                {groupField.visible && groupField.useDropdown ? (
-                  <>
-                    <FormSelect
-                      label={groupField.label}
-                      value={groupSelectValue}
-                      options={groupField.options}
-                      searchable={groupField.searchable}
-                      loading={optionsLoading}
-                      onChange={(value) => updateCascadeField('group', value)}
-                    />
-                    {groupSelectValue === VMP_OTHER_OPTION ? (
-                      <FormInput
-                        label={otherSpecifyLabel(groupField.label)}
-                        required
-                        value={groupOtherValue}
-                        onChange={(value) => {
-                          setGroupOtherDraft(value)
-                          updateCascadeField('group', value || VMP_OTHER_OPTION)
-                        }}
-                      />
-                    ) : null}
-                  </>
-                ) : null}
+                {renderGroupSubcategoryField(false)}
               </>
             ) : null}
 
-            <FormInput
-              label="Item / System / Area Name"
-              required
-              value={formRecord.itemName}
-              onChange={(value) => setFormRecord((current) => current && { ...current, itemName: value })}
-            />
             {!isEquipment ? (
               <FormInput
                 label="Asset / Tag No."
@@ -700,10 +746,22 @@ export function VmpMasterlistFormPage() {
                 helper="Optional for facilities or records without a formal tag."
               />
             ) : null}
-            <FormInput
+            <FormEditableCombobox
               label="Responsible Owner"
               value={formRecord.responsibleOwner}
+              options={responsibleOwnerOptions}
+              removableOptions={savedResponsibleOwners}
+              loading={optionsLoading}
+              placeholder="Type or select responsible owner…"
               onChange={(value) => setFormRecord((current) => current && { ...current, responsibleOwner: value })}
+              onCommit={(value) => {
+                rememberResponsibleOwner(value)
+                refreshResponsibleOwnerOptions()
+              }}
+              onRemoveOption={(value) => {
+                forgetResponsibleOwner(value)
+                refreshResponsibleOwnerOptions()
+              }}
             />
             <FormSelect
               label="Criticality"
@@ -717,13 +775,13 @@ export function VmpMasterlistFormPage() {
           </div>
         </section>
 
-        <section className="vrms-panel vmp-form-section">
+        <section className={VMP_SECTION_CARD_CLASS}>
           <VmpFormSectionHeader
             title="Document References"
             description="Linked protocol and report tracer numbers."
             icon="link"
           />
-          <div className="vmp-form-grid">
+          <div className={VMP_FORM_GRID_CLASS}>
             <FormInput
               label="Protocol Tracer"
               value={formRecord.protocolTracer}
@@ -745,13 +803,13 @@ export function VmpMasterlistFormPage() {
           </div>
         </section>
 
-        <section className="vrms-panel vmp-form-section">
+        <section className={VMP_SECTION_CARD_CLASS}>
           <VmpFormSectionHeader
             title="Schedule and Status"
             description="Review cycle, validation state, and lifecycle tracking."
             icon="calendar"
           />
-          <div className="vmp-form-grid">
+          <div className={VMP_FORM_GRID_CLASS}>
             <FormSelect
               label="Review / Revalidation Frequency"
               value={formRecord.reviewFrequency}
@@ -808,44 +866,56 @@ export function VmpMasterlistFormPage() {
         </section>
 
         {formMessage ? (
-          <p className="vmp-form-error" role="alert">
-            {formMessage}
+          <p
+            className="flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--danger-text)_28%,var(--border))] bg-[var(--badge-danger-bg)] px-3 py-2.5 text-sm font-semibold text-[var(--danger-text)]"
+            role="alert"
+          >
+            <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            <span>{formMessage}</span>
           </p>
         ) : null}
 
-        <div className="vmp-form-sticky-actions">
+        <div className="flex flex-wrap gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow)] sm:p-5">
           {isEditMode ? (
             <>
-              <button type="submit" className="vrms-btn-primary vmp-btn-with-icon" disabled={isSaving || optionsLoading}>
-                <VmpIcon name="save" />
+              <button
+                type="submit"
+                className="vrms-btn-primary vmp-btn-with-icon inline-flex items-center gap-2"
+                disabled={isSaving || optionsLoading}
+              >
+                {isSaving ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Save className="size-4" aria-hidden="true" />}
                 {isSaving ? 'Saving…' : 'Update Record'}
               </button>
-              <button type="button" className="vrms-btn-secondary vmp-btn-with-icon" onClick={handleCancel}>
-                <VmpIcon name="cancel" />
+              <button type="button" className="vrms-btn-secondary vmp-btn-with-icon inline-flex items-center gap-2" onClick={handleCancel}>
+                <X className="size-4" aria-hidden="true" />
                 Cancel
               </button>
             </>
           ) : (
             <>
-              <button type="submit" className="vrms-btn-primary vmp-btn-with-icon" disabled={isSaving || !canCreate || optionsLoading}>
-                <VmpIcon name="save" />
+              <button
+                type="submit"
+                className="vrms-btn-primary vmp-btn-with-icon inline-flex items-center gap-2"
+                disabled={isSaving || !canCreate || optionsLoading}
+              >
+                {isSaving ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Save className="size-4" aria-hidden="true" />}
                 {isSaving ? 'Saving…' : 'Save Record'}
               </button>
               <button
                 type="button"
-                className="vrms-btn-secondary vmp-btn-with-icon"
+                className="vrms-btn-secondary vmp-btn-with-icon inline-flex items-center gap-2"
                 disabled={isSaving || !canCreate || optionsLoading}
                 onClick={() => void handleSave('draft')}
               >
-                <VmpIcon name="draft" />
+                <FilePen className="size-4" aria-hidden="true" />
                 Save as Draft
               </button>
-              <button type="button" className="vrms-btn-secondary vmp-btn-with-icon" onClick={handleClear}>
-                <VmpIcon name="clear" />
+              <button type="button" className="vrms-btn-secondary vmp-btn-with-icon inline-flex items-center gap-2" onClick={handleClear}>
+                <Eraser className="size-4" aria-hidden="true" />
                 Clear Form
               </button>
-              <button type="button" className="vrms-btn-secondary vmp-btn-with-icon" onClick={handleCancel}>
-                <VmpIcon name="cancel" />
+              <button type="button" className="vrms-btn-secondary vmp-btn-with-icon inline-flex items-center gap-2" onClick={handleCancel}>
+                <X className="size-4" aria-hidden="true" />
                 Cancel
               </button>
             </>

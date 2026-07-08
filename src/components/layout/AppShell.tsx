@@ -146,7 +146,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [messagesOpen, setMessagesOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false)
-  const { user, logout, usesSupabase } = useAuth()
+  const { user, logout } = useAuth()
   const { messages, loading, unreadCount, isAdmin, refresh, acknowledgeUnread } = useFeedbackMessages()
   const { accessibleNavigationGroups, permissionsReady, canViewMenu } = usePermissions()
   const showApqrNotifications = canViewMenu('apqr-dashboard') || canViewMenu('apqr-scheduler')
@@ -213,11 +213,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             <button type="button" className="sidebar-profile-action" aria-label="Registry settings" onClick={() => navigate('/registry')}>
               <IconGift />
             </button>
-          </div>
-
-          <div className="sidebar-environment">
-            <span className="environment-dot" />
-            {usesSupabase ? 'Supabase live backend' : 'Mock data environment'}
           </div>
         </div>
       </aside>
