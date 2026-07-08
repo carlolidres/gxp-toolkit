@@ -3,7 +3,7 @@
 Last Updated: `2026-07-08`
 Version: `v33.3`
 Branch: `main` / `master`
-Commit: `2812667` — v33.2: fix APQR contact role columns deforming when adding contacts
+Commit: `a2978a0` — v33.3: enable RLS on public.schema_migrations
 Deployment: `DEPLOYED` — GitHub Pages run 28867825053 (2026-07-07); Supabase migration `20260708193000_schema_migrations_rls` applied to `ydndeoacgfnxjqwwnswh`
 
 ## Current Status
