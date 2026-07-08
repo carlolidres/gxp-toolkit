@@ -1,12 +1,14 @@
 # Current Handoff
 
-Last Updated: `2026-07-07`
-Version: `v33.2`
+Last Updated: `2026-07-08`
+Version: `v33.3`
 Branch: `main` / `master`
 Commit: `2812667` — v33.2: fix APQR contact role columns deforming when adding contacts
-Deployment: `DEPLOYED` — GitHub Pages run 28867825053 (2026-07-07); Supabase migrations up to date
+Deployment: `DEPLOYED` — GitHub Pages run 28867825053 (2026-07-07); Supabase migration `20260708193000_schema_migrations_rls` applied to `ydndeoacgfnxjqwwnswh`
 
 ## Current Status
+
+**Supabase security — `schema_migrations` RLS** — enabled RLS on `public.schema_migrations`, revoked `anon`/`authenticated` grants. Tooling-only table; no client API access. Linter ERROR `rls_disabled_in_public` cleared (INFO `rls_enabled_no_policy` is intentional deny-by-default).
 
 **Topbar version history drawer** — info icon left of bell opens right-side release notes drawer with curated version timeline and developer attribution (Carlo M. Lidres). Topbar actions modernized: clustered icon/account groups, divider, focus-visible states, improved profile typography.
 
