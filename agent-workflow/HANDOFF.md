@@ -3,8 +3,8 @@
 Last Updated: `2026-07-08`
 Version: `v33.4`
 Branch: `main` / `master`
-Commit: `6dba34d` — v33.4: modernize admin, auth, VMP form, and messages UI
-Deployment: `PENDING` — push to `master` triggers GitHub Pages workflow
+Commit: `1e099d7` — v33.4 handoff (feature commit `6dba34d`)
+Deployment: `DEPLOYED` — GitHub Pages run [28947714351](https://github.com/carlolidres/gxp-toolkit/actions/runs/28947714351) (2026-07-08)
 
 ## Current Status
 
