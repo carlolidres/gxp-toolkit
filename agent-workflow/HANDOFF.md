@@ -3,7 +3,7 @@
 Last Updated: `2026-07-08`
 Version: `v33.4`
 Branch: `main` / `master`
-Commit: `8b20ff4` — v33.4: modernize admin, auth, VMP form, and messages UI
+Commit: `6dba34d` — v33.4: modernize admin, auth, VMP form, and messages UI
 Deployment: `PENDING` — push to `master` triggers GitHub Pages workflow
 
 ## Current Status
