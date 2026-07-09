@@ -7,6 +7,7 @@ import { VrmsAppProvider } from '../context/VrmsAppContext'
 import { VmpAppProvider } from '../context/VmpAppContext'
 import { LoginPage } from '../pages/LoginPage'
 import { SignUpPage } from '../pages/SignUpPage'
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
 import { ResetPasswordPage } from '../pages/ResetPasswordPage'
 import { AccountSettingsPage } from '../pages/AccountSettingsPage'
 import { VrmsDashboardPage } from '../pages/vrms/VrmsDashboardPage'
@@ -41,6 +42,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route

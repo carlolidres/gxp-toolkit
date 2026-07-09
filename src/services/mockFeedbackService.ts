@@ -38,11 +38,17 @@ function seedMessages(): FeedbackMessage[] {
 }
 
 function purgeExpired(messages: FeedbackMessage[]): FeedbackMessage[] {
-  const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000
+  const now = Date.now()
+  const readCutoff = now - 24 * 60 * 60 * 1000
+  const closedCutoff = now - 3 * 24 * 60 * 60 * 1000
   return messages.filter((message) => {
-    if (message.status !== 'addressed' && message.status !== 'rejected') return true
     if (!message.statusUpdatedAt) return true
-    return new Date(message.statusUpdatedAt).getTime() >= cutoff
+    const updatedAt = new Date(message.statusUpdatedAt).getTime()
+    if (message.status === 'read') return updatedAt >= readCutoff
+    if (message.status === 'addressed' || message.status === 'rejected') {
+      return updatedAt >= closedCutoff
+    }
+    return true
   })
 }
 
@@ -85,10 +91,20 @@ export const mockFeedbackService = {
     return message
   },
 
-  async acknowledgeUnread(_user: AuthUser): Promise<void> {
+  async acknowledgeUnread(user: AuthUser): Promise<void> {
     await delay()
+    const profileId = requireProfileId(user)
+    const now = new Date().toISOString()
     const next = readStore().map((message) =>
-      message.status === 'unread' ? { ...message, status: 'read' as const } : message,
+      message.status === 'unread'
+        ? {
+            ...message,
+            status: 'read' as const,
+            statusUpdatedById: profileId,
+            statusUpdatedByName: user.name,
+            statusUpdatedAt: now,
+          }
+        : message,
     )
     writeStore(next)
   },

@@ -5,9 +5,16 @@ import {
   seedMockUserPermissions,
 } from '../data/mockUserPermissions'
 import { normalizeUserPermissions } from '../lib/permissions'
-import { setMockMustChangePassword } from './authService'
+import { generateTemporaryPassword } from '../lib/temporaryPassword'
+import {
+  getMockPasswordResetRequestedAt,
+  setMockMustChangePassword,
+  setMockPasswordResetRequested,
+} from './authService'
 import type { UserRole } from '../types/auth'
 import type { ManagedUser, UpdateManagedUserInput, UserPermissions } from '../types/permissions'
+
+const MOCK_LAST_TEMP_PASSWORD_KEY = 'gxp-toolkit-last-temp-password'
 
 function toManagedUser(
   user: (typeof mockUsers)[number],
@@ -17,6 +24,7 @@ function toManagedUser(
   return {
     ...user,
     active,
+    passwordResetRequestedAt: getMockPasswordResetRequestedAt(user.email),
     permissions,
   }
 }
@@ -70,7 +78,20 @@ export const mockUserManagementService = {
     await delay()
     const user = mockUsers.find((candidate) => candidate.id === userId)
     if (!user) throw new Error('User not found.')
+    if (!getMockPasswordResetRequestedAt(user.email)) {
+      throw new Error('No pending password reset request for this user.')
+    }
+
+    const temporaryPassword = generateTemporaryPassword(16)
+    // Mock mode: no outbound email — store for local verification / console.
+    localStorage.setItem(
+      MOCK_LAST_TEMP_PASSWORD_KEY,
+      JSON.stringify({ email: user.email, temporaryPassword, at: new Date().toISOString() }),
+    )
+    console.info(`[mock] Temporary password for ${user.email}: ${temporaryPassword}`)
+
     setMockMustChangePassword(user.email, true)
+    setMockPasswordResetRequested(user.email, null)
   },
 
   resetStore() {

@@ -6,10 +6,20 @@ export type AppVersionEntry = {
 
 export const APP_DEVELOPER = 'Carlo M. Lidres'
 
-export const APP_CURRENT_VERSION = 'v32'
+export const APP_CURRENT_VERSION = 'v33'
 
 /** Curated release notes — newest first. */
 export const APP_VERSION_HISTORY: AppVersionEntry[] = [
+  {
+    version: 'v33',
+    releaseDate: '2026-07-09',
+    changes: [
+      'Admin-approved password reset — forgot password notifies admins; Reset Password issues emailed temp credentials',
+      'Acknowledged Messages notifications purge after 24 hours',
+      'Auth pages UI refresh and removal of unused Remember me row',
+      'User Management, VMP form, and Messages modal Tailwind/Lucide modernization',
+    ],
+  },
   {
     version: 'v32',
     releaseDate: '2026-07-05',

@@ -3,6 +3,13 @@
 
 @source "./LoginPage.tsx";
 @source "./SignUpPage.tsx";
+@source "./ForgotPasswordPage.tsx";
+@source "./ResetPasswordPage.tsx";
+@source "./auth-form-shared.tsx";
+
+.login-card-modern .password-input-wrap {
+  position: relative;
+}
 
 .login-card-modern .password-input-wrap .input {
   padding-right: 2.75rem;
@@ -10,7 +17,9 @@
 
 .login-card-modern .password-input-toggle {
   position: absolute;
+  top: 50%;
   right: 0.5rem;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -32,4 +41,35 @@
 .login-card-modern .password-input-toggle:focus-visible {
   outline: 2px solid var(--glow-ring);
   outline-offset: 2px;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-secondary-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 420px) {
+  .auth-secondary-actions {
+    grid-template-columns: 1fr;
+  }
 }

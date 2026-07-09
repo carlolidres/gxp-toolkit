@@ -5,13 +5,21 @@
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS profiles (
-  id            TEXT PRIMARY KEY,
-  auth_user_id  TEXT,
-  email         TEXT NOT NULL,
-  display_name  TEXT NOT NULL,
-  role          TEXT NOT NULL DEFAULT 'viewer',
-  active        INTEGER NOT NULL DEFAULT 1
+  id                            TEXT PRIMARY KEY,
+  auth_user_id                  TEXT,
+  email                         TEXT NOT NULL,
+  display_name                  TEXT NOT NULL,
+  role                          TEXT NOT NULL DEFAULT 'viewer',
+  active                        INTEGER NOT NULL DEFAULT 1,
+  must_change_password          INTEGER NOT NULL DEFAULT 0,
+  password_reset_at             TEXT,
+  password_reset_by             TEXT REFERENCES profiles(id) ON DELETE SET NULL,
+  password_reset_requested_at   TEXT
 );
+
+CREATE INDEX IF NOT EXISTS idx_profiles_password_reset_requested_at
+  ON profiles(password_reset_requested_at)
+  WHERE password_reset_requested_at IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS app_feedback_messages (
   id                           TEXT PRIMARY KEY,

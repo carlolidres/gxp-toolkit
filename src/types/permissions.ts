@@ -16,6 +16,8 @@ export interface ManagedUser {
   role: UserRole
   initials: string
   active: boolean
+  /** ISO timestamp when the user submitted Forgot password; null/undefined when none pending. */
+  passwordResetRequestedAt?: string | null
   permissions: UserPermissions
 }
 

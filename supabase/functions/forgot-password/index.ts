@@ -14,14 +14,20 @@ function json(body: unknown, status = 200) {
   })
 }
 
+/** Generic success — do not reveal whether the email exists. */
+const ACCEPTED = {
+  success: true,
+  message:
+    'If an account exists for that email, an administrator has been notified. You will receive a temporary password by email after approval.',
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405)
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  const defaultPassword = Deno.env.get('DEFAULT_RESET_PASSWORD')?.trim()
-  if (!supabaseUrl || !serviceRoleKey || !defaultPassword) {
+  if (!supabaseUrl || !serviceRoleKey) {
     return json({ error: 'The password reset service is not configured.' }, 503)
   }
 
@@ -41,42 +47,45 @@ Deno.serve(async (request) => {
 
   const { data: profile, error: profileError } = await adminClient
     .from('profiles')
-    .select('id, email, auth_user_id, active')
+    .select('id, email, display_name, auth_user_id, active, password_reset_requested_at')
     .ilike('email', email)
     .maybeSingle()
 
-  if (profileError || !profile) {
-    return json({ error: 'No email/password account was found for that address.' }, 404)
-  }
-  if (!profile.active) {
-    return json({ error: 'This account is inactive. Contact an administrator.' }, 400)
-  }
-  if (!profile.auth_user_id) {
-    return json(
-      { error: 'This account uses Google or Microsoft sign-in. Use that provider instead of a password reset.' },
-      400,
-    )
-  }
+  if (profileError) return json({ error: 'Password reset request failed.' }, 502)
 
-  const { error: passwordError } = await adminClient.auth.admin.updateUserById(profile.auth_user_id, {
-    password: defaultPassword,
-  })
-  if (passwordError) return json({ error: 'The password could not be reset.' }, 502)
-
-  await adminClient.auth.admin.signOut(profile.auth_user_id, 'global')
+  // Enumeration-safe: unknown / inactive / OAuth-only accounts look the same as success.
+  if (!profile || !profile.active || !profile.auth_user_id) {
+    return json(ACCEPTED)
+  }
 
   const now = new Date().toISOString()
+  const alreadyPending = Boolean(profile.password_reset_requested_at)
+
   const { error: updateError } = await adminClient
     .from('profiles')
     .update({
-      must_change_password: true,
-      password_reset_at: now,
-      password_reset_by: null,
+      password_reset_requested_at: now,
       updated_at: now,
     })
     .eq('id', profile.id)
 
-  if (updateError) return json({ error: 'The mandatory password-change flag could not be set.' }, 502)
+  if (updateError) return json({ error: 'Password reset request failed.' }, 502)
 
-  return json({ success: true, temporaryPassword: defaultPassword })
+  if (!alreadyPending) {
+    const { error: messageError } = await adminClient.from('app_feedback_messages').insert({
+      sender_profile_id: profile.id,
+      sender_name: profile.display_name || profile.email,
+      sender_email: profile.email,
+      category: 'improvement',
+      content: `[Password reset request] ${profile.display_name || profile.email} (${profile.email}) requested a password reset. Open User Management and click Reset Password beside this account to approve.`,
+      status: 'unread',
+      submitted_at: now,
+    })
+    if (messageError) {
+      // Request flag is already set; admin can still act from User Management.
+      console.error('forgot-password: admin notification insert failed', messageError.message)
+    }
+  }
+
+  return json(ACCEPTED)
 })

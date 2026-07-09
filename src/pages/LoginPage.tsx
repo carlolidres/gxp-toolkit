@@ -1,8 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import {
-  AlertCircle,
-  CheckCircle2,
   KeyRound,
   Loader2,
   Lock,
@@ -18,26 +16,40 @@ import { APP_NAME } from '../config/appNavigation'
 import { useAuth } from '../hooks/useAuth'
 import { consumeLoginFlash } from '../lib/authSessionStore'
 import { getAuthErrorMessage } from '../lib/authMessages'
-import { AUTH_CARD_CLASS, AUTH_INPUT_CLASS, AuthField } from './auth-form-shared'
+import {
+  AUTH_CARD_CLASS,
+  AUTH_GHOST_BTN_CLASS,
+  AUTH_INPUT_CLASS,
+  AUTH_PRIMARY_BTN_CLASS,
+  AuthAlert,
+  AuthDivider,
+  AuthField,
+} from './auth-form-shared'
 import './login-page.css'
 
+function readEmailFromState(state: unknown): string {
+  if (typeof state === 'object' && state && 'email' in state) {
+    const value = (state as { email?: unknown }).email
+    if (typeof value === 'string') return value
+  }
+  return ''
+}
+
 export function LoginPage() {
+  const location = useLocation()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(() => consumeLoginFlash())
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => readEmailFromState(location.state))
   const [password, setPassword] = useState('')
-  const [resetTemporaryPassword, setResetTemporaryPassword] = useState<string | null>(null)
-  const [resetStatus, setResetStatus] = useState<string | null>(null)
-  const [resetError, setResetError] = useState<string | null>(null)
-  const [resetLoading, setResetLoading] = useState(false)
-  const { isAuthenticated, authReady, login, usesSupabase, requestPasswordReset, user } = useAuth()
+  const { isAuthenticated, authReady, login, usesSupabase, user } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
     if (!authReady || isAuthenticated) return
-    setEmail('')
+    const fromState = readEmailFromState(location.state)
+    setEmail(fromState)
     setPassword('')
-  }, [authReady, isAuthenticated])
+  }, [authReady, isAuthenticated, location.state])
 
   if (!authReady) {
     return (
@@ -74,34 +86,6 @@ export function LoginPage() {
       setError(getAuthErrorMessage(err, 'Sign in failed.'))
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  async function sendPasswordReset() {
-    setResetTemporaryPassword(null)
-    setResetStatus(null)
-    setResetError(null)
-
-    const address = email.trim()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
-      setResetError('Enter the email address used for your account above.')
-      return
-    }
-
-    setResetLoading(true)
-    try {
-      const { temporaryPassword } = await requestPasswordReset(address)
-      setResetTemporaryPassword(temporaryPassword)
-      setPassword(temporaryPassword)
-      setResetStatus(
-        usesSupabase
-          ? 'Your password was reset to the temporary password below. Sign in, then create a new password.'
-          : 'Mock mode: use the temporary password below, then create a new password.',
-      )
-    } catch (err) {
-      setResetError(getAuthErrorMessage(err, 'Password reset request failed.'))
-    } finally {
-      setResetLoading(false)
     }
   }
 
@@ -175,21 +159,9 @@ export function LoginPage() {
             ) : null}
           </div>
 
-          {error ? (
-            <p
-              className="mt-4 flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_10%,var(--surface))] px-3 py-2.5 text-sm text-[var(--danger)]"
-              role="alert"
-            >
-              <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              <span>{error}</span>
-            </p>
-          ) : null}
+          {error ? <AuthAlert tone="error">{error}</AuthAlert> : null}
 
-          <button
-            type="submit"
-            className="button primary wide mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow-ring)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isLoading}
-          >
+          <button type="submit" className={AUTH_PRIMARY_BTN_CLASS} disabled={isLoading}>
             {isLoading ? (
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
             ) : (
@@ -204,64 +176,22 @@ export function LoginPage() {
             </p>
           ) : null}
 
-          <div className="mt-5 flex items-center justify-between gap-3 border-t border-[var(--border)] pt-4">
+          <AuthDivider />
+
+          <div className="auth-secondary-actions">
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-md px-1 py-1 text-sm font-semibold text-[var(--teal)] transition-colors hover:text-[color-mix(in_srgb,var(--teal)_80%,var(--navy))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow-ring)] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={resetLoading}
-              onClick={() => void sendPasswordReset()}
+              className={AUTH_GHOST_BTN_CLASS}
+              onClick={() => navigate('/forgot-password', { state: { email } })}
             >
-              {resetLoading ? (
-                <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
-              ) : (
-                <KeyRound className="size-3.5" aria-hidden="true" />
-              )}
-              {resetLoading ? 'Resetting password…' : 'Forgot password?'}
+              <KeyRound className="size-3.5" aria-hidden="true" />
+              Forgot password?
             </button>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-md px-1 py-1 text-sm font-semibold text-[var(--teal)] transition-colors hover:text-[color-mix(in_srgb,var(--teal)_80%,var(--navy))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow-ring)]"
-              onClick={() => navigate('/signup')}
-            >
+            <button type="button" className={AUTH_GHOST_BTN_CLASS} onClick={() => navigate('/signup')}>
               <UserPlus className="size-3.5" aria-hidden="true" />
-              Sign-up
+              Sign up
             </button>
           </div>
-
-          {resetError ? (
-            <p
-              className="mt-4 flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_10%,var(--surface))] px-3 py-2.5 text-sm text-[var(--danger)]"
-              role="alert"
-            >
-              <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              <span>{resetError}</span>
-            </p>
-          ) : null}
-
-          {resetStatus ? (
-            <p
-              className="mt-4 flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--teal)_40%,var(--border))] bg-[color-mix(in_srgb,var(--teal)_10%,var(--surface))] px-3 py-2.5 text-sm text-[var(--teal)]"
-              role="status"
-            >
-              <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              <span>{resetStatus}</span>
-            </p>
-          ) : null}
-
-          {resetTemporaryPassword ? (
-            <div
-              className="mt-4 space-y-2 rounded-lg border border-[color-mix(in_srgb,var(--teal)_35%,var(--border))] bg-[color-mix(in_srgb,var(--teal)_8%,var(--surface))] px-4 py-3"
-              role="status"
-            >
-              <span className="text-xs font-bold uppercase tracking-wide text-[var(--teal)]">Temporary password</span>
-              <code className="block break-all text-lg font-bold tracking-wide text-[var(--navy)]">
-                {resetTemporaryPassword}
-              </code>
-              <p className="text-xs leading-relaxed text-[var(--muted)]">
-                Use this password to sign in. You must choose a new password before accessing the app.
-              </p>
-            </div>
-          ) : null}
         </form>
       </section>
     </div>

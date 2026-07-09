@@ -1,8 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import {
-  AlertCircle,
-  CheckCircle2,
+  KeyRound,
   Loader2,
   Lock,
   LogIn,
@@ -16,7 +15,15 @@ import { GxpLogo } from '../components/brand/GxpLogo'
 import { APP_NAME } from '../config/appNavigation'
 import { useAuth } from '../hooks/useAuth'
 import { getAuthErrorMessage } from '../lib/authMessages'
-import { AUTH_CARD_CLASS, AUTH_INPUT_CLASS, AuthField } from './auth-form-shared'
+import {
+  AUTH_CARD_CLASS,
+  AUTH_GHOST_BTN_CLASS,
+  AUTH_INPUT_CLASS,
+  AUTH_PRIMARY_BTN_CLASS,
+  AuthAlert,
+  AuthDivider,
+  AuthField,
+} from './auth-form-shared'
 import './login-page.css'
 
 interface SignUpForm {
@@ -142,7 +149,7 @@ export function SignUpPage() {
               </AuthField>
             </div>
 
-            <AuthField label="Email address" icon={<Mail className="size-3.5 text-[var(--teal)]" aria-hidden="true" />}>
+            <AuthField label="Email" icon={<Mail className="size-3.5 text-[var(--teal)]" aria-hidden="true" />}>
               <TextInput
                 name="email"
                 type="email"
@@ -180,31 +187,10 @@ export function SignUpPage() {
             </AuthField>
           </div>
 
-          {error ? (
-            <p
-              className="mt-4 flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_10%,var(--surface))] px-3 py-2.5 text-sm text-[var(--danger)]"
-              role="alert"
-            >
-              <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              <span>{error}</span>
-            </p>
-          ) : null}
+          {error ? <AuthAlert tone="error">{error}</AuthAlert> : null}
+          {success ? <AuthAlert tone="success">{success}</AuthAlert> : null}
 
-          {success ? (
-            <p
-              className="mt-4 flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--teal)_40%,var(--border))] bg-[color-mix(in_srgb,var(--teal)_10%,var(--surface))] px-3 py-2.5 text-sm text-[var(--teal)]"
-              role="status"
-            >
-              <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              <span>{success}</span>
-            </p>
-          ) : null}
-
-          <button
-            type="submit"
-            className="button primary wide mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow-ring)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isLoading}
-          >
+          <button type="submit" className={AUTH_PRIMARY_BTN_CLASS} disabled={isLoading}>
             {isLoading ? (
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
             ) : (
@@ -213,17 +199,22 @@ export function SignUpPage() {
             {isLoading ? 'Creating account…' : 'Create account'}
           </button>
 
-          <p className="mt-5 border-t border-[var(--border)] pt-4 text-center text-sm text-[var(--muted)]">
-            Already have an account?{' '}
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 font-semibold text-[var(--teal)] transition-colors hover:text-[color-mix(in_srgb,var(--teal)_80%,var(--navy))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow-ring)]"
-              onClick={() => navigate('/login')}
-            >
+          <AuthDivider />
+
+          <div className="auth-secondary-actions">
+            <button type="button" className={AUTH_GHOST_BTN_CLASS} onClick={() => navigate('/login')}>
               <LogIn className="size-3.5" aria-hidden="true" />
               Sign in
             </button>
-          </p>
+            <button
+              type="button"
+              className={AUTH_GHOST_BTN_CLASS}
+              onClick={() => navigate('/forgot-password', { state: { email: form.email } })}
+            >
+              <KeyRound className="size-3.5" aria-hidden="true" />
+              Forgot password?
+            </button>
+          </div>
         </form>
       </section>
     </div>

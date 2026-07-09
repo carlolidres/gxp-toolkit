@@ -34,11 +34,31 @@ supabase secrets set DEFAULT_RESET_PASSWORD=iLoveJesus
    - `VITE_SUPABASE_ANON_KEY`
 7. Build with `VITE_BASE_PATH=/gxp-toolkit/`.
 
-## Admin default-password reset
+## Admin-approved password reset
 
-- Migration adds `profiles.must_change_password`, `check_temporary_password_required(email)`, and `clear_must_change_password()`.
-- Edge Function `admin-reset-password` uses the service role to set Auth password and invalidate sessions. Callable only by admins (`is_vrms_admin()`).
-- Set `DEFAULT_RESET_PASSWORD` via Supabase secrets (not in client). After admin reset, user signs in with the password provided through a secure channel; `/reset-password` enforces change when `must_change_password` is set.
+Flow:
+
+1. User submits Forgot password → Edge Function `forgot-password` sets `profiles.password_reset_requested_at` and inserts an admin notification in `app_feedback_messages` (no password change; no temp password returned to the browser).
+2. Admin opens User Management → **Reset Password** appears only when a request is pending.
+3. Admin approves → Edge Function `admin-reset-password` generates a random 16-character temporary password, emails it via Gmail SMTP, updates Auth, sets `must_change_password`, clears the pending request.
+4. User signs in with the emailed temporary password → `/reset-password` is required before app access.
+
+Secrets (Supabase function secrets, never `VITE_*`):
+
+```powershell
+supabase functions deploy forgot-password
+supabase functions deploy admin-reset-password
+
+# Gmail SMTP (App Password required — Google Account → Security → 2-Step Verification → App passwords)
+supabase secrets set GMAIL_USER=carlolidres@gmail.com
+supabase secrets set GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+# Optional display-name override (defaults to "GxP Toolkit <GMAIL_USER>")
+supabase secrets set PASSWORD_RESET_FROM_EMAIL="GxP Toolkit <carlolidres@gmail.com>"
+```
+
+`DEFAULT_RESET_PASSWORD` and `RESEND_API_KEY` are no longer used by this flow.
+
+Related migration: `20260709102630_admin_approved_password_reset.sql` (`profiles.password_reset_requested_at`). Earlier migrations still provide `must_change_password`, `check_temporary_password_required(email)`, and `clear_must_change_password()`.
 
 ## Security migrations (2026-06-26)
 

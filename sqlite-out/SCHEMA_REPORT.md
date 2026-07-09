@@ -1,10 +1,10 @@
-# SQLite Schema Report — GxP Toolkit (2026-07-06)
+# SQLite Schema Report — GxP Toolkit (2026-07-09)
 
 ## Summary
 - Source: `database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql`
 - Schema version: **unknown**
-- Tables: **30** · Foreign keys: **74** · Indexes: **26**
-- Generated: 2026-07-06T09:06:54.224Z
+- Tables: **30** · Foreign keys: **75** · Indexes: **26**
+- Generated: 2026-07-09T10:33:04.574Z
 
 ## Agent Usage
 
@@ -23,6 +23,10 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `display_name` | TEXT | NO |  |  |  |  |  |
 | `role` | TEXT | NO |  |  | 'viewer' |  |  |
 | `active` | INTEGER | NO |  |  | 1 |  |  |
+| `must_change_password` | INTEGER | NO |  |  | 0 |  |  |
+| `password_reset_at` | TEXT | YES |  |  |  |  |  |
+| `password_reset_by` | TEXT | YES |  |  |  |  | `profiles.id` ON DELETE SET NULL |
+| `password_reset_requested_at` | TEXT | YES |  |  |  |  |  |
 
 ### `app_feedback_messages`
 
@@ -660,6 +664,7 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 
 ## Relationships
 
+- `profiles.password_reset_by` → `profiles.id` (ON DELETE SET NULL)
 - `app_feedback_messages.sender_profile_id` → `profiles.id` (ON DELETE CASCADE)
 - `app_feedback_messages.status_updated_by_profile_id` → `profiles.id` (ON DELETE SET NULL)
 - `vmp_field_options.parent_option_id` → `vmp_field_options.id` (ON DELETE SET NULL)
@@ -770,6 +775,7 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 
 ```mermaid
 erDiagram
+  profiles ||--o{ profiles : "password_reset_by"
   profiles ||--o{ app_feedback_messages : "sender_profile_id"
   profiles ||--o{ app_feedback_messages : "status_updated_by_profile_id"
   vmp_field_options ||--o{ vmp_field_options : "parent_option_id"
@@ -851,6 +857,10 @@ erDiagram
     text display_name
     text role
     integer active
+    integer must_change_password
+    text password_reset_at
+    text password_reset_by FK
+    text password_reset_requested_at
   }
   app_feedback_messages {
     text id PK

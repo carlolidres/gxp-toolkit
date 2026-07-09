@@ -123,11 +123,18 @@ export function UserManagementPage() {
   }
 
   async function handleResetUserPassword() {
-    if (!selectedUser) return
+    if (!selectedUser?.passwordResetRequestedAt) return
     setResettingPassword(true)
     try {
       await userManagementService.resetUserPassword(selectedUser.id)
-      notify(`Password reset to the default temporary password for ${selectedUser.email}.`)
+      setUsers((current) =>
+        current.map((item) =>
+          item.id === selectedUser.id ? { ...item, passwordResetRequestedAt: null } : item,
+        ),
+      )
+      notify(
+        `Temporary password issued for ${selectedUser.email}. Check their inbox (or mock console). They must create a new password after sign-in.`,
+      )
     } catch (err) {
       notify(err instanceof Error ? err.message : 'Failed to reset user password.')
     } finally {
@@ -241,6 +248,12 @@ export function UserManagementPage() {
                             Inactive
                           </span>
                         ) : null}
+                        {item.passwordResetRequestedAt ? (
+                          <span className="inline-flex items-center gap-0.5 text-[0.65rem] font-medium text-amber-700">
+                            <KeyRound className="size-3" aria-hidden="true" />
+                            Reset requested
+                          </span>
+                        ) : null}
                       </span>
                     </span>
                   </button>
@@ -314,25 +327,31 @@ export function UserManagementPage() {
                     </label>
                   </div>
 
-                  <div className="flex flex-col gap-1.5 sm:col-span-2 xl:col-span-1">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                      <KeyRound className="size-3.5" aria-hidden="true" />
-                      Password reset
-                    </span>
-                    <button
-                      type="button"
-                      className="vrms-btn-secondary inline-flex w-full items-center justify-center gap-2 sm:w-auto"
-                      disabled={resettingPassword}
-                      onClick={() => void handleResetUserPassword()}
-                    >
-                      {resettingPassword ? (
-                        <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
-                      ) : (
-                        <KeyRound className="size-4 shrink-0" aria-hidden="true" />
-                      )}
-                      {resettingPassword ? 'Resetting…' : 'Reset to default password'}
-                    </button>
-                  </div>
+                  {selectedUser.passwordResetRequestedAt ? (
+                    <div className="flex flex-col gap-1.5 sm:col-span-2 xl:col-span-1">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                        <KeyRound className="size-3.5" aria-hidden="true" />
+                        Password reset
+                      </span>
+                      <button
+                        type="button"
+                        className="vrms-btn-primary inline-flex w-full items-center justify-center gap-2 sm:w-auto"
+                        disabled={resettingPassword || !selectedUser.active}
+                        onClick={() => void handleResetUserPassword()}
+                      >
+                        {resettingPassword ? (
+                          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <KeyRound className="size-4 shrink-0" aria-hidden="true" />
+                        )}
+                        {resettingPassword ? 'Resetting…' : 'Reset Password'}
+                      </button>
+                      <p className="text-xs leading-relaxed text-[var(--muted)]">
+                        Requested {new Date(selectedUser.passwordResetRequestedAt).toLocaleString()}. Approving emails a
+                        random 16-character temporary password and requires a new password after sign-in.
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
 
                 <p className="mt-4 flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--teal)_20%,var(--border))] bg-[var(--alert-info-bg)] px-3 py-2.5 text-sm text-[var(--muted)]">

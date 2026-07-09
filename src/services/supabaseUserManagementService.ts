@@ -13,6 +13,7 @@ interface ProfileRow {
   role: string
   active: boolean
   auth_user_id: string | null
+  password_reset_requested_at?: string | null
 }
 
 function requireClient() {
@@ -35,6 +36,7 @@ function toManagedUser(profile: ProfileRow, permissions: UserPermissions): Manag
     role,
     initials: initialsFromName(profile.display_name, profile.email),
     active: profile.active,
+    passwordResetRequestedAt: profile.password_reset_requested_at ?? null,
     permissions: normalizeUserPermissions(permissions, role),
   }
 }
@@ -79,7 +81,7 @@ async function loadProfile(profileId: string): Promise<ProfileRow> {
 
   const { data: fallback, error: fallbackError } = await client
     .from('profiles')
-    .select('id, email, display_name, role, active, auth_user_id')
+    .select('id, email, display_name, role, active, auth_user_id, password_reset_requested_at')
     .eq('id', profileId)
     .maybeSingle()
 
@@ -93,7 +95,7 @@ export const supabaseUserManagementService = {
     const client = await requireAuthenticatedClient()
     const { data: profiles, error } = await client
       .from('profiles')
-      .select('id, email, display_name, role, active, auth_user_id')
+      .select('id, email, display_name, role, active, auth_user_id, password_reset_requested_at')
       .order('display_name', { ascending: true })
 
     if (error) throw new Error(error.message)

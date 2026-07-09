@@ -118,11 +118,18 @@ export const supabaseFeedbackService = {
     return mapRow(data as FeedbackRow)
   },
 
-  async acknowledgeUnread(): Promise<void> {
+  async acknowledgeUnread(user: AuthUser): Promise<void> {
     const client = await requireAuthenticatedClient()
+    const profileId = await resolveProfileId(user)
+    const now = new Date().toISOString()
     const { error } = await client
       .from('app_feedback_messages')
-      .update({ status: 'read' })
+      .update({
+        status: 'read',
+        status_updated_by_profile_id: profileId,
+        status_updated_by_name: user.name,
+        status_updated_at: now,
+      })
       .eq('status', 'unread')
 
     if (error) throw new Error(error.message)

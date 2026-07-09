@@ -2,17 +2,17 @@
   "meta": {
     "project": "gxp-toolkit",
     "source": "database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql",
-    "generatedAt": "2026-07-06T09:06:54.224Z",
+    "generatedAt": "2026-07-09T10:33:04.574Z",
     "schemaVersion": null,
     "tableCount": 30,
-    "edgeCount": 74,
+    "edgeCount": 75,
     "indexCount": 26
   },
   "nodes": [
     {
       "id": "profiles",
       "type": "table",
-      "columnCount": 6,
+      "columnCount": 10,
       "primaryKeys": [
         "id"
       ],
@@ -75,6 +75,51 @@
           "primaryKey": false,
           "unique": false,
           "default": "1",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "must_change_password",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "password_reset_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "password_reset_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "profiles",
+            "column": "id",
+            "onDelete": "SET NULL",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "password_reset_requested_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
           "check": null,
           "references": null
         }
@@ -4890,6 +4935,20 @@
     }
   ],
   "edges": [
+    {
+      "id": "profiles.password_reset_by->profiles.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "profiles",
+        "column": "password_reset_by"
+      },
+      "to": {
+        "table": "profiles",
+        "column": "id"
+      },
+      "onDelete": "SET NULL",
+      "onUpdate": null
+    },
     {
       "id": "app_feedback_messages.sender_profile_id->profiles.id",
       "type": "foreign_key",

@@ -1,18 +1,24 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../lib/supabase', () => ({
   isSupabaseConfigured: () => false,
   getSupabaseClient: () => null,
 }))
 
-import { MOCK_DEFAULT_RESET_PASSWORD } from '../config/authPasswordPolicy'
-import { authService } from './authService'
+import { MOCK_PASSWORD_RESET_REQUEST_KEY } from '../config/authPasswordPolicy'
+import { authService, getMockPasswordResetRequestedAt } from './authService'
 
 describe('requestPasswordReset mock mode', () => {
-  it('returns the temporary default password and flags mandatory change', async () => {
-    const email = 'reset-user@example.com'
+  beforeEach(() => {
+    localStorage.removeItem(MOCK_PASSWORD_RESET_REQUEST_KEY)
+  })
+
+  it('records a pending admin request without returning a temporary password', async () => {
+    const email = 'admin@example.com'
     const result = await authService.requestPasswordReset(email)
-    expect(result.temporaryPassword).toBe(MOCK_DEFAULT_RESET_PASSWORD)
-    await expect(authService.checkTemporaryPasswordRequired(email)).resolves.toBe(true)
+    expect(result.success).toBe(true)
+    expect(result.message.toLowerCase()).toContain('administrator')
+    expect(getMockPasswordResetRequestedAt(email)).toBeTruthy()
+    await expect(authService.checkTemporaryPasswordRequired(email)).resolves.toBe(false)
   })
 })

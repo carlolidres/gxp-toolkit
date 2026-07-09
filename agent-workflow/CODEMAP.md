@@ -21,7 +21,7 @@ Do not duplicate database schema details here. Database work belongs in `DATA_MA
 
 | Module | Path | Responsibility |
 |---|---|---|
-| Auth | `src/pages/LoginPage.tsx`, `src/pages/SignUpPage.tsx` | Email/password and OAuth entry screens |
+| Auth | `src/pages/LoginPage.tsx`, `src/pages/SignUpPage.tsx`, `src/pages/ForgotPasswordPage.tsx`, `src/pages/ResetPasswordPage.tsx` | Email/password entry, recovery, and reset screens |
 | VRMS dashboard | `src/pages/vrms/VrmsDashboardPage.tsx` | Routing KPIs, charts, and work queues |
 | VRMS routing | `src/pages/vrms/VrmsRoutingPage.tsx` | Routing document create/edit/sign/forward workflow |
 | VRMS database | `src/pages/vrms/VrmsDatabasePage.tsx` | Document database table and filtering |

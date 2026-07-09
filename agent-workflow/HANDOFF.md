@@ -1,12 +1,18 @@
 # Current Handoff
 
-Last Updated: `2026-07-08`
-Version: `v33.4`
+Last Updated: `2026-07-09`
+Version: `v33`
 Branch: `main` / `master`
-Commit: `1e099d7` — v33.4 handoff (feature commit `6dba34d`)
-Deployment: `DEPLOYED` — GitHub Pages run [28947714351](https://github.com/carlolidres/gxp-toolkit/actions/runs/28947714351) (2026-07-08)
+Commit: `(pending commit)`
+Deployment: `PENDING` — push + GitHub Pages deploy in progress
 
 ## Current Status
+
+**v33 release** — Admin-approved password reset (forgot → admin Messages notify → Reset Password → emailed temp password), 24h purge of acknowledged Messages, auth UI refresh (Remember me removed), User Management / VMP / Messages modernization. App version history set to `v33`.
+
+**Admin-approved password reset (v33.6)** — Self-service temporary-password issuance removed. Forgot password only records `profiles.password_reset_requested_at` and notifies admins via `app_feedback_messages`. User Management shows **Reset Password** only when a request is pending. Admin approval generates a random 16-char temp password, emails it via **Gmail SMTP** (`nodemailer` + App Password), sets `must_change_password`, clears the pending flag. User must change password after temp login. Migration applied + edge functions redeployed on linked project `ydndeoacgfnxjqwwnswh`.
+
+**Auth pages UI refresh (v33.5)** — Login, Sign-up, Forgot password, and Reset password aligned to `screenshot/Login Page.png`: icon field labels, remember-me + session hint row, full-width primary CTA, OR divider, side-by-side ghost secondary actions. New route `/forgot-password` (`ForgotPasswordPage.tsx`); reset flow moved off the login card. Shared helpers in `auth-form-shared.tsx` + `login-page.css`. Remember-me is UI-only (sessions remain tab-scoped / 15-min inactivity per existing policy).
 
 **UI modernization batch (v33.4)** — Tailwind CSS + Lucide refresh across User Management, login/sign-up auth cards, VMP Masterlist Form, and Messages modal; removed sidebar environment indicator. VMP form adds editable combobox suggestions for group/subcategory and responsible owner.
 
@@ -49,19 +55,20 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 
 | Check | Status | Result |
 |---|---|---|
-| `npm run build` | `PASSED` | 2026-07-08 — User Management UI refresh |
-| `npm run test` | `PASSED` | 119/119 (2026-07-08) |
-| `supabase db push` | `PASSED` | Remote up to date (20260705120000–20260705223000) |
-| `npm run apqr:seed-supabase` | `PASSED` | Remote APQR data cleared (DELETE-only script) |
-| `npm run apqr:seed-permissions` | `PASSED` | Admin + edoc-creator APQR menus |
+| `npm run build` | `PASSED` | 2026-07-09 — v33.7 ack purge |
+| `npm run test` (narrow) | `PASSED` | mockFeedbackService.purge + passwordReset (2/2) |
+| Supabase migration `feedback_ack_purge_24h` | `PASSED` | Applied via MCP on `ydndeoacgfnxjqwwnswh` |
+| `supabase db push` | `BLOCKED` | Remote versions `20260708123542`, `20260709103218` missing locally — repair/pull needed |
+| `npm run db:map` | `PASSED` | 30 tables (prior session) |
+| `npm run verify:schema` | `FAILED` | Pre-existing mock/seed ID mismatch (users/documents); unrelated |
+| Edge functions `forgot-password`, `admin-reset-password` | `DEPLOYED` | Linked project; admin-reset uses Gmail SMTP |
+| `npm run test` full | `NOT_RUN` | Narrow tests only this session |
 
 ## Next Action
 
-1. Browser smoke on `/admin/users` (user selection, role change, permission toggles, save/reset, password reset).
-2. Browser smoke on `/apqr/database` (summary cards, filters, columns, list/grid, pagination).
-2. Browser smoke on `/apqr/registry` (form layout, filters, pagination, edit flow).
-2. Re-run `npm run test` if greeting/apqrDelivery timeouts recur.
-3. Deploy frontend when ready.
+1. Browser smoke: Forgot password → admin Messages unread → open/ack → confirm purge after 24h (or force `status_updated_at` back for a quick check).
+2. Set Gmail SMTP secrets if not already: `GMAIL_USER`, `GMAIL_APP_PASSWORD`, optional `PASSWORD_RESET_FROM_EMAIL`.
+3. Repair local/remote migration history (`20260708123542`, `20260709103218`), then deploy frontend.
 
 ## eDoc Rollout Progress
 

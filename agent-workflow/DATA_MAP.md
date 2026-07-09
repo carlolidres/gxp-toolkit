@@ -1,6 +1,6 @@
 # Data Map
 
-Last Updated: `2026-07-04`
+Last Updated: `2026-07-09`
 
 ## Purpose
 
@@ -67,7 +67,7 @@ Audit import note: the source audit CSV has misleading headers for document-rela
 
 | Entity | Table or bundle key | Purpose | Primary Key | Source |
 |---|---|---|---|---|
-| Profile | `profiles` | Application profile and authorization metadata linked to optional Supabase Auth identity | `id` text | `supabase/migrations/20260617000000_vrms_schema.sql`, `20260617100000_vrms_auth_profiles.sql`, `20260618200000_profiles_user_management.sql` |
+| Profile | `profiles` | Application profile and authorization metadata linked to optional Supabase Auth identity; includes `must_change_password` and `password_reset_requested_at` for admin-approved reset | `id` text | `supabase/migrations/20260617000000_vrms_schema.sql`, `20260623200000_admin_default_password_reset.sql`, `20260709102630_admin_approved_password_reset.sql` |
 | User menu permission | `user_menu_permissions` | Menu/action grants by profile | `(user_id, menu_id)` | `supabase/migrations/20260618100000_user_menu_permissions.sql` |
 | Routing document | `routing_documents` / `routingDocuments` | VRMS document routing record and signatory tracker | `routing_tracker` | `reference/VRMSdatabase/VRMS - Documents.csv` |
 | Registry value | `registry_values` / `registryValues` | Controlled values for status, routing recipients, report/protocol, client, category, department, prepared by, checked by | `id`; unique `(registry_type, value)` | Registry CSV exports |

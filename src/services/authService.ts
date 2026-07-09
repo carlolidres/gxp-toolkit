@@ -1,5 +1,9 @@
 import { mockUsers } from '../data/mockAuth'
-import { MOCK_DEFAULT_RESET_PASSWORD, MOCK_MUST_CHANGE_PASSWORD_KEY } from '../config/authPasswordPolicy'
+import { mockFeedbackService } from './mockFeedbackService'
+import {
+  MOCK_MUST_CHANGE_PASSWORD_KEY,
+  MOCK_PASSWORD_RESET_REQUEST_KEY,
+} from '../config/authPasswordPolicy'
 import {
   getSessionOnce,
   resetGetSessionOnce,
@@ -29,7 +33,9 @@ export interface UpdateProfileInput {
 }
 
 export interface PasswordResetResult {
-  temporaryPassword: string
+  /** Always true on success; temporary passwords are never returned to the requester. */
+  success: true
+  message: string
 }
 
 interface ProfileRow {
@@ -141,6 +147,27 @@ export function setMockMustChangePassword(email: string, required: boolean) {
   if (required) store[key] = true
   else delete store[key]
   writeMockMustChangeStore(store)
+}
+
+function readMockResetRequestStore(): Record<string, string> {
+  const raw = localStorage.getItem(MOCK_PASSWORD_RESET_REQUEST_KEY)
+  return raw ? (JSON.parse(raw) as Record<string, string>) : {}
+}
+
+function writeMockResetRequestStore(store: Record<string, string>) {
+  localStorage.setItem(MOCK_PASSWORD_RESET_REQUEST_KEY, JSON.stringify(store))
+}
+
+export function setMockPasswordResetRequested(email: string, requestedAt: string | null) {
+  const store = readMockResetRequestStore()
+  const key = email.trim().toLowerCase()
+  if (requestedAt) store[key] = requestedAt
+  else delete store[key]
+  writeMockResetRequestStore(store)
+}
+
+export function getMockPasswordResetRequestedAt(email: string): string | null {
+  return readMockResetRequestStore()[email.trim().toLowerCase()] ?? null
 }
 
 function sessionFallbackUser(session: { user: { id: string; email?: string; user_metadata?: Record<string, unknown> } }): AuthUser {
@@ -273,10 +300,26 @@ export const authService = {
     const normalized = email.trim().toLowerCase()
     if (!normalized) throw new Error('A valid email address is required.')
 
+    const accepted: PasswordResetResult = {
+      success: true,
+      message:
+        'If an account exists for that email, an administrator has been notified. You will receive a temporary password by email after approval.',
+    }
+
     if (!isSupabaseConfigured()) {
       await new Promise((resolve) => setTimeout(resolve, 350))
-      setMockMustChangePassword(normalized, true)
-      return { temporaryPassword: MOCK_DEFAULT_RESET_PASSWORD }
+      const user = mockUsers.find((candidate) => candidate.email.toLowerCase() === normalized)
+      if (user) {
+        setMockPasswordResetRequested(normalized, new Date().toISOString())
+        await mockFeedbackService.submitMessage(
+          { ...user, profileId: user.id },
+          {
+            category: 'improvement',
+            content: `[Password reset request] ${user.name} (${user.email}) requested a password reset. Open User Management and click Reset Password beside this account to approve.`,
+          },
+        )
+      }
+      return accepted
     }
 
     const client = getSupabaseClient()
@@ -291,16 +334,11 @@ export const authService = {
       throw new Error(getAuthErrorMessage(String(data.error), 'Password reset request failed.'))
     }
 
-    const temporaryPassword =
-      data && typeof data === 'object' && 'temporaryPassword' in data
-        ? String((data as { temporaryPassword?: unknown }).temporaryPassword ?? '').trim()
-        : ''
-
-    if (!temporaryPassword) {
-      throw new Error('Password reset succeeded but no temporary password was returned.')
+    if (data && typeof data === 'object' && 'message' in data && typeof data.message === 'string') {
+      return { success: true, message: data.message }
     }
 
-    return { temporaryPassword }
+    return accepted
   },
 
   async checkTemporaryPasswordRequired(email: string): Promise<boolean> {
