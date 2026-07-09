@@ -3,8 +3,8 @@
 Last Updated: `2026-07-09`
 Version: `v33`
 Branch: `main` / `master`
-Commit: `(pending commit)`
-Deployment: `PENDING` — push + GitHub Pages deploy in progress
+Commit: `ac9f9d6` — v33: admin-approved password reset and auth UI refresh
+Deployment: `DEPLOYED` — GitHub Pages run [29015330584](https://github.com/carlolidres/gxp-toolkit/actions/runs/29015330584) (2026-07-09)
 
 ## Current Status
 
