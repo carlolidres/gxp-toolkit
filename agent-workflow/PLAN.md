@@ -14,9 +14,9 @@ Ship v34: commit APQR scheduler UX + atmospheric theme + Ant Design migration br
 
 1. [x] App version history set to `v34`
 2. [x] Source + workflow changes committed (exclude reference/, debug logs, screenshots)
-3. [ ] Merged and pushed to `main` and `master`
-4. [ ] GitHub Pages deploy succeeded
+3. [x] Merged and pushed to `main` and `master`
+4. [x] GitHub Pages deploy succeeded — run [29094496719](https://github.com/carlolidres/gxp-toolkit/actions/runs/29094496719)
 
 ## Remaining
 
-- [ ] Confirm Pages deploy run green after push to `master`
+- None for this release

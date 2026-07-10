@@ -3,8 +3,8 @@
 Last Updated: `2026-07-10`
 Version: `v34`
 Branch: `main` / `master`
-Commit: `(pending)` — v34: Ant Design migration, APQR scheduler UX, atmospheric theme
-Deployment: `PENDING` — push to `master` triggers GitHub Pages
+Commit: `2973d69` — v34: Ant Design migration, APQR scheduler UX, atmospheric theme
+Deployment: `DEPLOYED` — GitHub Pages run [29094496719](https://github.com/carlolidres/gxp-toolkit/actions/runs/29094496719) (2026-07-10)
 
 ## Current Status
 
