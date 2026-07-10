@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Button, Card, Input } from 'antd'
+import { Download, FilePlus } from 'lucide-react'
 
 import {
   EdocEmpty,
@@ -45,19 +47,19 @@ export function EdocDocumentsPage({
     <EdocPage
       title={title}
       description="Authorized eDoc records with version, status, owner, department, and due-date context."
-      action={<Link className="button primary" to="/edoc/create">Create Document</Link>}
+      action={<Link to="/edoc/create"><Button type="primary" icon={<FilePlus size={15} />}>Create Document</Button></Link>}
     >
       {error ? <EdocError message={error} /> : null}
-      <section className="panel">
+      <Card className="panel">
         <div className="vrms-toolbar">
           <div>
             <label>Search</label>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Number, title, owner, status..." />
+            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Number, title, owner, status..." />
           </div>
           {canExport ? (
-            <button type="button" className="button secondary" onClick={() => exportCsv(filtered)}>
+            <Button icon={<Download size={15} />} onClick={() => exportCsv(filtered)}>
               Export CSV
-            </button>
+            </Button>
           ) : null}
         </div>
         {loading ? <EdocLoading /> : null}
@@ -78,7 +80,7 @@ export function EdocDocumentsPage({
             ]}
           />
         )}
-      </section>
+      </Card>
     </EdocPage>
   )
 }

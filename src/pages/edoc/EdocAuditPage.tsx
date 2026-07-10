@@ -1,4 +1,5 @@
 import { EdocError, EdocLoading, EdocPage, formatEdocDate } from '../../components/edoc/EdocComponents'
+import { Card } from 'antd'
 import { DataTable } from '../../components/data-display/DataTable'
 import { useEdocAudit } from '../../features/edoc/useEdocData'
 
@@ -8,7 +9,7 @@ export function EdocAuditPage() {
   return (
     <EdocPage title="Audit Trail" description="Append-only eDoc audit events for authorized review.">
       {error ? <EdocError message={error} /> : null}
-      <section className="panel">
+      <Card className="panel">
         {loading ? <EdocLoading label="Loading audit trail..." /> : null}
         <DataTable
           rows={data ?? []}
@@ -20,7 +21,7 @@ export function EdocAuditPage() {
             { key: 'createdAt', label: 'Timestamp', render: (row) => formatEdocDate(row.createdAt) },
           ]}
         />
-      </section>
+      </Card>
     </EdocPage>
   )
 }

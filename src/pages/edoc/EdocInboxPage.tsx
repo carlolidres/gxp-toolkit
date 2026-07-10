@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { Button, Card } from 'antd'
+import { FolderOpen } from 'lucide-react'
 
 import {
   EdocEmpty,
@@ -16,7 +18,7 @@ export function EdocInboxPage() {
   return (
     <EdocPage title="My Inbox" description="Review, approval, signature, acknowledgment, and delegated tasks assigned to you.">
       {error ? <EdocError message={error} /> : null}
-      <section className="panel">
+      <Card className="panel">
         {loading ? <EdocLoading /> : null}
         {!loading && (data ?? []).length === 0 ? (
           <EdocEmpty title="No active assignments" description="New eDoc tasks will appear here when route steps activate." />
@@ -33,12 +35,12 @@ export function EdocInboxPage() {
               {
                 key: 'open',
                 label: '',
-                render: (row) => <Link className="button small" to={`/edoc/workspace/${row.id}`}>Open</Link>,
+                render: (row) => <Link to={`/edoc/workspace/${row.id}`}><Button size="small" icon={<FolderOpen size={14} />}>Open</Button></Link>,
               },
             ]}
           />
         )}
-      </section>
+      </Card>
     </EdocPage>
   )
 }

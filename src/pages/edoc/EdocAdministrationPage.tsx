@@ -1,4 +1,6 @@
 import { EdocPage } from '../../components/edoc/EdocComponents'
+import { Card, Tag } from 'antd'
+import { Settings2 } from 'lucide-react'
 
 const adminAreas = [
   'Role and permission matrix',
@@ -16,19 +18,20 @@ const adminAreas = [
 export function EdocAdministrationPage() {
   return (
     <EdocPage title="Administration" description="Organization-scoped eDoc controls for administrators.">
-      <section className="panel">
+      <Card className="panel">
         <div className="adapter-grid">
           {adminAreas.map((area) => (
-            <article key={area}>
-              <span>→</span>
+            <Card key={area} size="small">
+              <Settings2 size={18} aria-hidden="true" />
               <div>
                 <strong>{area}</strong>
                 <p>Protected configuration area. Writes must use RLS/RPC or Edge Functions.</p>
+                <Tag color="gold">Authorized admins</Tag>
               </div>
-            </article>
+            </Card>
           ))}
         </div>
-      </section>
+      </Card>
     </EdocPage>
   )
 }

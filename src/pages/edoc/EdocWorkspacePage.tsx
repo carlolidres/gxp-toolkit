@@ -1,5 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Button, Card, Input } from 'antd'
+import { Check, CornerUpLeft, X } from 'lucide-react'
 
 import { EdocEmpty, EdocError, EdocLoading, EdocPage, formatEdocDate } from '../../components/edoc/EdocComponents'
 import { edocService } from '../../features/edoc/edocService'
@@ -82,33 +84,33 @@ export function EdocWorkspacePage() {
     <EdocPage title="Signing Workspace" description={`${task.documentNumber} · ${task.documentTitle}`}>
       {error ? <EdocError message={error} /> : null}
       <div className="edoc-workspace">
-        <aside className="panel side-panel">
+        <Card className="panel side-panel">
           <span className="eyebrow">Assignment</span>
           <h2>{task.action}</h2>
           <p><strong>Due:</strong> {formatEdocDate(task.dueAt)}</p>
           <p><strong>Owner:</strong> {task.ownerName}</p>
-          <label>Comment<textarea value={comment} onChange={(event) => setComment(event.target.value)} /></label>
-          <label>Return/reject reason<textarea value={reason} onChange={(event) => setReason(event.target.value)} /></label>
+          <label>Comment<Input.TextArea value={comment} onChange={(event) => setComment(event.target.value)} /></label>
+          <label>Return/reject reason<Input.TextArea value={reason} onChange={(event) => setReason(event.target.value)} /></label>
           {task.action === 'sign' ? (
             <form className="edoc-sign-form" onSubmit={submitSignature}>
-              <label>Signature meaning<input value={signatureMeaning} onChange={(event) => setSignatureMeaning(event.target.value)} /></label>
-              <label>Typed signature<input value={typedSignature} onChange={(event) => setTypedSignature(event.target.value)} /></label>
-              <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+              <label>Signature meaning<Input value={signatureMeaning} onChange={(event) => setSignatureMeaning(event.target.value)} /></label>
+              <label>Typed signature<Input value={typedSignature} onChange={(event) => setTypedSignature(event.target.value)} /></label>
+              <label>Password<Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
               <label className="edoc-inline-check"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /> I consent to apply my electronic signature to this exact version.</label>
-              <button className="button primary" type="submit" disabled={submitting}>{submitting ? 'Signing...' : 'Sign document'}</button>
+              <Button htmlType="submit" type="primary" icon={<Check size={15} />} loading={submitting}>{submitting ? 'Signing...' : 'Sign document'}</Button>
             </form>
           ) : (
             <div className="decision-panel">
-              <button className="button primary" type="button" disabled={submitting} onClick={() => void submitAction(task.action as 'review' | 'approve' | 'acknowledge')}>
+              <Button type="primary" icon={<Check size={15} />} loading={submitting} onClick={() => void submitAction(task.action as 'review' | 'approve' | 'acknowledge')}>
                 Complete {task.action}
-              </button>
-              <button className="button warning" type="button" disabled={submitting} onClick={() => void submitAction('return')}>Return</button>
-              <button className="button danger" type="button" disabled={submitting} onClick={() => void submitAction('reject')}>Reject</button>
+              </Button>
+              <Button icon={<CornerUpLeft size={15} />} disabled={submitting} onClick={() => void submitAction('return')}>Return</Button>
+              <Button danger icon={<X size={15} />} disabled={submitting} onClick={() => void submitAction('reject')}>Reject</Button>
             </div>
           )}
-          <Link className="button secondary" to="/edoc/inbox">Back to inbox</Link>
-        </aside>
-        <section className="panel pdf-panel">
+          <Link to="/edoc/inbox"><Button>Back to inbox</Button></Link>
+        </Card>
+        <Card className="panel pdf-panel">
           <div className="document-preview edoc-document-preview">
             <div className="document-page">
               <div className="document-mark">eDoc</div>
@@ -120,8 +122,8 @@ export function EdocWorkspacePage() {
               <span className="page-number">1 / 1</span>
             </div>
           </div>
-        </section>
-        <section className="panel side-panel">
+        </Card>
+        <Card className="panel side-panel">
           <span className="eyebrow">Audit activity</span>
           {audit.loading ? <EdocLoading label="Loading audit..." /> : null}
           {audit.error ? <EdocError message={audit.error} /> : null}
@@ -135,7 +137,7 @@ export function EdocWorkspacePage() {
               </article>
             ))}
           </div>
-        </section>
+        </Card>
       </div>
     </EdocPage>
   )
