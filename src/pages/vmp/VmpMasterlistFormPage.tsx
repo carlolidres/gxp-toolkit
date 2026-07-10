@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Alert, Button, Spin } from 'antd'
 import { AlertCircle, CheckCircle2, Eraser, FilePen, Loader2, Save, X } from 'lucide-react'
 
 import { FormInput, FormSelect, FormTextarea, VmpFormSectionHeader, VmpModeBanner } from '../../components/vmp/VmpFormFields'
@@ -486,7 +487,7 @@ export function VmpMasterlistFormPage() {
   if (loading || !formRecord) {
     return (
       <VrmsPage eyebrow="Validation Master Plan" title="VMP / Masterlist Form" description="Create or update validation masterlist records.">
-        <p className="vrms-muted">{editRecordId && !existing ? 'Record not found.' : 'Loading form…'}</p>
+        <Spin tip={editRecordId && !existing ? 'Record not found.' : 'Loading form…'} />
       </VrmsPage>
     )
   }
@@ -537,13 +538,7 @@ export function VmpMasterlistFormPage() {
         </p>
       ) : null}
       {optionsError ? (
-        <p
-          className="flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--danger-text)_28%,var(--border))] bg-[var(--badge-danger-bg)] px-3 py-2.5 text-sm font-semibold text-[var(--danger-text)]"
-          role="alert"
-        >
-          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <span>{optionsError}</span>
-        </p>
+        <Alert className="vmp-form-error" type="error" showIcon icon={<AlertCircle size={16} />} message={optionsError} />
       ) : null}
 
       {saveSuccess ? (
@@ -564,9 +559,9 @@ export function VmpMasterlistFormPage() {
             <Link className="vrms-btn-primary" to={`/vmp/database?recordId=${encodeURIComponent(saveSuccess.recordId)}`}>
               View in Database
             </Link>
-            <button type="button" className="vrms-btn-secondary" onClick={handleAddAnother}>
+            <Button className="vrms-btn-secondary" onClick={handleAddAnother}>
               Add Another Record
-            </button>
+            </Button>
           </div>
         </section>
       ) : null}
@@ -866,58 +861,55 @@ export function VmpMasterlistFormPage() {
         </section>
 
         {formMessage ? (
-          <p
-            className="flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--danger-text)_28%,var(--border))] bg-[var(--badge-danger-bg)] px-3 py-2.5 text-sm font-semibold text-[var(--danger-text)]"
-            role="alert"
-          >
-            <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <span>{formMessage}</span>
-          </p>
+          <Alert className="vmp-form-error" type="error" showIcon icon={<AlertCircle size={16} />} message={formMessage} />
         ) : null}
 
         <div className="flex flex-wrap gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow)] sm:p-5">
           {isEditMode ? (
             <>
-              <button
-                type="submit"
+              <Button
+                htmlType="submit"
+                type="primary"
                 className="vrms-btn-primary vmp-btn-with-icon inline-flex items-center gap-2"
-                disabled={isSaving || optionsLoading}
+                loading={isSaving}
+                disabled={optionsLoading}
               >
                 {isSaving ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Save className="size-4" aria-hidden="true" />}
                 {isSaving ? 'Saving…' : 'Update Record'}
-              </button>
-              <button type="button" className="vrms-btn-secondary vmp-btn-with-icon inline-flex items-center gap-2" onClick={handleCancel}>
+              </Button>
+              <Button className="vrms-btn-secondary vmp-btn-with-icon inline-flex items-center gap-2" onClick={handleCancel}>
                 <X className="size-4" aria-hidden="true" />
                 Cancel
-              </button>
+              </Button>
             </>
           ) : (
             <>
-              <button
-                type="submit"
+              <Button
+                htmlType="submit"
+                type="primary"
                 className="vrms-btn-primary vmp-btn-with-icon inline-flex items-center gap-2"
-                disabled={isSaving || !canCreate || optionsLoading}
+                loading={isSaving}
+                disabled={!canCreate || optionsLoading}
               >
                 {isSaving ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Save className="size-4" aria-hidden="true" />}
                 {isSaving ? 'Saving…' : 'Save Record'}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
                 className="vrms-btn-secondary vmp-btn-with-icon inline-flex items-center gap-2"
                 disabled={isSaving || !canCreate || optionsLoading}
                 onClick={() => void handleSave('draft')}
               >
                 <FilePen className="size-4" aria-hidden="true" />
                 Save as Draft
-              </button>
-              <button type="button" className="vrms-btn-secondary vmp-btn-with-icon inline-flex items-center gap-2" onClick={handleClear}>
+              </Button>
+              <Button className="vrms-btn-secondary vmp-btn-with-icon inline-flex items-center gap-2" onClick={handleClear}>
                 <Eraser className="size-4" aria-hidden="true" />
                 Clear Form
-              </button>
-              <button type="button" className="vrms-btn-secondary vmp-btn-with-icon inline-flex items-center gap-2" onClick={handleCancel}>
+              </Button>
+              <Button className="vrms-btn-secondary vmp-btn-with-icon inline-flex items-center gap-2" onClick={handleCancel}>
                 <X className="size-4" aria-hidden="true" />
                 Cancel
-              </button>
+              </Button>
             </>
           )}
         </div>

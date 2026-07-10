@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { Button, Empty, Select, Spin, Table, Tag } from 'antd'
+import { RotateCcw, ToggleLeft } from 'lucide-react'
 
 import { VrmsPage } from '../../components/vrms/VrmsPage'
 import { useToast } from '../../components/feedback/ToastProvider'
@@ -38,59 +40,37 @@ export function VmpFieldOptionsPage() {
         <div className="vrms-toolbar" style={{ gridTemplateColumns: '220px 1fr' }}>
           <div>
             <label htmlFor="vmp-field-type">Field type</label>
-            <select id="vmp-field-type" value={fieldType} onChange={(event) => setFieldType(event.target.value as VmpFieldType)}>
-              {fieldTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
+            <Select id="vmp-field-type" value={fieldType} onChange={(value) => setFieldType(value as VmpFieldType)} options={fieldTypes.map((type) => ({ value: type, label: type }))} />
           </div>
         </div>
-        {optionsLoading ? <p className="vrms-muted">Loading options…</p> : null}
-        <table className="vrms-table">
-          <thead>
-            <tr>
-              <th>Value</th>
-              <th>Context</th>
-              <th>Source</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={5}>No user-defined options for this field type yet.</td>
-              </tr>
-            ) : (
-              rows.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.displayValue}</td>
-                  <td>
-                    {[row.validationArea, row.siteId, row.departmentId, row.parentOptionId].filter(Boolean).join(' · ') || '—'}
-                  </td>
-                  <td>{row.isUserDefined ? 'User' : 'System'}</td>
-                  <td>{row.isActive ? 'Active' : 'Inactive'}</td>
-                  <td>
-                    {canEdit && row.isUserDefined ? (
-                      <button
-                        type="button"
-                        className="vrms-btn-secondary"
-                        disabled={busyId === row.id}
-                        onClick={() => void toggleActive(row.id, row.isActive)}
-                      >
-                        {row.isActive ? 'Deactivate' : 'Reactivate'}
-                      </button>
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        {optionsLoading ? <Spin tip="Loading options…" /> : rows.length === 0 ? <Empty description="No user-defined options for this field type yet." /> : (
+          <Table
+            className="vrms-table"
+            dataSource={rows}
+            rowKey="id"
+            pagination={{ pageSize: 10, showSizeChanger: true }}
+            columns={[
+              { title: 'Value', dataIndex: 'displayValue', key: 'displayValue' },
+              { title: 'Context', key: 'context', render: (_, row) => [row.validationArea, row.siteId, row.departmentId, row.parentOptionId].filter(Boolean).join(' · ') || '—' },
+              { title: 'Source', key: 'source', render: (_, row) => <Tag>{row.isUserDefined ? 'User' : 'System'}</Tag> },
+              { title: 'Status', key: 'status', render: (_, row) => <Tag color={row.isActive ? 'green' : 'default'}>{row.isActive ? 'Active' : 'Inactive'}</Tag> },
+              {
+                title: 'Action',
+                key: 'action',
+                render: (_, row) => canEdit && row.isUserDefined ? (
+                  <Button
+                    icon={row.isActive ? <ToggleLeft size={15} /> : <RotateCcw size={15} />}
+                    className="vrms-btn-secondary"
+                    loading={busyId === row.id}
+                    onClick={() => void toggleActive(row.id, row.isActive)}
+                  >
+                    {row.isActive ? 'Deactivate' : 'Reactivate'}
+                  </Button>
+                ) : '—',
+              },
+            ]}
+          />
+        )}
       </section>
     </VrmsPage>
   )

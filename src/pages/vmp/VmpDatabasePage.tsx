@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Button, Empty, Spin } from 'antd'
 
 import { FilterSelect, StatusPill, VmpIcon } from '../../components/vmp/VmpFormFields'
 import { VmpRecordDrawer } from '../../components/vmp/VmpRecordDrawer'
@@ -290,9 +291,9 @@ export function VmpDatabasePage() {
     if (key === 'actions') {
       return (
         <div className="vmp-row-actions">
-          <button type="button" aria-label="View record" onClick={() => setSelectedRecord(record)}>
+          <Button type="text" aria-label="View record" onClick={() => setSelectedRecord(record)}>
             <VmpIcon name="eye" />
-          </button>
+          </Button>
           {canEditForm ? (
             <Link
               to={`/vmp/masterlist?edit=${encodeURIComponent(record.recordId)}`}
@@ -303,14 +304,14 @@ export function VmpDatabasePage() {
             </Link>
           ) : null}
           {canArchive && !record.isArchived ? (
-            <button type="button" aria-label="Archive record" onClick={() => void handleArchive(record)}>
+            <Button type="text" danger aria-label="Archive record" onClick={() => void handleArchive(record)}>
               <VmpIcon name="archive" />
-            </button>
+            </Button>
           ) : null}
           {canArchive && record.isArchived ? (
-            <button type="button" aria-label="Restore record" onClick={() => void handleRestore(record)}>
+            <Button type="text" aria-label="Restore record" onClick={() => void handleRestore(record)}>
               <VmpIcon name="restore" />
-            </button>
+            </Button>
           ) : null}
         </div>
       )
@@ -350,21 +351,19 @@ export function VmpDatabasePage() {
             <VmpIcon name="plus" /> Masterlist Form
           </Link>
           {canExport ? (
-            <button
-              type="button"
+            <Button
               className="vrms-btn-secondary vmp-action-secondary"
               onClick={() => exportCsv(filteredRecords)}
             >
               <VmpIcon name="download" /> Export
-            </button>
+            </Button>
           ) : null}
-          <button
-            type="button"
+          <Button
             className="vrms-btn-secondary vmp-action-secondary"
             onClick={() => setViewsOpen((current) => !current)}
           >
             <VmpIcon name="sliders" /> Columns
-          </button>
+          </Button>
         </div>
       }
     >
@@ -375,9 +374,9 @@ export function VmpDatabasePage() {
             <p>{activeFilterCount ? `${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'}` : 'No active filters'}</p>
           </div>
           <div className="vmp-filter-actions">
-            <button type="button" className="vrms-btn-secondary" onClick={clearFilters}>
+            <Button className="vrms-btn-secondary" onClick={clearFilters}>
               Clear Filters
-            </button>
+            </Button>
             <label className="vmp-check-row">
               <input
                 type="checkbox"
@@ -465,14 +464,14 @@ export function VmpDatabasePage() {
         {error ? <p className="vmp-form-error">{error}</p> : null}
 
         {loading ? (
-          <p className="vrms-muted">Loading masterlist records…</p>
+          <Spin tip="Loading masterlist records…" />
         ) : sortedRecords.length === 0 ? (
           <div className="vmp-empty-state">
-            <strong>No records found</strong>
-            <p>Create a record in Masterlist Form or adjust your filters.</p>
+            <Empty description="No records found. Create a record in Masterlist Form or adjust your filters.">
             <Link className="vrms-btn-primary" to="/vmp/masterlist">
               Open Masterlist Form
             </Link>
+            </Empty>
           </div>
         ) : (
           <>
@@ -489,10 +488,10 @@ export function VmpDatabasePage() {
                         const key = column.key
                         return (
                           <th key={key}>
-                            <button type="button" className="vmp-sort-button" onClick={() => handleSort(key)}>
+                            <Button type="text" className="vmp-sort-button" onClick={() => handleSort(key)}>
                               {columnLabels[key]}
                               {sortKey === key ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : ''}
-                            </button>
+                            </Button>
                           </th>
                         )
                       })}
@@ -521,20 +520,19 @@ export function VmpDatabasePage() {
               </table>
             </div>
             <div className="vmp-pagination">
-              <button type="button" className="vrms-btn-secondary" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>
+              <Button className="vrms-btn-secondary" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>
                 Previous
-              </button>
+              </Button>
               <span>
                 Page {page} of {pageCount}
               </span>
-              <button
-                type="button"
+              <Button
                 className="vrms-btn-secondary"
                 disabled={page >= pageCount}
                 onClick={() => setPage((current) => current + 1)}
               >
                 Next
-              </button>
+              </Button>
             </div>
           </>
         )}
