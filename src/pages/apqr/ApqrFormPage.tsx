@@ -128,7 +128,7 @@ export function ApqrFormPage() {
       if (fu.recorded_by.trim()) names.add(fu.recorded_by.trim())
     })
     return [...names].sort((a, b) => a.localeCompare(b))
-  }, [user?.name, sentBy, savedSenders, followUps])
+  }, [user, sentBy, savedSenders, followUps])
 
   useEffect(() => {
     void listSentBySuggestions().then(setSavedSenders)

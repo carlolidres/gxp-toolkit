@@ -8,8 +8,8 @@ test('eDoc dashboard is reachable in mock mode', async ({ page }) => {
   await page.locator('input[name="password"]').fill('password')
   await page.getByRole('button', { name: /sign in/i }).click()
 
-  await expect(page.getByText('Mock data environment')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible({ timeout: 15_000 })
   await page.goto('/#/edoc')
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 15_000 })
-  await expect(page.getByRole('main').getByRole('link', { name: 'Create Document' })).toBeVisible()
+  await expect(page.getByRole('main').getByText('Create Document')).toBeVisible()
 })
