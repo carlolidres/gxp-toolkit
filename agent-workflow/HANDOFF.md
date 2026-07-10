@@ -3,8 +3,8 @@
 Last Updated: `2026-07-11`
 Version: `v34`
 Branch: `main` / `master`
-Commit: `(pending)` — Document Routing Form UI polish
-Deployment: `PENDING` — push to `master` triggers GitHub Pages
+Commit: `de164c0` — ui: polish Document Routing Form for light and dark themes
+Deployment: `DEPLOYED` — GitHub Pages run [29126416135](https://github.com/carlolidres/gxp-toolkit/actions/runs/29126416135) (2026-07-11)
 
 ## Current Status
 

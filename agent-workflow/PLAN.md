@@ -13,9 +13,9 @@ Ship Document Routing Form UI polish: commit, push to `main`/`master`, deploy Gi
 ## Acceptance
 
 1. [x] Routing form UI polish implemented
-2. [ ] Committed and pushed to `main` and `master`
-3. [ ] GitHub Pages deploy succeeded
+2. [x] Committed and pushed to `main` and `master`
+3. [x] GitHub Pages deploy succeeded — run [29126416135](https://github.com/carlolidres/gxp-toolkit/actions/runs/29126416135)
 
 ## Remaining
 
-- Confirm Pages deploy run green after push to `master`
+- None for this task
