@@ -866,6 +866,360 @@
   margin-top: 10px;
 }
 
+/* —— Document Routing form (light + dark) —— */
+.vrms-routing-layout {
+  align-items: stretch;
+}
+
+@media (min-width: 1100px) {
+  .vrms-routing-layout {
+    grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);
+  }
+}
+
+.vrms-routing-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface-elevated);
+  border-color: color-mix(in srgb, var(--border) 88%, var(--teal) 12%);
+}
+
+.vrms-routing-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-muted) 70%, transparent);
+}
+
+.vrms-routing-panel-header h2 {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  color: var(--navy);
+}
+
+.vrms-routing-panel-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  color: #fff;
+  background: linear-gradient(
+    135deg,
+    var(--teal),
+    color-mix(in srgb, var(--teal) 55%, #0284c7)
+  );
+  box-shadow: 0 8px 16px color-mix(in srgb, var(--teal) 22%, transparent);
+}
+
+.vrms-routing-panel-icon--users {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--teal) 88%, var(--navy) 12%),
+    var(--teal)
+  );
+  box-shadow: 0 8px 16px color-mix(in srgb, var(--teal) 20%, transparent);
+}
+
+[data-theme='dark'] .vrms-routing-panel-icon {
+  color: #0b1220;
+}
+
+[data-theme='dark'] .vrms-routing-panel-icon--users {
+  color: #0b1220;
+}
+
+.vrms-routing-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  padding: 18px 20px 20px;
+}
+
+.vrms-routing-formgrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.vrms-routing-formgrid > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.vrms-routing-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.vrms-routing-field-label-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-right: 2px;
+  color: color-mix(in srgb, var(--teal) 75%, var(--muted));
+}
+
+.vrms-routing-required {
+  color: #3b82f6;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.vrms-routing-formgrid input,
+.vrms-routing-formgrid textarea,
+.vrms-signatories-panel .vrms-signatory-row input {
+  border-radius: 9px;
+  border-color: color-mix(in srgb, var(--border) 85%, var(--muted) 15%);
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.vrms-routing-formgrid input:hover:not(:disabled),
+.vrms-routing-formgrid textarea:hover:not(:disabled),
+.vrms-signatories-panel .vrms-signatory-row input:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--teal) 35%, var(--border));
+}
+
+.vrms-routing-formgrid input:focus-visible,
+.vrms-routing-formgrid textarea:focus-visible,
+.vrms-signatories-panel .vrms-signatory-row input:focus-visible {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 18%, transparent);
+}
+
+.vrms-routing-select {
+  width: 100%;
+}
+
+.vrms-routing-select.ant-select .ant-select-selector {
+  min-height: 38px !important;
+  border-radius: 9px !important;
+  background: var(--surface) !important;
+  border-color: color-mix(in srgb, var(--border) 85%, var(--muted) 15%) !important;
+}
+
+.vrms-routing-select.ant-select-focused .ant-select-selector {
+  border-color: var(--teal) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 18%, transparent) !important;
+}
+
+.vrms-routing-textarea-wrap {
+  position: relative;
+}
+
+.vrms-routing-formgrid textarea {
+  min-height: 110px;
+  padding-bottom: 28px;
+}
+
+.vrms-routing-char-count {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+  pointer-events: none;
+}
+
+.vrms-routing-actions {
+  margin-top: 4px;
+  gap: 10px;
+}
+
+.vrms-routing-submit.ant-btn-primary,
+.vrms-routing-submit.vrms-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding-inline: 18px;
+  border: 0;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #0f766e, #0284c7);
+  box-shadow: 0 10px 18px color-mix(in srgb, #0f766e 22%, transparent);
+}
+
+.vrms-routing-submit.ant-btn-primary:hover:not(:disabled),
+.vrms-routing-submit.vrms-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0d9488, #0369a1);
+}
+
+.vrms-routing-clear.ant-btn,
+.vrms-routing-add-signatory.ant-btn,
+.vrms-routing-clear.vrms-btn-secondary,
+.vrms-routing-add-signatory.vrms-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  border-radius: 9px;
+  border-color: color-mix(in srgb, var(--border) 70%, var(--teal) 30%);
+  background: transparent;
+  color: var(--navy);
+}
+
+.vrms-routing-clear.ant-btn:hover:not(:disabled),
+.vrms-routing-add-signatory.ant-btn:hover:not(:disabled) {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: color-mix(in srgb, var(--teal) 8%, transparent);
+}
+
+.vrms-signatories-body {
+  min-height: 420px;
+}
+
+.vrms-signatories-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex: 1;
+  min-height: 320px;
+  padding: 28px 20px;
+  text-align: center;
+  border: 1px dashed color-mix(in srgb, var(--border) 75%, var(--teal) 25%);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-muted) 80%, transparent);
+}
+
+.vrms-signatories-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 4px;
+  border-radius: 999px;
+  color: var(--teal);
+  background: color-mix(in srgb, var(--teal) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--teal) 28%, var(--border));
+}
+
+.vrms-signatories-empty h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--navy);
+}
+
+.vrms-signatories-empty p {
+  margin: 0 0 8px;
+  max-width: 28ch;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.vrms-signatory-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 750;
+  background: var(--surface-subtle);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.vrms-signatory-status--active {
+  color: #0f766e;
+  background: color-mix(in srgb, #14b8a6 16%, var(--surface));
+  border-color: color-mix(in srgb, #14b8a6 35%, var(--border));
+}
+
+.vrms-signatory-status--signed {
+  color: #1d4ed8;
+  background: color-mix(in srgb, #3b82f6 16%, var(--surface));
+  border-color: color-mix(in srgb, #3b82f6 35%, var(--border));
+}
+
+.vrms-signatory-status--pending {
+  color: #a16207;
+  background: color-mix(in srgb, #eab308 16%, var(--surface));
+  border-color: color-mix(in srgb, #eab308 35%, var(--border));
+}
+
+.vrms-signatory-row-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin: 0;
+  align-self: end;
+}
+
+.vrms-signatory-row-actions .ant-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.vrms-signatories-footnote {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: auto 0 0;
+  padding-top: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.vrms-signatories-footnote svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--teal);
+}
+
+[data-theme='dark'] .vrms-routing-panel {
+  background: color-mix(in srgb, var(--surface-elevated) 92%, #0b1220 8%);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme='dark'] .vrms-routing-panel-header {
+  background: color-mix(in srgb, var(--surface-subtle) 88%, transparent);
+}
+
+[data-theme='dark'] .vrms-routing-required {
+  color: #60a5fa;
+}
+
+[data-theme='dark'] .vrms-signatories-empty {
+  background: color-mix(in srgb, var(--surface-subtle) 70%, transparent);
+}
+
+[data-theme='light'] .vrms-routing-panel {
+  box-shadow: 0 10px 24px rgba(16, 42, 67, 0.06);
+}
+
+@media (max-width: 720px) {
+  .vrms-routing-formgrid {
+    grid-template-columns: 1fr;
+  }
+
+  .vrms-signatory-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
 .vrms-registry-list {
   display: grid;
   gap: 8px;

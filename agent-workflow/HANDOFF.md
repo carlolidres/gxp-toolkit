@@ -1,12 +1,14 @@
 # Current Handoff
 
-Last Updated: `2026-07-10`
+Last Updated: `2026-07-11`
 Version: `v34`
 Branch: `main` / `master`
-Commit: `2973d69` — v34: Ant Design migration, APQR scheduler UX, atmospheric theme
-Deployment: `DEPLOYED` — GitHub Pages run [29094496719](https://github.com/carlolidres/gxp-toolkit/actions/runs/29094496719) (2026-07-10)
+Commit: `(pending)` — Document Routing Form UI polish
+Deployment: `PENDING` — push to `master` triggers GitHub Pages
 
 ## Current Status
+
+**Document Routing Form UI polish** — Light/dark restyle of Document Routing Form + Signatories Tracker to match `screenshot/Routing Forms.png`: panel headers with theme-aligned icons, 2-column field grid, label icon spacing, required asterisks, remarks char counter display, Submit/Clear icons, signatories empty state, Signed/Remove on one row, status pills, footnote. Field handlers/disabled rules/validation unchanged.
 
 **v34 release** — Ant Design 6 UI migration; APQR Scheduler cycle-year filter, search, manual dates, full-cycle table; editable Tabulation Status Date; blank coverage defaults; atmospheric light/dark backgrounds. App version history set to `v34`.
 

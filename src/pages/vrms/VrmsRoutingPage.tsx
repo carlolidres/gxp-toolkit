@@ -1,17 +1,42 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button, Select } from 'antd'
-import { Check, Plus, Trash2 } from 'lucide-react'
+import {
+  CalendarDays,
+  Check,
+  FileText,
+  Info,
+  Mail,
+  Plus,
+  RefreshCw,
+  Send,
+  Trash2,
+  UserPlus,
+  Users,
+} from 'lucide-react'
 
 import { VrmsPage } from '../../components/vrms/VrmsPage'
 import { NaOptionalInput, NaOptionalTextarea } from '../../components/forms/NaOptionalField'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { useVrmsApp } from '../../context/VrmsAppContext'
-import { VRMS_ROUTING_FORM_FIELDS } from '../../lib/vrmsFormConfig'
+import { VRMS_ROUTING_FORM_FIELDS, type VrmsFormField } from '../../lib/vrmsFormConfig'
 import { NA_OPTIONAL_VALUE, isNaOptionalValue } from '../../lib/naOptionalField'
 import { formatVrmsDateTime, getStatusKey, normalizeOptionalField, validateRoutingPayload } from '../../utils/vrmsLogic'
 import type { RoutingDocument, SaveRoutingDocumentPayload, VrmsSignatory } from '../../types/vrms'
+
+const REMARKS_DISPLAY_MAX = 1000
+
+function fieldLabelIcon(field: VrmsFormField): ReactNode {
+  if (field.type === 'email' || field.key === 'email') return <Mail size={13} aria-hidden />
+  if (field.type === 'date') return <CalendarDays size={13} aria-hidden />
+  return null
+}
+
+function remarksDisplayLength(value: string): number {
+  if (!value || isNaOptionalValue(value)) return 0
+  return value.length
+}
 
 function emptySignatory(order: number, active: boolean): VrmsSignatory {
   return {
@@ -245,179 +270,256 @@ export function VrmsRoutingPage() {
     navigate('/routing')
   }
 
+  const remarksLength = remarksDisplayLength(form.remarks)
+
   return (
     <VrmsPage title="Document Routing" description="Register documents and track ordered signatories.">
-      <div className="vrms-grid2">
-        <section className="vrms-panel">
-          <h2>Document Routing Form</h2>
-          {saveSuccess ? (
-            <p className="form-success" role="status" aria-live="polite">
-              Document routing record saved successfully.
-              {saveSuccess.routingTracker ? ` Tracker: ${saveSuccess.routingTracker}` : ''}
-              {saveSuccess.docTracer ? ` · Doc Tracer: ${saveSuccess.docTracer}` : ''}
-            </p>
-          ) : null}
-          {form.routingTracker ? (
-            <div className="vrms-tracker-callout">
-              Tracker{' '}
-              <Button type="link" className="vrms-tracker-link" onClick={() => void loadTracker(form.routingTracker)}>
-                {form.routingTracker}
-              </Button>
+      <div className="vrms-grid2 vrms-routing-layout">
+        <section className="vrms-panel vrms-routing-panel">
+          <header className="vrms-routing-panel-header">
+            <span className="vrms-routing-panel-icon" aria-hidden>
+              <FileText size={18} />
+            </span>
+            <h2>Document Routing Form</h2>
+          </header>
+
+          <div className="vrms-routing-panel-body">
+            {saveSuccess ? (
+              <p className="form-success" role="status" aria-live="polite">
+                Document routing record saved successfully.
+                {saveSuccess.routingTracker ? ` Tracker: ${saveSuccess.routingTracker}` : ''}
+                {saveSuccess.docTracer ? ` · Doc Tracer: ${saveSuccess.docTracer}` : ''}
+              </p>
+            ) : null}
+            {form.routingTracker ? (
+              <div className="vrms-tracker-callout">
+                Tracker{' '}
+                <Button type="link" className="vrms-tracker-link" onClick={() => void loadTracker(form.routingTracker)}>
+                  {form.routingTracker}
+                </Button>
+              </div>
+            ) : null}
+
+            <div className="vrms-formgrid vrms-routing-formgrid">
+              {VRMS_ROUTING_FORM_FIELDS.map((field) => {
+                const value = String(form[field.key as keyof typeof form] ?? '')
+                const labelIcon = fieldLabelIcon(field)
+                const isRemarks = field.key === 'remarks'
+                return (
+                  <div key={field.key} className={field.wide ? 'wide' : undefined}>
+                    <label className="vrms-routing-field-label">
+                      {labelIcon ? <span className="vrms-routing-field-label-icon">{labelIcon}</span> : null}
+                      <span>{field.label}</span>
+                      {field.required ? <span className="vrms-routing-required" aria-hidden>*</span> : null}
+                    </label>
+                    {field.naOptional && field.type === 'textarea' ? (
+                      <div className="vrms-routing-textarea-wrap">
+                        <NaOptionalTextarea
+                          value={value}
+                          disabled={!canModifyForm}
+                          onChange={(next) => updateField(field.key, next)}
+                        />
+                        {isRemarks ? (
+                          <span className="vrms-routing-char-count" aria-live="polite">
+                            {remarksLength} / {REMARKS_DISPLAY_MAX}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : field.naOptional ? (
+                      <NaOptionalInput
+                        type={field.type === 'email' ? 'text' : (field.type ?? 'text')}
+                        inputMode={field.type === 'email' ? 'email' : undefined}
+                        value={value}
+                        disabled={!canModifyForm}
+                        onChange={(next) => updateField(field.key, next)}
+                      />
+                    ) : field.type === 'textarea' ? (
+                      <div className="vrms-routing-textarea-wrap">
+                        <textarea
+                          value={value}
+                          disabled={!canModifyForm}
+                          onChange={(event) => updateField(field.key, event.target.value)}
+                        />
+                        {isRemarks ? (
+                          <span className="vrms-routing-char-count" aria-live="polite">
+                            {remarksLength} / {REMARKS_DISPLAY_MAX}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : field.registryType ? (
+                      <Select
+                        className="vrms-routing-select"
+                        value={value}
+                        disabled={!canModifyForm}
+                        onChange={(next) => {
+                          if (field.key === 'status') handleStatusChange(next)
+                          else if (field.key === 'sentRoutingTo') handleSentRoutingChange(next)
+                          else updateField(field.key, next)
+                        }}
+                        options={[
+                          { value: '', label: `Select ${field.label}` },
+                          ...(appData?.registries[field.registryType] ?? []).map((option) => ({
+                            value: option,
+                            label: option,
+                          })),
+                        ]}
+                      />
+                    ) : (
+                      <input
+                        type={field.type ?? 'text'}
+                        value={value}
+                        disabled={!canModifyForm}
+                        onChange={(event) => updateField(field.key, event.target.value)}
+                      />
+                    )}
+                  </div>
+                )
+              })}
             </div>
-          ) : null}
 
-          <div className="vrms-formgrid">
-            {VRMS_ROUTING_FORM_FIELDS.map((field) => {
-              const value = String(form[field.key as keyof typeof form] ?? '')
-              return (
-                <div key={field.key} className={field.wide ? 'wide' : undefined}>
-                  <label>
-                    {field.label}
-                    {field.required ? ' *' : ''}
-                  </label>
-                  {field.naOptional && field.type === 'textarea' ? (
-                    <NaOptionalTextarea
-                      value={value}
-                      disabled={!canModifyForm}
-                      onChange={(next) => updateField(field.key, next)}
-                    />
-                  ) : field.naOptional ? (
-                    <NaOptionalInput
-                      type={field.type === 'email' ? 'text' : (field.type ?? 'text')}
-                      inputMode={field.type === 'email' ? 'email' : undefined}
-                      value={value}
-                      disabled={!canModifyForm}
-                      onChange={(next) => updateField(field.key, next)}
-                    />
-                  ) : field.type === 'textarea' ? (
-                    <textarea
-                      value={value}
-                      disabled={!canModifyForm}
-                      onChange={(event) => updateField(field.key, event.target.value)}
-                    />
-                  ) : field.registryType ? (
-                    <Select
-                      value={value}
-                      disabled={!canModifyForm}
-                      onChange={(next) => {
-                        if (field.key === 'status') handleStatusChange(next)
-                        else if (field.key === 'sentRoutingTo') handleSentRoutingChange(next)
-                        else updateField(field.key, next)
-                      }}
-                      options={[
-                        { value: '', label: `Select ${field.label}` },
-                        ...(appData?.registries[field.registryType] ?? []).map((option) => ({ value: option, label: option })),
-                      ]}
-                    />
-                  ) : (
-                    <input
-                      type={field.type ?? 'text'}
-                      value={value}
-                      disabled={!canModifyForm}
-                      onChange={(event) => updateField(field.key, event.target.value)}
-                    />
-                  )}
-                </div>
-              )
-            })}
-          </div>
+            {saveError ? <p className="form-error">{saveError}</p> : null}
 
-          {saveError ? <p className="form-error">{saveError}</p> : null}
-
-          <div className="vrms-actions">
-            {canSubmit ? (
-              <Button type="primary" className="vrms-btn-primary" loading={saving} onClick={() => void handleSubmit()}>
-                {saving ? 'Saving…' : 'Submit'}
-              </Button>
-            ) : null}
-            {canCreate ? (
-              <Button className="vrms-btn-secondary" disabled={saving} onClick={clearForm}>
-                Clear
-              </Button>
-            ) : null}
+            <div className="vrms-actions vrms-routing-actions">
+              {canSubmit ? (
+                <Button
+                  type="primary"
+                  icon={<Send size={15} />}
+                  className="vrms-btn-primary vrms-routing-submit"
+                  loading={saving}
+                  onClick={() => void handleSubmit()}
+                >
+                  {saving ? 'Saving…' : 'Submit'}
+                </Button>
+              ) : null}
+              {canCreate ? (
+                <Button
+                  icon={<RefreshCw size={15} />}
+                  className="vrms-btn-secondary vrms-routing-clear"
+                  disabled={saving}
+                  onClick={clearForm}
+                >
+                  Clear
+                </Button>
+              ) : null}
+            </div>
           </div>
         </section>
 
-        <section className="vrms-panel">
-          <h2>Signatories Tracker</h2>
-          <div className="vrms-signatory-list">
-            {signatories.length === 0 ? (
-              <p className="vrms-muted">No signatories added.</p>
-            ) : (
-              signatories.map((item, index) => {
-                const canSign =
-                  Boolean(form.routingTracker) && isRouting && item.Status === 'Active' && canApprove && !isFormDirty
-                const signed = item.Status === 'Signed'
-                return (
-                  <div className="vrms-signatory-row" key={`${item.Order}-${index}`}>
-                    <div className="vrms-signatory-head">
-                      <strong>#{index + 1}</strong>
-                      <span>{item.Status}</span>
+        <section className="vrms-panel vrms-routing-panel vrms-signatories-panel">
+          <header className="vrms-routing-panel-header">
+            <span className="vrms-routing-panel-icon vrms-routing-panel-icon--users" aria-hidden>
+              <Users size={18} />
+            </span>
+            <h2>Signatories Tracker</h2>
+          </header>
+
+          <div className="vrms-routing-panel-body vrms-signatories-body">
+            <div className="vrms-signatory-list">
+              {signatories.length === 0 ? (
+                <div className="vrms-signatories-empty">
+                  <span className="vrms-signatories-empty-icon" aria-hidden>
+                    <UserPlus size={28} />
+                  </span>
+                  <h3>No signatories added.</h3>
+                  <p>Add signatories to define the order and track document approvals.</p>
+                  {canEdit ? (
+                    <Button
+                      icon={<Plus size={15} />}
+                      className="vrms-btn-secondary vrms-routing-add-signatory"
+                      onClick={addSignatory}
+                    >
+                      Add Signatory
+                    </Button>
+                  ) : null}
+                </div>
+              ) : (
+                signatories.map((item, index) => {
+                  const canSign =
+                    Boolean(form.routingTracker) && isRouting && item.Status === 'Active' && canApprove && !isFormDirty
+                  const signed = item.Status === 'Signed'
+                  return (
+                    <div className="vrms-signatory-row" key={`${item.Order}-${index}`}>
+                      <div className="vrms-signatory-head">
+                        <strong>#{index + 1}</strong>
+                        <span className={`vrms-signatory-status vrms-signatory-status--${item.Status.toLowerCase()}`}>
+                          {item.Status}
+                        </span>
+                      </div>
+                      <label className="vrms-routing-field-label">Signatory/Approver Name</label>
+                      <Select
+                        className="vrms-routing-select"
+                        value={item.Name}
+                        disabled={signed || (isRouting && index === 0) || !canModifyForm}
+                        onChange={(value) => updateSignatory(index, 'Name', value)}
+                        options={[
+                          { value: '', label: 'Select signatory' },
+                          ...allowedNames.map((name) => ({ value: name, label: name })),
+                        ]}
+                      />
+                      <div className="vrms-signatory-meta">
+                        <div>
+                          <label className="vrms-routing-field-label">Date/time forwarded</label>
+                          <input value={item['Date/time forwarded'] || 'Not forwarded'} readOnly />
+                        </div>
+                        <div>
+                          <label className="vrms-routing-field-label">Date/time signed</label>
+                          <input value={item['Date/time signed'] || 'Not signed'} readOnly />
+                        </div>
+                      </div>
+                      <div className="vrms-signatory-meta">
+                        <div>
+                          <label className="vrms-routing-field-label">Duration</label>
+                          <input value={item['Duration pending/signing time'] || ''} readOnly />
+                        </div>
+                        <div className="vrms-actions vrms-signatory-row-actions">
+                          {canApprove ? (
+                            <Button
+                              type="primary"
+                              icon={<Check size={15} />}
+                              className="vrms-btn-primary"
+                              disabled={!canSign || signingOrder !== null}
+                              onClick={() => void handleSign(item.Order)}
+                            >
+                              {signingOrder === item.Order ? 'Signing…' : 'Signed'}
+                            </Button>
+                          ) : null}
+                          {canDelete ? (
+                            <Button
+                              icon={<Trash2 size={15} />}
+                              className="vrms-btn-secondary"
+                              disabled={signed}
+                              onClick={() => removeSignatory(index)}
+                            >
+                              Remove
+                            </Button>
+                          ) : null}
+                        </div>
+                      </div>
                     </div>
-                    <label>Signatory/Approver Name</label>
-                    <Select
-                      value={item.Name}
-                      disabled={signed || (isRouting && index === 0) || !canModifyForm}
-                      onChange={(value) => updateSignatory(index, 'Name', value)}
-                      options={[
-                        { value: '', label: 'Select signatory' },
-                        ...allowedNames.map((name) => ({ value: name, label: name })),
-                      ]}
-                    />
-                    <div className="vrms-signatory-meta">
-                      <div>
-                        <label>Date/time forwarded</label>
-                        <input value={item['Date/time forwarded'] || 'Not forwarded'} readOnly />
-                      </div>
-                      <div>
-                        <label>Date/time signed</label>
-                        <input value={item['Date/time signed'] || 'Not signed'} readOnly />
-                      </div>
-                    </div>
-                    <div className="vrms-signatory-meta">
-                      <div>
-                        <label>Duration</label>
-                        <input value={item['Duration pending/signing time'] || ''} readOnly />
-                      </div>
-                      <div className="vrms-actions" style={{ margin: 0 }}>
-                        {canApprove ? (
-                          <Button
-                            type="primary"
-                            icon={<Check size={15} />}
-                            className="vrms-btn-primary"
-                            disabled={!canSign || signingOrder !== null}
-                            onClick={() => void handleSign(item.Order)}
-                          >
-                            {signingOrder === item.Order ? 'Signing…' : 'Signed'}
-                          </Button>
-                        ) : null}
-                        {canDelete ? (
-                          <Button
-                            icon={<Trash2 size={15} />}
-                            className="vrms-btn-secondary"
-                            disabled={signed}
-                            onClick={() => removeSignatory(index)}
-                          >
-                            Remove
-                          </Button>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })
-            )}
-          </div>
-          {canEdit ? (
-            <div className="vrms-actions">
-              <Button icon={<Plus size={15} />} className="vrms-btn-secondary" onClick={addSignatory}>
-                Add Signatory
-              </Button>
+                  )
+                })
+              )}
             </div>
-          ) : null}
-          <p className="vrms-muted" style={{ padding: '0 30px 24px' }}>
-            Signatory names must be selected from Sent/Routing To. Only the active signatory can be marked signed.
-          </p>
+
+            {signatories.length > 0 && canEdit ? (
+              <div className="vrms-actions vrms-routing-actions">
+                <Button
+                  icon={<Plus size={15} />}
+                  className="vrms-btn-secondary vrms-routing-add-signatory"
+                  onClick={addSignatory}
+                >
+                  Add Signatory
+                </Button>
+              </div>
+            ) : null}
+
+            <p className="vrms-signatories-footnote">
+              <Info size={14} aria-hidden />
+              <span>
+                Signatory names must be selected from Sent/Routing To. Only the active signatory can be marked signed.
+              </span>
+            </p>
+          </div>
         </section>
       </div>
     </VrmsPage>

@@ -12,7 +12,7 @@ export interface VrmsFormField {
 }
 
 export const VRMS_ROUTING_FORM_FIELDS: VrmsFormField[] = [
-  { key: 'docTracer', label: 'Doc Tracer #', required: true },
+  { key: 'docTracer', label: 'Doc Tracer #', required: true, wide: true },
   { key: 'equipmentProduct', label: 'Equipment/Product', required: true, wide: true },
   { key: 'category', label: 'Category', required: true, registryType: 'Category' },
   { key: 'ilTag', label: 'IL-Tag', naOptional: true },
@@ -23,7 +23,7 @@ export const VRMS_ROUTING_FORM_FIELDS: VrmsFormField[] = [
   { key: 'reportProtocol', label: 'Report/Protocol', required: true, registryType: 'Report / Protocol' },
   { key: 'batchNo', label: 'Batch No.', required: true, naOptional: true },
   { key: 'clientName', label: 'Client Name', required: true, registryType: 'Client' },
-  { key: 'department', label: 'Department', required: true, wide: true, registryType: 'Department' },
+  { key: 'department', label: 'Department', required: true, registryType: 'Department' },
   { key: 'preparedBy', label: 'Prepared By', required: true, registryType: 'Prepared by' },
   { key: 'datePrepared', label: 'Date Prepared', required: true, type: 'date' },
   { key: 'checkedBy', label: 'Checked By', required: true, registryType: 'Checked by' },
