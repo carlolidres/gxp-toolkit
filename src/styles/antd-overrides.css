@@ -1,0 +1,83 @@
+/* Scoped Ant Design customizations — avoid unsafe global .ant-* overrides. */
+
+.gxp-antd-app {
+  min-height: 100%;
+}
+
+.gxp-antd-app .ant-btn-primary {
+  box-shadow: none;
+}
+
+.gxp-antd-app .ant-layout {
+  background: transparent;
+}
+
+.gxp-antd-app .ant-card {
+  box-shadow: var(--shadow);
+}
+
+.gxp-antd-app .ant-table-wrapper .ant-table {
+  font-size: 13px;
+}
+
+.gxp-antd-app .ant-form-item {
+  margin-bottom: 14px;
+}
+
+.gxp-antd-app .ant-modal .ant-modal-content,
+.gxp-antd-app .ant-drawer .ant-drawer-content {
+  border-radius: 14px;
+}
+
+.gxp-antd-app .ant-empty-description {
+  color: var(--muted);
+}
+
+.gxp-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.gxp-icon-nav {
+  width: 18px;
+  height: 18px;
+}
+
+.gxp-icon-action {
+  width: 16px;
+  height: 16px;
+}
+
+.gxp-icon-status {
+  width: 16px;
+  height: 16px;
+}
+
+.gxp-icon-dashboard {
+  width: 22px;
+  height: 22px;
+}
+
+.gxp-brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gxp-brand-lockup-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.gxp-brand-lockup-title {
+  font-weight: 700;
+  color: var(--navy);
+  font-size: 0.95rem;
+}
+
+.gxp-brand-lockup-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+}

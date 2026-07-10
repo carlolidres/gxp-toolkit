@@ -6,6 +6,7 @@ import { App } from './app/App'
 import { AuthProvider } from './hooks/useAuth'
 import { PermissionsProvider } from './hooks/usePermissions'
 import { ThemeProvider } from './hooks/useTheme'
+import { AntDesignProvider } from './theme/AntDesignProvider'
 import { ToastProvider } from './components/feedback/ToastProvider'
 import './styles/globals.css'
 import './styles/multiform-project.css'
@@ -15,13 +16,15 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <HashRouter>
       <ThemeProvider>
-        <AuthProvider>
-          <PermissionsProvider>
-            <ToastProvider>
-              <App />
-            </ToastProvider>
-          </PermissionsProvider>
-        </AuthProvider>
+        <AntDesignProvider>
+          <AuthProvider>
+            <PermissionsProvider>
+              <ToastProvider>
+                <App />
+              </ToastProvider>
+            </PermissionsProvider>
+          </AuthProvider>
+        </AntDesignProvider>
       </ThemeProvider>
     </HashRouter>
   </StrictMode>,
