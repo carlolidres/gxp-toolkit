@@ -475,59 +475,68 @@
   background: color-mix(in srgb, var(--teal) 6%, transparent);
 }
 
-.vrms-database-panel .vrms-table-wrap {
-  /* overflow-x:hidden forces overflow-y:auto and shows a useless vertical scrollbar */
-  overflow: visible;
+.vrms-database-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
-.vrms-database-panel .vrms-table {
+.vrms-database-panel .vrms-table-wrap {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  /* Fit remaining viewport below page header + toolbar; scroll rows inside */
+  max-height: calc(100dvh - 12.5rem);
+  overflow: auto;
+}
+
+.vrms-database-panel .vrms-table,
+.vrms-database-panel .vrms-table .ant-table,
+.vrms-database-panel .vrms-table .ant-table-container,
+.vrms-database-panel .vrms-table .ant-table-content,
+.vrms-database-panel .vrms-table table {
+  width: 100% !important;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.vrms-database-panel .vrms-table table {
   table-layout: fixed;
 }
 
-.vrms-database-panel .vrms-table th,
-.vrms-database-panel .vrms-table td {
+.vrms-database-panel .vrms-table .ant-table-thead > tr > th,
+.vrms-database-panel .vrms-table .ant-table-tbody > tr > td {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: normal;
 }
 
-.vrms-database-panel .vrms-table th:nth-child(1),
-.vrms-database-panel .vrms-table td:nth-child(1) {
-  width: 14%;
+.vrms-database-panel .vrms-table .ant-table-thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-inline: clamp(6px, 0.8vw, 12px);
+  font-size: clamp(0.62rem, 0.7vw + 0.4rem, 0.72rem);
+  letter-spacing: 0.03em;
 }
 
-.vrms-database-panel .vrms-table th:nth-child(2),
-.vrms-database-panel .vrms-table td:nth-child(2) {
-  width: 18%;
+.vrms-database-panel .vrms-table .ant-table-tbody > tr > td {
+  padding-inline: clamp(6px, 0.8vw, 12px);
 }
 
-.vrms-database-panel .vrms-table th:nth-child(3),
-.vrms-database-panel .vrms-table td:nth-child(3) {
-  width: 30%;
+.vrms-database-panel .vrms-table .ant-table-cell .vrms-tracker-link {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
 }
 
-.vrms-database-panel .vrms-table th:nth-child(4),
-.vrms-database-panel .vrms-table td:nth-child(4) {
-  width: 9%;
-}
-
-.vrms-database-panel .vrms-table th:nth-child(5),
-.vrms-database-panel .vrms-table td:nth-child(5) {
-  width: 7%;
-}
-
-.vrms-database-panel .vrms-table th:nth-child(6),
-.vrms-database-panel .vrms-table td:nth-child(6) {
-  width: 8%;
-}
-
-.vrms-database-panel .vrms-table th:nth-child(7),
-.vrms-database-panel .vrms-table td:nth-child(7) {
-  width: 10%;
-}
-
-.vrms-database-panel .vrms-table th:nth-child(8),
-.vrms-database-panel .vrms-table td:nth-child(8) {
-  width: 4%;
+@media (max-width: 800px) {
+  .vrms-database-panel .vrms-table-wrap {
+    max-height: calc(100dvh - 14.5rem);
+  }
 }
 
 .vrms-clickable-row {
@@ -641,6 +650,43 @@
 }
 
 .vrms-toolbar-search .ant-input {
+  width: 100%;
+}
+
+/* Database filters: one responsive row */
+.vrms-database-panel .vrms-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: end;
+  gap: clamp(8px, 1.1vw, 16px);
+}
+
+.vrms-database-panel .vrms-toolbar-search {
+  flex: 1.6 1 160px;
+  min-width: 0;
+  grid-column: auto;
+}
+
+.vrms-database-panel .vrms-toolbar > div:not(.vrms-toolbar-search) {
+  flex: 1 1 110px;
+  min-width: 0;
+  max-width: 170px;
+}
+
+.vrms-database-panel .vrms-toolbar .vrms-checkbox-filter {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.vrms-database-panel .vrms-toolbar .vrms-btn-secondary {
+  flex: 0 0 auto;
+  justify-self: auto;
+  width: auto;
+}
+
+.vrms-database-panel .vrms-toolbar .ant-select {
+  min-width: 0;
   width: 100%;
 }
 
@@ -1276,6 +1322,22 @@
 
   .vrms-toolbar .vrms-btn-secondary {
     justify-self: stretch;
+  }
+
+  .vrms-database-panel .vrms-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .vrms-database-panel .vrms-toolbar-search,
+  .vrms-database-panel .vrms-toolbar > div:not(.vrms-toolbar-search) {
+    flex: 1 1 calc(50% - 8px);
+    max-width: none;
+  }
+
+  .vrms-database-panel .vrms-toolbar .vrms-checkbox-filter,
+  .vrms-database-panel .vrms-toolbar .vrms-btn-secondary {
+    flex: 1 1 auto;
   }
 }
 

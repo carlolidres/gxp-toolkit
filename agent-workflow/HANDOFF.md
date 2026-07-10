@@ -3,10 +3,12 @@
 Last Updated: `2026-07-11`
 Version: `v34`
 Branch: `main` / `master`
-Commit: `de164c0` — ui: polish Document Routing Form for light and dark themes
-Deployment: `DEPLOYED` — GitHub Pages run [29126416135](https://github.com/carlolidres/gxp-toolkit/actions/runs/29126416135) (2026-07-11)
+Commit: `(pending)` — VRMS Database toolbar + table viewport polish
+Deployment: `PENDING` — push to `master` triggers GitHub Pages
 
 ## Current Status
+
+**VRMS Database UI polish** — Toolbar stays on one responsive row; table uses fixed layout with ellipsis headers; table wrap capped to viewport height with internal scroll and sticky headers.
 
 **Document Routing Form UI polish** — Light/dark restyle of Document Routing Form + Signatories Tracker to match `screenshot/Routing Forms.png`: panel headers with theme-aligned icons, 2-column field grid, label icon spacing, required asterisks, remarks char counter display, Submit/Clear icons, signatories empty state, Signed/Remove on one row, status pills, footnote. Field handlers/disabled rules/validation unchanged.
 

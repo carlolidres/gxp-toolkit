@@ -8,14 +8,16 @@ Status: `COMPLETE`
 
 ## Objective
 
-Ship Document Routing Form UI polish: commit, push to `main`/`master`, deploy GitHub Pages.
+Ship VRMS Database toolbar/table viewport polish: commit, push to `main`/`master`, deploy GitHub Pages.
 
 ## Acceptance
 
-1. [x] Routing form UI polish implemented
-2. [x] Committed and pushed to `main` and `master`
-3. [x] GitHub Pages deploy succeeded — run [29126416135](https://github.com/carlolidres/gxp-toolkit/actions/runs/29126416135)
+1. [x] Database toolbar single responsive row
+2. [x] Table headers fit container with ellipsis
+3. [x] Table wrap capped to viewport with internal scroll
+4. [ ] Committed and pushed to `main` and `master`
+5. [ ] GitHub Pages deploy succeeded
 
 ## Remaining
 
-- None for this task
+- Confirm Pages deploy run green after push to `master`

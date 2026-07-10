@@ -8,8 +8,19 @@ type ColumnKey = keyof RoutingDocument
 
 interface VrmsDataTableProps {
   rows: RoutingDocument[]
-  columns: ReadonlyArray<{ key: ColumnKey; label: string }>
+  columns: ReadonlyArray<{ key: ColumnKey; label: string; width?: string | number }>
   onTrackerClick?: (tracker: string) => void
+}
+
+const DEFAULT_WIDTHS: Partial<Record<ColumnKey, string | number>> = {
+  routingTracker: '12%',
+  docTracer: '14%',
+  equipmentProduct: '22%',
+  category: '9%',
+  ilTag: '7%',
+  status: 72,
+  sentRoutingTo: '12%',
+  email: '12%',
 }
 
 export function VrmsDataTable({ rows, columns, onTrackerClick }: VrmsDataTableProps) {
@@ -17,7 +28,9 @@ export function VrmsDataTable({ rows, columns, onTrackerClick }: VrmsDataTablePr
     key: column.key,
     title: column.label,
     dataIndex: column.key,
-    ...(column.key === 'status' ? { width: 72, align: 'center' as const } : {}),
+    ellipsis: column.key !== 'status',
+    width: column.width ?? DEFAULT_WIDTHS[column.key],
+    ...(column.key === 'status' ? { align: 'center' as const } : {}),
     render: (_value, row) => {
       if (column.key === 'routingTracker' && onTrackerClick) {
         return (
@@ -42,6 +55,8 @@ export function VrmsDataTable({ rows, columns, onTrackerClick }: VrmsDataTablePr
         dataSource={rows}
         pagination={false}
         size="middle"
+        tableLayout="fixed"
+        style={{ width: '100%' }}
         locale={{ emptyText: 'No records found.' }}
       />
     </div>
