@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Button, Card, Spin } from 'antd'
 import {
   KeyRound,
   Loader2,
@@ -16,6 +17,7 @@ import { APP_NAME } from '../config/appNavigation'
 import { useAuth } from '../hooks/useAuth'
 import { consumeLoginFlash } from '../lib/authSessionStore'
 import { getAuthErrorMessage } from '../lib/authMessages'
+import { iconSize, iconStroke } from '../theme/iconSizes'
 import {
   AUTH_CARD_CLASS,
   AUTH_GHOST_BTN_CLASS,
@@ -53,13 +55,11 @@ export function LoginPage() {
 
   if (!authReady) {
     return (
-      <div
-        className="flex min-h-screen items-center justify-center gap-3 text-[var(--muted)]"
-        role="status"
-        aria-live="polite"
-      >
-        <Loader2 className="size-5 animate-spin text-[var(--teal)]" aria-hidden="true" />
-        <span>Restoring session…</span>
+      <div className="flex min-h-screen items-center justify-center" role="status" aria-live="polite">
+        <Spin
+          tip="Restoring session…"
+          indicator={<Loader2 className="anticon-spin" size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />}
+        />
       </div>
     )
   }
@@ -92,7 +92,7 @@ export function LoginPage() {
   return (
     <div className="login-page">
       <section className="login-story">
-        <GxpLogo variant="full" tone="light" />
+        <GxpLogo variant="lockup" showTagline />
         <div>
           <span className="eyebrow">Validation Routing Monitoring System</span>
           <h1>Quality operations, composed for reuse.</h1>
@@ -105,94 +105,96 @@ export function LoginPage() {
       </section>
 
       <section className="login-panel">
-        <form
-          className={AUTH_CARD_CLASS}
-          onSubmit={handleSubmit}
-          autoComplete="off"
-          aria-labelledby="login-title"
-        >
-          <header className="mb-6 space-y-2">
-            <span className="eyebrow">Welcome back</span>
-            <h2 id="login-title" className="text-2xl font-bold tracking-tight text-[var(--navy)] sm:text-[1.65rem]">
-              Sign in to {APP_NAME}
-            </h2>
-            <p className="text-sm leading-relaxed text-[var(--muted)]">
-              {usesSupabase ? 'Use your email and password.' : 'Any password works in this mock environment.'}
-            </p>
-          </header>
+        <Card className={AUTH_CARD_CLASS} bordered>
+          <form onSubmit={handleSubmit} autoComplete="off" aria-labelledby="login-title">
+            <header className="mb-6 space-y-2">
+              <span className="eyebrow">Welcome back</span>
+              <h2 id="login-title" className="text-2xl font-bold tracking-tight text-[var(--navy)] sm:text-[1.65rem]">
+                Sign in to {APP_NAME}
+              </h2>
+              <p className="text-sm leading-relaxed text-[var(--muted)]">
+                {usesSupabase ? 'Use your email and password.' : 'Any password works in this mock environment.'}
+              </p>
+            </header>
 
-          <div className="flex flex-col gap-4">
-            <AuthField label="Email" icon={<Mail className="size-3.5 text-[var(--teal)]" aria-hidden="true" />}>
-              <TextInput
-                name="email"
-                type="email"
-                className={AUTH_INPUT_CLASS}
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                autoComplete="email"
-                placeholder="you@company.com"
-              />
-            </AuthField>
+            <div className="flex flex-col gap-4">
+              <AuthField label="Email" icon={<Mail size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+                <TextInput
+                  name="email"
+                  type="email"
+                  className={AUTH_INPUT_CLASS}
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                  autoComplete="email"
+                  placeholder="you@company.com"
+                />
+              </AuthField>
 
-            <AuthField label="Password" icon={<Lock className="size-3.5 text-[var(--teal)]" aria-hidden="true" />}>
-              <PasswordInput
-                name="password"
-                className={AUTH_INPUT_CLASS}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                autoComplete="current-password"
-                placeholder="Enter your password"
-              />
-            </AuthField>
+              <AuthField label="Password" icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+                <PasswordInput
+                  name="password"
+                  className={AUTH_INPUT_CLASS}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                />
+              </AuthField>
+
+              {!usesSupabase ? (
+                <AuthField label="Example role" icon={<Shield size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+                  <SelectInput name="role" defaultValue="Admin" className={AUTH_INPUT_CLASS}>
+                    <option>Admin</option>
+                    <option>Manager</option>
+                    <option>Editor</option>
+                    <option>Viewer</option>
+                  </SelectInput>
+                </AuthField>
+              ) : null}
+            </div>
+
+            {error ? <AuthAlert tone="error">{error}</AuthAlert> : null}
+
+            <Button
+              type="primary"
+              htmlType="submit"
+              className={AUTH_PRIMARY_BTN_CLASS}
+              loading={isLoading}
+              icon={!isLoading ? <LogIn size={iconSize.sm} strokeWidth={iconStroke} aria-hidden /> : undefined}
+              block
+              size="large"
+            >
+              {isLoading ? 'Signing in…' : 'Sign in'}
+            </Button>
 
             {!usesSupabase ? (
-              <AuthField label="Example role" icon={<Shield className="size-3.5 text-[var(--teal)]" aria-hidden="true" />}>
-                <SelectInput name="role" defaultValue="Admin" className={AUTH_INPUT_CLASS}>
-                  <option>Admin</option>
-                  <option>Manager</option>
-                  <option>Editor</option>
-                  <option>Viewer</option>
-                </SelectInput>
-              </AuthField>
+              <p className="mt-3 text-center text-xs text-[var(--muted)]">
+                Use role selection to test protected UI patterns.
+              </p>
             ) : null}
-          </div>
 
-          {error ? <AuthAlert tone="error">{error}</AuthAlert> : null}
+            <AuthDivider />
 
-          <button type="submit" className={AUTH_PRIMARY_BTN_CLASS} disabled={isLoading}>
-            {isLoading ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <LogIn className="size-4" aria-hidden="true" />
-            )}
-            {isLoading ? 'Signing in…' : 'Sign in'}
-          </button>
-
-          {!usesSupabase ? (
-            <p className="mt-3 text-center text-xs text-[var(--muted)]">
-              Use role selection to test protected UI patterns.
-            </p>
-          ) : null}
-
-          <AuthDivider />
-
-          <div className="auth-secondary-actions">
-            <button
-              type="button"
-              className={AUTH_GHOST_BTN_CLASS}
-              onClick={() => navigate('/forgot-password', { state: { email } })}
-            >
-              <KeyRound className="size-3.5" aria-hidden="true" />
-              Forgot password?
-            </button>
-            <button type="button" className={AUTH_GHOST_BTN_CLASS} onClick={() => navigate('/signup')}>
-              <UserPlus className="size-3.5" aria-hidden="true" />
-              Sign up
-            </button>
-          </div>
-        </form>
+            <div className="auth-secondary-actions">
+              <Button
+                className={AUTH_GHOST_BTN_CLASS}
+                icon={<KeyRound size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}
+                onClick={() => navigate('/forgot-password', { state: { email } })}
+              >
+                Forgot password?
+              </Button>
+              <Button
+                className={AUTH_GHOST_BTN_CLASS}
+                icon={<UserPlus size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}
+                onClick={() => navigate('/signup')}
+              >
+                Sign up
+              </Button>
+            </div>
+          </form>
+        </Card>
       </section>
     </div>
   )

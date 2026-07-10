@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import { Button, Card } from 'antd'
 import {
   KeyRound,
-  Loader2,
   Lock,
   LogIn,
   Mail,
@@ -15,6 +15,7 @@ import { GxpLogo } from '../components/brand/GxpLogo'
 import { APP_NAME } from '../config/appNavigation'
 import { useAuth } from '../hooks/useAuth'
 import { getAuthErrorMessage } from '../lib/authMessages'
+import { iconSize, iconStroke } from '../theme/iconSizes'
 import {
   AUTH_CARD_CLASS,
   AUTH_GHOST_BTN_CLASS,
@@ -99,7 +100,7 @@ export function SignUpPage() {
   return (
     <div className="login-page">
       <section className="login-story">
-        <GxpLogo variant="full" tone="light" />
+        <GxpLogo variant="lockup" showTagline />
         <div>
           <span className="eyebrow">Join VRMS</span>
           <h1>Create a validated routing workspace account.</h1>
@@ -112,110 +113,117 @@ export function SignUpPage() {
       </section>
 
       <section className="login-panel">
-        <form className={AUTH_CARD_CLASS} onSubmit={handleSubmit} aria-labelledby="signup-title">
-          <header className="mb-6 space-y-2">
-            <span className="eyebrow">Create account</span>
-            <h2 id="signup-title" className="text-2xl font-bold tracking-tight text-[var(--navy)] sm:text-[1.65rem]">
-              Sign up for {APP_NAME}
-            </h2>
-            <p className="text-sm leading-relaxed text-[var(--muted)]">
-              {usesSupabase ? 'Register with email and password.' : 'Mock mode creates a local viewer account for testing.'}
-            </p>
-          </header>
+        <Card className={AUTH_CARD_CLASS} bordered>
+          <form onSubmit={handleSubmit} aria-labelledby="signup-title">
+            <header className="mb-6 space-y-2">
+              <span className="eyebrow">Create account</span>
+              <h2 id="signup-title" className="text-2xl font-bold tracking-tight text-[var(--navy)] sm:text-[1.65rem]">
+                Sign up for {APP_NAME}
+              </h2>
+              <p className="text-sm leading-relaxed text-[var(--muted)]">
+                {usesSupabase ? 'Register with email and password.' : 'Mock mode creates a local viewer account for testing.'}
+              </p>
+            </header>
 
-          <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <AuthField label="First name" icon={<User className="size-3.5 text-[var(--teal)]" aria-hidden="true" />}>
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <AuthField label="First name" icon={<User size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+                  <TextInput
+                    name="firstName"
+                    className={AUTH_INPUT_CLASS}
+                    value={form.firstName}
+                    onChange={(event) => updateField('firstName', event.target.value)}
+                    required
+                    autoComplete="given-name"
+                    placeholder="First name"
+                  />
+                </AuthField>
+                <AuthField label="Last name" icon={<User size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+                  <TextInput
+                    name="lastName"
+                    className={AUTH_INPUT_CLASS}
+                    value={form.lastName}
+                    onChange={(event) => updateField('lastName', event.target.value)}
+                    required
+                    autoComplete="family-name"
+                    placeholder="Last name"
+                  />
+                </AuthField>
+              </div>
+
+              <AuthField label="Email" icon={<Mail size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
                 <TextInput
-                  name="firstName"
+                  name="email"
+                  type="email"
                   className={AUTH_INPUT_CLASS}
-                  value={form.firstName}
-                  onChange={(event) => updateField('firstName', event.target.value)}
+                  value={form.email}
+                  onChange={(event) => updateField('email', event.target.value)}
                   required
-                  autoComplete="given-name"
-                  placeholder="First name"
+                  autoComplete="email"
+                  placeholder="you@company.com"
                 />
               </AuthField>
-              <AuthField label="Last name" icon={<User className="size-3.5 text-[var(--teal)]" aria-hidden="true" />}>
-                <TextInput
-                  name="lastName"
+
+              <AuthField label="Password" icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+                <PasswordInput
+                  name="password"
                   className={AUTH_INPUT_CLASS}
-                  value={form.lastName}
-                  onChange={(event) => updateField('lastName', event.target.value)}
+                  value={form.password}
+                  onChange={(event) => updateField('password', event.target.value)}
                   required
-                  autoComplete="family-name"
-                  placeholder="Last name"
+                  autoComplete="new-password"
+                  placeholder="At least 8 characters"
+                />
+              </AuthField>
+
+              <AuthField label="Confirm password" icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+                <PasswordInput
+                  name="confirmPassword"
+                  className={AUTH_INPUT_CLASS}
+                  value={form.confirmPassword}
+                  onChange={(event) => updateField('confirmPassword', event.target.value)}
+                  required
+                  autoComplete="new-password"
+                  placeholder="Re-enter password"
                 />
               </AuthField>
             </div>
 
-            <AuthField label="Email" icon={<Mail className="size-3.5 text-[var(--teal)]" aria-hidden="true" />}>
-              <TextInput
-                name="email"
-                type="email"
-                className={AUTH_INPUT_CLASS}
-                value={form.email}
-                onChange={(event) => updateField('email', event.target.value)}
-                required
-                autoComplete="email"
-                placeholder="you@company.com"
-              />
-            </AuthField>
+            {error ? <AuthAlert tone="error">{error}</AuthAlert> : null}
+            {success ? <AuthAlert tone="success">{success}</AuthAlert> : null}
 
-            <AuthField label="Password" icon={<Lock className="size-3.5 text-[var(--teal)]" aria-hidden="true" />}>
-              <PasswordInput
-                name="password"
-                className={AUTH_INPUT_CLASS}
-                value={form.password}
-                onChange={(event) => updateField('password', event.target.value)}
-                required
-                autoComplete="new-password"
-                placeholder="At least 8 characters"
-              />
-            </AuthField>
-
-            <AuthField label="Confirm password" icon={<Lock className="size-3.5 text-[var(--teal)]" aria-hidden="true" />}>
-              <PasswordInput
-                name="confirmPassword"
-                className={AUTH_INPUT_CLASS}
-                value={form.confirmPassword}
-                onChange={(event) => updateField('confirmPassword', event.target.value)}
-                required
-                autoComplete="new-password"
-                placeholder="Re-enter password"
-              />
-            </AuthField>
-          </div>
-
-          {error ? <AuthAlert tone="error">{error}</AuthAlert> : null}
-          {success ? <AuthAlert tone="success">{success}</AuthAlert> : null}
-
-          <button type="submit" className={AUTH_PRIMARY_BTN_CLASS} disabled={isLoading}>
-            {isLoading ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <UserPlus className="size-4" aria-hidden="true" />
-            )}
-            {isLoading ? 'Creating account…' : 'Create account'}
-          </button>
-
-          <AuthDivider />
-
-          <div className="auth-secondary-actions">
-            <button type="button" className={AUTH_GHOST_BTN_CLASS} onClick={() => navigate('/login')}>
-              <LogIn className="size-3.5" aria-hidden="true" />
-              Sign in
-            </button>
-            <button
-              type="button"
-              className={AUTH_GHOST_BTN_CLASS}
-              onClick={() => navigate('/forgot-password', { state: { email: form.email } })}
+            <Button
+              type="primary"
+              htmlType="submit"
+              className={AUTH_PRIMARY_BTN_CLASS}
+              loading={isLoading}
+              icon={!isLoading ? <UserPlus size={iconSize.sm} strokeWidth={iconStroke} aria-hidden /> : undefined}
+              block
+              size="large"
             >
-              <KeyRound className="size-3.5" aria-hidden="true" />
-              Forgot password?
-            </button>
-          </div>
-        </form>
+              {isLoading ? 'Creating account…' : 'Create account'}
+            </Button>
+
+            <AuthDivider />
+
+            <div className="auth-secondary-actions">
+              <Button
+                className={AUTH_GHOST_BTN_CLASS}
+                icon={<LogIn size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}
+                onClick={() => navigate('/login')}
+              >
+                Sign in
+              </Button>
+              <Button
+                className={AUTH_GHOST_BTN_CLASS}
+                icon={<KeyRound size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}
+                onClick={() => navigate('/forgot-password', { state: { email: form.email } })}
+              >
+                Forgot password?
+              </Button>
+            </div>
+          </form>
+        </Card>
       </section>
     </div>
   )

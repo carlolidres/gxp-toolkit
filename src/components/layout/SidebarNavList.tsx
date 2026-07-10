@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type DragEvent, type ReactElement, type SVGProps } from 'react'
+import { useEffect, useMemo, useState, type DragEvent, type ReactElement } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import type { NavGroupDefinition } from '../../config/appNavigation'
@@ -7,7 +7,7 @@ import { isSidebarItemActive } from '../../config/sidebarMenus'
 import { useSidebarMenuOrder } from '../../hooks/useSidebarMenuOrder'
 import { SidebarNavGroup } from './SidebarNavGroup'
 
-type IconProps = SVGProps<SVGSVGElement>
+type GroupIcon = (props: { className?: string }) => ReactElement
 
 export function SidebarNavList({
   groups,
@@ -15,7 +15,7 @@ export function SidebarNavList({
   onNavigate,
 }: {
   groups: NavGroupDefinition[]
-  groupIcons: Record<string, (props: IconProps) => ReactElement>
+  groupIcons: Record<string, GroupIcon>
   onNavigate?: () => void
 }) {
   const { orderedGroups, moveGroup } = useSidebarMenuOrder(groups)

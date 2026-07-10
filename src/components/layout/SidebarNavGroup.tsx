@@ -1,18 +1,12 @@
-import { type DragEvent, type ReactElement, type SVGProps } from 'react'
+import { type DragEvent, type ReactElement } from 'react'
 import { NavLink } from 'react-router-dom'
+import { ChevronDown } from 'lucide-react'
 
 import type { SidebarSubmenuItem } from '../../config/sidebarMenus'
 import { submenuHref, submenuNavLinkEnd } from '../../config/sidebarMenus'
+import { iconSize, iconStroke } from '../../theme/iconSizes'
 
-type IconProps = SVGProps<SVGSVGElement>
-
-function IconChevron(props: IconProps) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="sidebar-chevron" aria-hidden="true" {...props}>
-      <path d="m6 9 6 6 6-6" />
-    </svg>
-  )
-}
+type GroupIcon = (props: { className?: string }) => ReactElement
 
 export function SidebarNavGroup({
   title,
@@ -31,7 +25,7 @@ export function SidebarNavGroup({
 }: {
   title: string
   tooltip?: string
-  icon: (props: IconProps) => ReactElement
+  icon: GroupIcon
   items: SidebarSubmenuItem[]
   isOpen: boolean
   onToggle: () => void
@@ -48,14 +42,12 @@ export function SidebarNavGroup({
     isOpen ? 'open' : '',
     isDragging ? 'is-dragging' : '',
     isDropTarget ? 'is-drop-target' : '',
-  ].filter(Boolean).join(' ')
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
-    <div
-      className={groupClass}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-    >
+    <div className={groupClass} onDragOver={onDragOver} onDrop={onDrop}>
       <button
         type="button"
         className="sidebar-nav-group-toggle"
@@ -68,7 +60,12 @@ export function SidebarNavGroup({
       >
         <Icon />
         <span>{title}</span>
-        <IconChevron />
+        <ChevronDown
+          size={iconSize.sm}
+          strokeWidth={iconStroke}
+          className="sidebar-chevron"
+          aria-hidden
+        />
       </button>
       {isOpen && (
         <div className="sidebar-nav-group-items">
