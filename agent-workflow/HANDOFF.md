@@ -148,3 +148,10 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 - eDoc service falls back to mock data when Supabase env vars are unset
 - PDF signing production features deferred per `docs/edoc/IMPLEMENTATION_PLAN.md`
 - Test 3.4 (storage signed URL) still manual
+
+## UI Migration: Ant Design 6
+
+- Migrated remaining VRMS, VMP, eDoc, and APQR page chrome to Ant Design 6 while retaining route links, permission checks, service calls, exports, and validations.
+- Replaced straightforward buttons, inputs, selects, feedback, cards, and audit/field-options tables; custom keyboard-driven pickers and resizable tables remain native where their existing event behavior is required.
+- Verification: `npm run type-check` passed after each module group (2026-07-10).
+- Commits: `ab1c611` (VRMS), `a7e48df` (VMP), `94fbbe0` (eDoc), `d049823` (APQR).
