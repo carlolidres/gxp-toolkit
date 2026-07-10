@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Button, Card, Statistic } from 'antd'
 
 import { EdocError, EdocLoading, EdocPage } from '../../components/edoc/EdocComponents'
 import { useEdocDashboard, useEdocInbox } from '../../features/edoc/useEdocData'
@@ -15,7 +16,11 @@ export function EdocDashboardPage() {
     <EdocPage
       title="Dashboard"
       description="Controlled PDF routing, signature, acknowledgment, and audit activity."
-      action={<Link className="button primary" to="/edoc/create">Create Document</Link>}
+      action={
+        <Link to="/edoc/create">
+          <Button type="primary">Create Document</Button>
+        </Link>
+      }
     >
       {dashboard.error ? <EdocError message={dashboard.error} /> : null}
       {metrics ? (
@@ -35,35 +40,43 @@ export function EdocDashboardPage() {
         </section>
       ) : null}
 
-      <section className="panel">
-        <div className="panel-heading">
-          <h2>Recent Assignments</h2>
-          <Link className="button secondary" to="/edoc/inbox">Open inbox</Link>
-        </div>
+      <Card
+        className="panel"
+        title="Recent Assignments"
+        extra={
+          <Link to="/edoc/inbox">
+            <Button>Open inbox</Button>
+          </Link>
+        }
+      >
         {inbox.error ? <EdocError message={inbox.error} /> : null}
         <div className="task-list">
           {(inbox.data ?? []).slice(0, 5).map((task) => (
             <article key={task.id}>
               <div>
                 <strong>{task.documentTitle}</strong>
-                <p>{task.documentNumber} · {task.action}</p>
+                <p>
+                  {task.documentNumber} · {task.action}
+                </p>
               </div>
-              <Link className="button" to={`/edoc/workspace/${task.id}`}>Open</Link>
+              <Link to={`/edoc/workspace/${task.id}`}>
+                <Button size="small">Open</Button>
+              </Link>
             </article>
           ))}
-          {!inbox.loading && (inbox.data ?? []).length === 0 ? <p className="messages-empty">No active assignments.</p> : null}
+          {!inbox.loading && (inbox.data ?? []).length === 0 ? (
+            <p className="messages-empty">No active assignments.</p>
+          ) : null}
         </div>
-      </section>
+      </Card>
     </EdocPage>
   )
 }
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <article className="stat-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </article>
+    <Card className="stat-card" size="small">
+      <Statistic title={label} value={value} />
+    </Card>
   )
 }
-

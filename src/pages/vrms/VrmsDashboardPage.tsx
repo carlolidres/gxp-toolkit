@@ -1,6 +1,20 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { SVGProps } from 'react'
+import {
+  AlertTriangle,
+  Archive,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  FileText,
+  MoreVertical,
+  RefreshCw,
+  ScanLine,
+  Send,
+  Share2,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react'
 
 import { VrmsPage } from '../../components/vrms/VrmsPage'
 import { useAuth } from '../../hooks/useAuth'
@@ -11,6 +25,7 @@ import type { RoutingDocument } from '../../types/vrms'
 import { VrmsDataTable } from '../../components/vrms/VrmsDataTable'
 import { formatDashboardGreeting } from '../../lib/greeting'
 import { getVrmsStatusStyle } from '../../lib/vrmsStatus'
+import { iconSize, iconStroke } from '../../theme/iconSizes'
 
 const dashboardCards = [
   { key: 'total', label: 'Total', tone: 0, icon: 'document', to: '/database' },
@@ -58,54 +73,24 @@ function initials(name: string): string {
     .toUpperCase()
 }
 
-function CardIcon({ name, ...props }: { name: string } & SVGProps<SVGSVGElement>) {
-  const shared = {
-    width: 22,
-    height: 22,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.8,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    'aria-hidden': true,
-    ...props,
-  }
+const cardIcons: Record<string, LucideIcon> = {
+  document: FileText,
+  send: Send,
+  scan: ScanLine,
+  check: CheckCircle2,
+  archive: Archive,
+  x: XCircle,
+  alert: AlertTriangle,
+  clock: Clock3,
+  share: Share2,
+  refresh: RefreshCw,
+  more: MoreVertical,
+  chevron: ChevronRight,
+}
 
-  if (name === 'send') {
-    return <svg {...shared}><path d="m22 2-7 20-4-9-9-4 20-7Z" /><path d="M22 2 11 13" /></svg>
-  }
-  if (name === 'scan') {
-    return <svg {...shared}><path d="M7 3H5a2 2 0 0 0-2 2v2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><path d="M8 12h8" /></svg>
-  }
-  if (name === 'check') {
-    return <svg {...shared}><circle cx="12" cy="12" r="9" /><path d="m8 12 2.6 2.6L16 9" /></svg>
-  }
-  if (name === 'archive') {
-    return <svg {...shared}><path d="M4 7h16" /><path d="M5 7l1 13h12l1-13" /><path d="M8 3h8l1 4H7l1-4Z" /><path d="M10 12h4" /></svg>
-  }
-  if (name === 'x') {
-    return <svg {...shared}><circle cx="12" cy="12" r="9" /><path d="m9 9 6 6" /><path d="m15 9-6 6" /></svg>
-  }
-  if (name === 'alert') {
-    return <svg {...shared}><path d="M12 3 2.5 20h19L12 3Z" /><path d="M12 9v5" /><path d="M12 17h.01" /></svg>
-  }
-  if (name === 'clock') {
-    return <svg {...shared}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
-  }
-  if (name === 'share') {
-    return <svg {...shared}><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 10.6 6.8-4.2" /><path d="m8.6 13.4 6.8 4.2" /></svg>
-  }
-  if (name === 'refresh') {
-    return <svg {...shared}><path d="M20 11a8 8 0 0 0-14.9-4" /><path d="M5 3v4h4" /><path d="M4 13a8 8 0 0 0 14.9 4" /><path d="M19 21v-4h-4" /></svg>
-  }
-  if (name === 'more') {
-    return <svg {...shared}><circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" /></svg>
-  }
-  if (name === 'chevron') {
-    return <svg {...shared}><path d="m9 18 6-6-6-6" /></svg>
-  }
-  return <svg {...shared}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><path d="M9 13h6" /><path d="M9 17h4" /></svg>
+function CardIcon({ name }: { name: string }) {
+  const Icon = cardIcons[name] ?? FileText
+  return <Icon size={iconSize.xl} strokeWidth={iconStroke} aria-hidden />
 }
 
 function statusDatabasePath(status: string): string {

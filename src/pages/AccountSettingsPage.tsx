@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Alert, Button, Card } from 'antd'
+import { Save, UserRound } from 'lucide-react'
 
 import { VrmsPage } from '../components/vrms/VrmsPage'
 import { FormField, TextInput } from '../components/forms/FormControls'
@@ -6,6 +8,7 @@ import { useToast } from '../components/feedback/ToastProvider'
 import { useAuth } from '../hooks/useAuth'
 import { getAuthErrorMessage } from '../lib/authMessages'
 import { splitDisplayName } from '../lib/profileNames'
+import { iconSize, iconStroke } from '../theme/iconSizes'
 
 export function AccountSettingsPage() {
   const { user, updateProfile } = useAuth()
@@ -51,10 +54,15 @@ export function AccountSettingsPage() {
       description="Update your profile name. Password changes are managed by an administrator."
     >
       <div className="settings-grid">
-        <section className="panel">
-          <div className="panel-heading">
-            <h2>Profile</h2>
-          </div>
+        <Card
+          className="panel"
+          title={
+            <span className="inline-flex items-center gap-2">
+              <UserRound size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />
+              Profile
+            </span>
+          }
+        >
           <form className="form-grid" onSubmit={handleProfileSubmit}>
             <FormField label="First name">
               <TextInput value={firstName} onChange={(event) => setFirstName(event.target.value)} required />
@@ -68,14 +76,21 @@ export function AccountSettingsPage() {
             <FormField label="Role">
               <TextInput value={user?.role ?? ''} readOnly />
             </FormField>
-            {profileError ? <p className="form-error span-2">{profileError}</p> : null}
+            {profileError ? (
+              <Alert className="span-2" type="error" showIcon message={profileError} />
+            ) : null}
             <div className="span-2">
-              <button type="submit" className="button primary" disabled={profileSaving}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={profileSaving}
+                icon={!profileSaving ? <Save size={iconSize.sm} strokeWidth={iconStroke} aria-hidden /> : undefined}
+              >
                 {profileSaving ? 'Saving…' : 'Save profile'}
-              </button>
+              </Button>
             </div>
           </form>
-        </section>
+        </Card>
       </div>
     </VrmsPage>
   )

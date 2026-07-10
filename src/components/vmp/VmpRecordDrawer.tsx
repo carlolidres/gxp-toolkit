@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Button, Drawer, Space, Tabs } from 'antd'
 
 import type { VmpMasterlistRecord } from '../../lib/vmpMasterlist'
 import {
@@ -145,50 +146,49 @@ export function VmpRecordDrawer({
   const [tab, setTab] = useState<DrawerTab>('Overview')
 
   return (
-    <aside className="vmp-record-drawer" aria-label="Record details">
-      <header>
+    <Drawer
+      open
+      onClose={onClose}
+      width={480}
+      className="vmp-record-drawer"
+      title={
         <div>
-          <h2>{record.itemName || record.recordId}</h2>
-          <p>
+          <h2 style={{ margin: 0, fontSize: '1.1rem' }}>{record.itemName || record.recordId}</h2>
+          <p style={{ margin: 0, color: 'var(--muted)' }}>
             {record.validationArea} · {record.recordId}
           </p>
         </div>
-        <div className="vmp-drawer-actions">
+      }
+      extra={
+        <Space wrap>
           {canEdit ? (
-            <Link className="vrms-btn-secondary" to={`/vmp/masterlist?edit=${encodeURIComponent(record.recordId)}`}>
-              <VmpIcon name="edit" /> Edit
+            <Link to={`/vmp/masterlist?edit=${encodeURIComponent(record.recordId)}`}>
+              <Button icon={<VmpIcon name="edit" />}>Edit</Button>
             </Link>
           ) : null}
           {canArchive && !record.isArchived ? (
-            <button type="button" className="vrms-btn-secondary" onClick={onArchive}>
-              <VmpIcon name="archive" /> Archive
-            </button>
+            <Button icon={<VmpIcon name="archive" />} onClick={onArchive}>
+              Archive
+            </Button>
           ) : null}
           {canArchive && record.isArchived ? (
-            <button type="button" className="vrms-btn-secondary" onClick={onRestore}>
-              <VmpIcon name="restore" /> Restore
-            </button>
+            <Button icon={<VmpIcon name="restore" />} onClick={onRestore}>
+              Restore
+            </Button>
           ) : null}
-          <button type="button" className="vrms-btn-secondary" onClick={onClose}>
-            Close
-          </button>
-        </div>
-      </header>
-      <div className="vmp-tabs" role="tablist">
-        {drawerTabs.map((item) => (
-          <button
-            key={item}
-            type="button"
-            role="tab"
-            className={tab === item ? 'active' : ''}
-            aria-selected={tab === item}
-            onClick={() => setTab(item)}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
-      <DrawerBody record={record} tab={tab} />
-    </aside>
+          <Button onClick={onClose}>Close</Button>
+        </Space>
+      }
+    >
+      <Tabs
+        activeKey={tab}
+        onChange={(key) => setTab(key as DrawerTab)}
+        items={drawerTabs.map((item) => ({
+          key: item,
+          label: item,
+          children: <DrawerBody record={record} tab={item} />,
+        }))}
+      />
+    </Drawer>
   )
 }

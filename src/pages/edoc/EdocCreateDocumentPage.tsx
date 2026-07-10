@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { Button, Steps } from 'antd'
 
 import { EdocError, EdocPage } from '../../components/edoc/EdocComponents'
 import { DateInput } from '../../components/forms/FormControls'
@@ -174,17 +175,12 @@ export function EdocCreateDocumentPage() {
   return (
     <EdocPage title="Create Document" description="Prepare metadata, upload a private PDF, configure routing, place fields, and send.">
       <section className="panel">
-        <div className="stepper edoc-stepper">
-          {wizardSteps.map((label, index) => (
-            <div key={label} className={index < activeStep ? 'step approved' : index === activeStep ? 'step in-progress' : 'step'}>
-              <span className="step-marker">{index + 1}</span>
-              <div>
-                <strong>{label}</strong>
-                <small>{index < activeStep ? 'Complete' : index === activeStep ? 'Current' : 'Pending'}</small>
-              </div>
-            </div>
-          ))}
-        </div>
+        <Steps
+          className="edoc-stepper"
+          current={activeStep}
+          items={wizardSteps.map((label) => ({ title: label }))}
+          style={{ marginBottom: 20 }}
+        />
         {error ? <EdocError message={error} /> : null}
 
         {created ? (
@@ -192,8 +188,8 @@ export function EdocCreateDocumentPage() {
             <h2>Route sent</h2>
             <p>The eDoc route was created and the first eligible assignment group was activated.</p>
             <div className="button-row">
-              <Link className="button" to="/edoc/inbox">Open Inbox</Link>
-              <Link className="button primary" to="/edoc/documents">View Documents</Link>
+              <Link to="/edoc/inbox"><Button>Open Inbox</Button></Link>
+              <Link to="/edoc/documents"><Button type="primary">View Documents</Button></Link>
             </div>
           </div>
         ) : null}

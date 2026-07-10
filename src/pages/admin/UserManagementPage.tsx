@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Button, Spin } from 'antd'
 import {
   Info,
   KeyRound,
@@ -21,6 +22,7 @@ import { getRoleDefaultPermissions, normalizeUserPermissions, permissionsAreEqua
 import { userManagementService } from '../../services/userManagementService'
 import type { UserRole } from '../../types/auth'
 import type { ManagedUser, UserPermissions } from '../../types/permissions'
+import { iconSize, iconStroke } from '../../theme/iconSizes'
 import './user-management.css'
 
 const roleOptions: UserRole[] = ['Admin', 'Manager', 'Editor', 'Viewer']
@@ -145,13 +147,11 @@ export function UserManagementPage() {
   if (loading) {
     return (
       <div className="page">
-        <div
-          className="flex min-h-[240px] flex-col items-center justify-center gap-3 text-[var(--muted)]"
-          role="status"
-          aria-live="polite"
-        >
-          <Loader2 className="size-6 animate-spin text-[var(--teal)]" aria-hidden="true" />
-          <span>Loading users…</span>
+        <div className="flex min-h-[240px] flex-col items-center justify-center gap-3" role="status" aria-live="polite">
+          <Spin
+            tip="Loading users…"
+            indicator={<Loader2 className="anticon-spin" size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />}
+          />
         </div>
       </div>
     )
@@ -165,28 +165,22 @@ export function UserManagementPage() {
       actions={
         selectedUser ? (
           <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              className="vrms-btn-secondary inline-flex items-center gap-2"
+            <Button
               disabled={!isDirty || saving}
               onClick={handleReset}
+              icon={<RotateCcw size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
             >
-              <RotateCcw className="size-4 shrink-0" aria-hidden="true" />
               Reset
-            </button>
-            <button
-              type="button"
-              className="vrms-btn-primary inline-flex items-center gap-2"
+            </Button>
+            <Button
+              type="primary"
               disabled={!isDirty || saving}
+              loading={saving}
               onClick={() => void handleSave()}
+              icon={!saving ? <Save size={iconSize.sm} strokeWidth={iconStroke} aria-hidden /> : undefined}
             >
-              {saving ? (
-                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
-              ) : (
-                <Save className="size-4 shrink-0" aria-hidden="true" />
-              )}
               {saving ? 'Saving…' : 'Save changes'}
-            </button>
+            </Button>
           </div>
         ) : null
       }

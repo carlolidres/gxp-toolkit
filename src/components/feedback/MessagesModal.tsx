@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Button } from 'antd'
 import {
   Bug,
   Check,
@@ -110,12 +111,15 @@ export function MessagesModal({
       onClose={onClose}
       footer={
         <>
-          <button type="button" className="button secondary" onClick={onClose}>
-            Close
-          </button>
-          <button type="button" className="button" disabled={submitting || !content.trim()} onClick={() => void handleSubmit()}>
+          <Button onClick={onClose}>Close</Button>
+          <Button
+            type="primary"
+            disabled={submitting || !content.trim()}
+            loading={submitting}
+            onClick={() => void handleSubmit()}
+          >
             {submitting ? 'Sending…' : 'Send message'}
-          </button>
+          </Button>
         </>
       }
     >
