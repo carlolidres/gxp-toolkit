@@ -61,6 +61,7 @@ export function ApqrFormPage() {
 
   const [department, setDepartment] = useState('')
   const [stabStatus, setStabStatus] = useState<StabilityTabulationStatus | ''>('')
+  const [stabStatusDate, setStabStatusDate] = useState('')
   const [noStabJustification, setNoStabJustification] = useState('')
   const [reportStatus, setReportStatus] = useState('')
   const [sentBy, setSentBy] = useState('')
@@ -150,6 +151,7 @@ export function ApqrFormPage() {
     const r = data.record
     setDepartment(r.department ?? '')
     setStabStatus(r.stability_tabulation_status ?? '')
+    setStabStatusDate(r.stability_tabulation_status_date ?? '')
     setNoStabJustification(r.no_ongoing_stability_justification ?? '')
     setReportStatus(r.apqr_report_status ?? '')
     setSentBy(r.sent_by ?? user?.name ?? '')
@@ -204,6 +206,7 @@ export function ApqrFormPage() {
       await saveRecord(apqrId, {
         department: department || null,
         stability_tabulation_status: stabStatus || null,
+        stability_tabulation_status_date: stabStatusDate || null,
         no_ongoing_stability_justification: noStabJustification || null,
         apqr_report_status: reportStatus || null,
         sent_by: sentBy || null,
@@ -436,7 +439,13 @@ export function ApqrFormPage() {
                 <select
                   value={stabStatus}
                   disabled={!canEdit}
-                  onChange={(e) => setStabStatus(e.target.value as StabilityTabulationStatus)}
+                  onChange={(e) => {
+                    const next = e.target.value as StabilityTabulationStatus
+                    setStabStatus(next)
+                    if (next && !stabStatusDate) {
+                      setStabStatusDate(new Date().toISOString().slice(0, 10))
+                    }
+                  }}
                 >
                   <option value="">Select…</option>
                   {STAB_STATUSES.map((s) => (
@@ -447,13 +456,10 @@ export function ApqrFormPage() {
                 </select>
               </Field>
               <Field label="Tabulation Status Date">
-                <input
-                  type="text"
-                  className="apqr-form-readonly"
-                  readOnly
-                  value={formatApqrDate(data.record?.stability_tabulation_status_date)}
-                  aria-readonly
-                  tabIndex={-1}
+                <AppDateInput
+                  value={stabStatusDate}
+                  disabled={!canEdit}
+                  onChange={(e) => setStabStatusDate(e.target.value)}
                 />
               </Field>
               <Field label="APQR Report Status" required>

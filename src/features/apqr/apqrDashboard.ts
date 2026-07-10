@@ -59,6 +59,26 @@ export function apqrCycleYearFromCoverage(endDate: string): number {
   return Number(endDate.slice(0, 4))
 }
 
+/** Scheduler cycle year = calendar year of the Commitment Date. */
+export function apqrCycleYearFromCommitment(commitmentDate: string | null | undefined): number | null {
+  if (!commitmentDate?.trim()) return null
+  const year = Number(commitmentDate.slice(0, 4))
+  return Number.isFinite(year) && year >= 2000 && year <= 2100 ? year : null
+}
+
+export function schedulerCycleYearOptions(
+  rows: Array<{ commitment_schedule?: string | null }>,
+  today = new Date(),
+): number[] {
+  const current = defaultApqrCycleYear(today)
+  const years = new Set<number>([current - 1, current, current + 1, current + 2])
+  for (const row of rows) {
+    const year = apqrCycleYearFromCommitment(row.commitment_schedule)
+    if (year != null) years.add(year)
+  }
+  return [...years].sort((a, b) => b - a)
+}
+
 /** Standard Nov 1 – Oct 31 review coverage for the given cycle year. */
 export function isStandardApqrCycleCoverage(start: string, end: string): boolean {
   const cycleYear = apqrCycleYearFromCoverage(end)

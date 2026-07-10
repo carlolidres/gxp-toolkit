@@ -1,4 +1,4 @@
-import { defaultApqrCycleYear, defaultApqrReviewCycle } from './apqrDashboard'
+import { defaultApqrCycleYear } from './apqrDashboard'
 import {
   addCalendarDays,
   defaultApqrGenerationDate,
@@ -20,6 +20,8 @@ export type ScheduleRowDraft = ApqrSchedulerRowInput & {
   id?: string
   apqr_id?: string
   client_name?: string
+  /** When true, calculated dates are user-entered and required. */
+  manual_calculated_dates?: boolean
 }
 
 export const SCHEDULE_STATUS_UI: Array<{ label: ApqrScheduleStatusLabel; value: CommitmentScheduleStatus }> = [
@@ -39,6 +41,13 @@ export function scheduleStatusLabel(status: CommitmentScheduleStatus): ApqrSched
 }
 
 export function computedScheduleDates(reviewCoverageEnd: string) {
+  if (!reviewCoverageEnd.trim()) {
+    return {
+      stability_pull_out_date: '',
+      apqr_generation_date: '',
+      commitment_schedule: '',
+    }
+  }
   return {
     stability_pull_out_date: defaultStabilityPullOutDate(reviewCoverageEnd),
     apqr_generation_date: defaultApqrGenerationDate(reviewCoverageEnd),
@@ -47,19 +56,20 @@ export function computedScheduleDates(reviewCoverageEnd: string) {
 }
 
 export function emptyScheduleRow(clientName = ''): ScheduleRowDraft {
-  const cycle = defaultApqrReviewCycle()
-  const dates = computedScheduleDates(cycle.end)
   return {
     client_name: clientName,
     product_name: '',
     product_code: '',
     product_status: 'Active',
-    review_coverage_start: cycle.start,
-    review_coverage_end: cycle.end,
-    ...dates,
+    review_coverage_start: '',
+    review_coverage_end: '',
+    stability_pull_out_date: '',
+    apqr_generation_date: '',
+    commitment_schedule: '',
     commitment_schedule_status: 'Planned',
     schedule_status_date: null,
     scheduler_remarks: [''],
+    manual_calculated_dates: false,
   }
 }
 
@@ -83,6 +93,11 @@ export function serializeSchedulerRemarks(remarks: string[] | undefined): string
 
 export function rowFromSchedulerEntry(entry: ApqrSchedulerEntry, clientName = ''): ScheduleRowDraft {
   const dates = computedScheduleDates(entry.review_coverage_end)
+  const manual = Boolean(
+    entry.commitment_schedule_adjustment_reason ||
+      entry.stability_pull_out_adjustment_reason ||
+      entry.apqr_generation_adjustment_reason,
+  )
   return {
     id: entry.id,
     apqr_id: entry.apqr_id,
@@ -106,6 +121,7 @@ export function rowFromSchedulerEntry(entry: ApqrSchedulerEntry, clientName = ''
     schedule_status_date: entry.schedule_status_date,
     stability_pull_out_adjustment_reason: entry.stability_pull_out_adjustment_reason ?? undefined,
     scheduler_remarks: parseSchedulerRemarks(entry.scheduler_remarks),
+    manual_calculated_dates: manual,
   }
 }
 
@@ -136,6 +152,7 @@ export function generateNextApqrCycle(row: ScheduleRowDraft): ScheduleRowDraft {
 }
 
 export function reviewCoverageNeedsReason(start: string, end: string): boolean {
+  if (!start.trim() || !end.trim()) return false
   return !isStandardOneYearCoverage(start, end)
 }
 

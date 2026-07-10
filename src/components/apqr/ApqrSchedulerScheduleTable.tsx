@@ -33,20 +33,16 @@ const COLUMN_ORDER: ColumnKey[] = Object.keys(COLUMN_LABELS) as ColumnKey[]
 
 export function ApqrSchedulerScheduleTable({
   rows,
+  filteredRows,
+  search,
+  onSearchChange,
   clientName,
   cycleYear,
-  pagedRows,
-  currentPage,
-  totalPages,
-  pageStart,
-  pageEnd,
-  totalRows,
-  pageSize,
+  cycleYearOptions,
+  onCycleYearChange,
   canExport,
   canEdit,
   busy,
-  onPageChange,
-  onPageSizeChange,
   onExport,
   onSaveAll,
   onView,
@@ -56,20 +52,16 @@ export function ApqrSchedulerScheduleTable({
   onMarkEol,
 }: {
   rows: ScheduleRowDraft[]
+  filteredRows: ScheduleRowDraft[]
+  search: string
+  onSearchChange: (value: string) => void
   clientName: string
   cycleYear: number
-  pagedRows: ScheduleRowDraft[]
-  currentPage: number
-  totalPages: number
-  pageStart: number
-  pageEnd: number
-  totalRows: number
-  pageSize: number
+  cycleYearOptions: number[]
+  onCycleYearChange: (year: number) => void
   canExport: boolean
   canEdit: boolean
   busy: boolean
-  onPageChange: (page: number) => void
-  onPageSizeChange: (size: number) => void
   onExport: () => void
   onSaveAll: () => void
   onView: (row: ScheduleRowDraft) => void
@@ -81,15 +73,40 @@ export function ApqrSchedulerScheduleTable({
   const { getColumnStyle, onResizeHandleMouseDown } = useColumnResize<ColumnKey>(
     'apqr-scheduler-column-widths',
   )
+  const totalRows = filteredRows.length
 
   return (
     <section className="panel apqr-scheduler-table-panel" aria-labelledby="apqr-scheduler-table-title">
       <div className="panel-heading apqr-scheduler-heading">
         <div className="apqr-scheduler-table-titles">
           <h2 id="apqr-scheduler-table-title">APQR Schedule for {clientName}</h2>
-          <p className="apqr-scheduler-cycle-year">APQR Cycle Year: {cycleYear}</p>
+          <label className="apqr-scheduler-cycle-year" htmlFor="apqr-scheduler-cycle-year">
+            <span>APQR Cycle Year</span>
+            <select
+              id="apqr-scheduler-cycle-year"
+              value={cycleYear}
+              aria-label="Filter by APQR cycle year from commitment date"
+              onChange={(e) => onCycleYearChange(Number(e.target.value))}
+            >
+              {cycleYearOptions.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         <div className="apqr-table-toolbar">
+          <label className="apqr-search-field">
+            <ApqrIcon name="search" />
+            <input
+              type="search"
+              value={search}
+              placeholder="Search product, code, status…"
+              aria-label="Filter APQR schedule entries"
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
+          </label>
           {canEdit && rows.length > 0 ? (
             <button type="button" className="button primary" disabled={busy} onClick={onSaveAll}>
               <ApqrIcon name="save" />
@@ -97,7 +114,7 @@ export function ApqrSchedulerScheduleTable({
             </button>
           ) : null}
           {canExport ? (
-            <button type="button" className="button secondary" disabled={!rows.length} onClick={onExport}>
+            <button type="button" className="button secondary" disabled={!totalRows} onClick={onExport}>
               <ApqrIcon name="export" />
               Export CSV
             </button>
@@ -126,7 +143,7 @@ export function ApqrSchedulerScheduleTable({
             </tr>
           </thead>
           <tbody>
-            {pagedRows.map((row) => {
+            {filteredRows.map((row) => {
               const rowKey = row.id ?? `${row.product_code}-${row.review_coverage_start}`
               const generationDate = row.apqr_generation_date ?? ''
               const commitmentDate = row.commitment_schedule ?? ''
@@ -232,66 +249,18 @@ export function ApqrSchedulerScheduleTable({
           <p className="messages-empty apqr-scheduler-empty">
             No APQR schedule entries yet. Complete the form above and click Submit.
           </p>
+        ) : totalRows === 0 ? (
+          <p className="messages-empty apqr-scheduler-empty">
+            No entries for cycle year {cycleYear}
+            {search.trim() ? ' match the current search' : ''}. Try another cycle year
+            {search.trim() ? ' or clear the search' : ''}.
+          </p>
         ) : null}
       </div>
 
       {totalRows > 0 ? (
-        <div className="apqr-scheduler-pagination">
-          <span>
-            {pageStart} to {pageEnd} of {totalRows} entries
-          </span>
-          <label>
-            per page
-            <select
-              value={pageSize}
-              onChange={(e) => {
-                onPageSizeChange(Number(e.target.value))
-                onPageChange(1)
-              }}
-            >
-              {[6, 10, 25, 50].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="apqr-pagination-buttons">
-            <button
-              type="button"
-              className="button secondary"
-              disabled={currentPage <= 1}
-              onClick={() => onPageChange(currentPage - 1)}
-            >
-              Prev
-            </button>
-            {Array.from({ length: totalPages }, (_, index) => index + 1)
-              .filter((n) => n === 1 || n === totalPages || Math.abs(n - currentPage) <= 1)
-              .map((n, index, list) => {
-                const prev = list[index - 1]
-                const gap = prev != null && n - prev > 1
-                return (
-                  <span key={n} className="apqr-pagination-number-wrap">
-                    {gap ? <span className="apqr-pagination-ellipsis">…</span> : null}
-                    <button
-                      type="button"
-                      className={`button secondary${n === currentPage ? ' is-active' : ''}`}
-                      onClick={() => onPageChange(n)}
-                    >
-                      {n}
-                    </button>
-                  </span>
-                )
-              })}
-            <button
-              type="button"
-              className="button secondary"
-              disabled={currentPage >= totalPages}
-              onClick={() => onPageChange(currentPage + 1)}
-            >
-              Next
-            </button>
-          </div>
+        <div className="apqr-scheduler-table-footer" aria-live="polite">
+          {totalRows} {totalRows === 1 ? 'entry' : 'entries'} for cycle year {cycleYear}
         </div>
       ) : null}
     </section>

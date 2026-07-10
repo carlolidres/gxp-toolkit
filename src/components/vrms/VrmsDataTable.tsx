@@ -1,8 +1,8 @@
-import { Button, Table, Tag } from 'antd'
+import { Button, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 
 import type { RoutingDocument } from '../../types/vrms'
-import { getVrmsStatusStyle } from '../../lib/vrmsStatus'
+import { VrmsStatusBadge } from './VrmsStatusBadge'
 
 type ColumnKey = keyof RoutingDocument
 
@@ -17,6 +17,7 @@ export function VrmsDataTable({ rows, columns, onTrackerClick }: VrmsDataTablePr
     key: column.key,
     title: column.label,
     dataIndex: column.key,
+    ...(column.key === 'status' ? { width: 72, align: 'center' as const } : {}),
     render: (_value, row) => {
       if (column.key === 'routingTracker' && onTrackerClick) {
         return (
@@ -44,21 +45,5 @@ export function VrmsDataTable({ rows, columns, onTrackerClick }: VrmsDataTablePr
         locale={{ emptyText: 'No records found.' }}
       />
     </div>
-  )
-}
-
-function VrmsStatusBadge({ status }: { status: string }) {
-  const style = getVrmsStatusStyle(status)
-  return (
-    <Tag
-      className="vrms-status-pill"
-      style={{
-        color: style.text,
-        background: style.background,
-        borderColor: style.border,
-      }}
-    >
-      {status || 'Blank'}
-    </Tag>
   )
 }

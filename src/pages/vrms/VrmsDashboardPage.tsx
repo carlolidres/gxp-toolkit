@@ -7,8 +7,6 @@ import {
   ChevronRight,
   Clock3,
   FileText,
-  MoreVertical,
-  RefreshCw,
   ScanLine,
   Send,
   Share2,
@@ -83,8 +81,6 @@ const cardIcons: Record<string, LucideIcon> = {
   alert: AlertTriangle,
   clock: Clock3,
   share: Share2,
-  refresh: RefreshCw,
-  more: MoreVertical,
   chevron: ChevronRight,
 }
 
@@ -171,7 +167,6 @@ function DashboardDocumentCard({
   actionLabel,
   actionPath,
   onTrackerClick,
-  onRefresh,
 }: {
   title: string
   icon: 'clock' | 'share'
@@ -180,7 +175,6 @@ function DashboardDocumentCard({
   actionLabel: string
   actionPath: string
   onTrackerClick: (tracker: string) => void
-  onRefresh: () => void
 }) {
   const navigate = useNavigate()
   const previewRows = rows.slice(0, 10)
@@ -194,11 +188,6 @@ function DashboardDocumentCard({
             <CardIcon name={icon} />
           </span>
           <h2>{title}</h2>
-        </div>
-        <div className="vrms-dashboard-doc-actions" aria-label={`${title} actions`}>
-          <button type="button" aria-label={`Refresh ${title}`} onClick={onRefresh}>
-            <CardIcon name="refresh" />
-          </button>
         </div>
       </div>
       <div className="vrms-dashboard-doc-table">
@@ -223,7 +212,7 @@ function DashboardDocumentCard({
 }
 
 export function VrmsDashboardPage() {
-  const { appData, loading, refresh } = useVrmsApp()
+  const { appData, loading } = useVrmsApp()
   const { user } = useAuth()
   const navigate = useNavigate()
   const distributionRef = useRef<HTMLElement>(null)
@@ -366,7 +355,6 @@ export function VrmsDashboardPage() {
           actionLabel="View all updated"
           actionPath="/database"
           onTrackerClick={(tracker) => navigate(`/routing?tracker=${encodeURIComponent(tracker)}`)}
-          onRefresh={() => void refresh()}
         />
         <DashboardDocumentCard
           title="Active routing documents"
@@ -376,7 +364,6 @@ export function VrmsDashboardPage() {
           actionLabel="View all routing"
           actionPath="/database?status=Routing"
           onTrackerClick={(tracker) => navigate(`/routing?tracker=${encodeURIComponent(tracker)}`)}
-          onRefresh={() => void refresh()}
         />
       </div>
     </VrmsPage>

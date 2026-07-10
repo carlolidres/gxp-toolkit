@@ -101,7 +101,7 @@ export function VrmsDatabasePage() {
     <VrmsPage title="Database" description={`${appData?.documents.length ?? 0} routing records`}>
       <section className="vrms-panel vrms-database-panel">
         <div className="vrms-toolbar">
-          <div>
+          <div className="vrms-toolbar-search">
             <label>Global search</label>
             <Input placeholder="Search all fields…" value={search} onChange={(event) => updateFilter('search', event.target.value)} />
           </div>

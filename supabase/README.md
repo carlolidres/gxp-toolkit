@@ -58,6 +58,8 @@ supabase secrets set PASSWORD_RESET_FROM_EMAIL="GxP Toolkit <carlolidres@gmail.c
 
 `DEFAULT_RESET_PASSWORD` and `RESEND_API_KEY` are no longer used by this flow.
 
+Reusable agent prompt for new projects: [`project-templates/gmail-forgot-password-prompt.md`](../project-templates/gmail-forgot-password-prompt.md).
+
 Related migration: `20260709102630_admin_approved_password_reset.sql` (`profiles.password_reset_requested_at`). Earlier migrations still provide `must_change_password`, `check_temporary_password_required(email)`, and `clear_must_change_password()`.
 
 ## Security migrations (2026-06-26)

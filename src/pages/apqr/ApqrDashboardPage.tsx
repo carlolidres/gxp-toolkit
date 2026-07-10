@@ -515,9 +515,9 @@ function TriageDonutChart({ data, total }: { data: ReturnType<typeof buildTriage
       <div className="chart apqr-donut-chart">
         <ResponsiveContainer>
           <PieChart>
-            <Pie data={data} dataKey="value" nameKey="name" innerRadius={58} outerRadius={82} paddingAngle={2}>
+            <Pie data={data} dataKey="value" nameKey="name" innerRadius={58} outerRadius={82} paddingAngle={2} stroke="none">
               {data.map((item) => (
-                <Cell key={item.name} fill={item.color} />
+                <Cell key={item.name} fill={item.color} stroke="none" />
               ))}
             </Pie>
             <Tooltip contentStyle={{ background: palette.tooltipBg, border: `1px solid ${palette.tooltipBorder}` }} />

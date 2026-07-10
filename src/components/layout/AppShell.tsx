@@ -137,21 +137,26 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
+      <Button
+        type="text"
+        className={[
+          'sidebar-expand-btn',
+          'sidebar-expand-btn-glow',
+          isCollapsed ? 'is-visible' : 'is-hidden',
+        ].join(' ')}
+        onClick={() => setIsCollapsed(false)}
+        aria-label="Open sidebar"
+        aria-hidden={!isCollapsed}
+        tabIndex={isCollapsed ? 0 : -1}
+        icon={<PanelLeft size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+      />
+
       <div className={mainClass}>
         <header className="topbar">
           <div className="topbar-leading">
-            {isCollapsed && (
-              <Button
-                type="text"
-                className="sidebar-expand-btn sidebar-expand-btn-glow"
-                onClick={() => setIsCollapsed(false)}
-                aria-label="Open sidebar"
-                icon={<PanelLeft size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />}
-              />
-            )}
             <Button
               type="text"
-              className="menu-button sidebar-expand-btn-glow"
+              className="menu-button"
               onClick={() => setIsMobileOpen((value) => !value)}
               aria-label="Toggle navigation"
               icon={<PanelLeft size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />}

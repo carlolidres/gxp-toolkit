@@ -1,12 +1,28 @@
 # Current Handoff
 
-Last Updated: `2026-07-09`
-Version: `v33`
+Last Updated: `2026-07-10`
+Version: `v34`
 Branch: `main` / `master`
-Commit: `ac9f9d6` — v33: admin-approved password reset and auth UI refresh
-Deployment: `DEPLOYED` — GitHub Pages run [29015330584](https://github.com/carlolidres/gxp-toolkit/actions/runs/29015330584) (2026-07-09)
+Commit: `(pending)` — v34: Ant Design migration, APQR scheduler UX, atmospheric theme
+Deployment: `PENDING` — push to `master` triggers GitHub Pages
 
 ## Current Status
+
+**v34 release** — Ant Design 6 UI migration; APQR Scheduler cycle-year filter, search, manual dates, full-cycle table; editable Tabulation Status Date; blank coverage defaults; atmospheric light/dark backgrounds. App version history set to `v34`.
+
+**APQR Scheduler table loads all cycle rows** — Removed per-page pagination; table shows every entry for the selected APQR Cycle Year (scrollable). Footer shows entry count only.
+
+**APQR Form Tabulation Status Date** — Field is editable via date picker; value persists on save. Changing Stability Tabulation Status auto-fills today only when the date is empty.
+
+**APQR Scheduler cycle year filter** — Interactive APQR Cycle Year select in schedule table heading. Filters rows by Commitment Date calendar year (e.g. commitment in 2027 → cycle 2027). Defaults to current calendar year on load / client change.
+
+**APQR Scheduler manual date entry** — Checkbox on Calculated dates (upper right). Unchecked (default): dates blank until coverage end, then auto-calculate and read-only. Checked: editable; Submit requires all three dates. Existing override rows load with checkbox on.
+
+**APQR Scheduler table search** — Global filter search bar in schedule table heading; filters product/code/status/coverage/dates/APQR ID. Export uses filtered rows; Save All still saves all. Empty-state when no matches.
+
+**APQR Scheduler coverage defaults** — Review Coverage From/To start blank on new/cleared forms; both required before Submit. Calculated dates stay blank until coverage end is set. Guards added for empty coverage in `computedScheduleDates` / `reviewCoverageNeedsReason`.
+
+**Atmospheric theme backgrounds** — Light and dark modes use a subtle animated body-level atmosphere: morning daylight + soft cloud washes in light; clean night + gentle moonlight in dark. Pure CSS (`body::before` / `body::after`); shell/main/login-panel transparent so atmosphere shows; cards/sidebar stay opaque. Respects `prefers-reduced-motion`. Ant Design `appBg` tokens aligned.
 
 **v33 release** — Admin-approved password reset (forgot → admin Messages notify → Reset Password → emailed temp password), 24h purge of acknowledged Messages, auth UI refresh (Remember me removed), User Management / VMP / Messages modernization. App version history set to `v33`.
 
@@ -55,20 +71,25 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 
 | Check | Status | Result |
 |---|---|---|
-| `npm run build` | `PASSED` | 2026-07-09 — v33.7 ack purge |
-| `npm run test` (narrow) | `PASSED` | mockFeedbackService.purge + passwordReset (2/2) |
+| `npm run test` (apqrDashboard) | `PASSED` | 2026-07-10 — commitment-based cycle year helpers (8/8) |
+| `npm run type-check` | `PASSED` | 2026-07-10 — manual date entry checkbox + scheduler search + blank coverage |
+| `npm run build` | `PASSED` | 2026-07-10 — atmospheric backgrounds |
+| Browser light/dark atmosphere | `PASSED` | Login + VRMS dashboard; morning washes + moonlight layers confirmed |
+| `npm run test` (narrow) | `PASSED` | mockFeedbackService.purge + passwordReset (2/2) — prior session |
 | Supabase migration `feedback_ack_purge_24h` | `PASSED` | Applied via MCP on `ydndeoacgfnxjqwwnswh` |
 | `supabase db push` | `BLOCKED` | Remote versions `20260708123542`, `20260709103218` missing locally — repair/pull needed |
 | `npm run db:map` | `PASSED` | 30 tables (prior session) |
 | `npm run verify:schema` | `FAILED` | Pre-existing mock/seed ID mismatch (users/documents); unrelated |
 | Edge functions `forgot-password`, `admin-reset-password` | `DEPLOYED` | Linked project; admin-reset uses Gmail SMTP |
-| `npm run test` full | `NOT_RUN` | Narrow tests only this session |
+| `npm run test` full | `NOT_RUN` | Not required for CSS atmosphere change |
 
 ## Next Action
 
-1. Browser smoke: Forgot password → admin Messages unread → open/ack → confirm purge after 24h (or force `status_updated_at` back for a quick check).
-2. Set Gmail SMTP secrets if not already: `GMAIL_USER`, `GMAIL_APP_PASSWORD`, optional `PASSWORD_RESET_FROM_EMAIL`.
-3. Repair local/remote migration history (`20260708123542`, `20260709103218`), then deploy frontend.
+1. Owner visual check: APQR Scheduler — manual date checkbox; blank coverage required; table search.
+2. Owner visual check: toggle light/dark on dashboard and login; adjust glow intensity if desired.
+3. Commit atmospheric CSS + scheduler changes when ready; then frontend deploy.
+4. Repair local/remote migration history (`20260708123542`, `20260709103218`) when doing Supabase work.
+
 
 ## eDoc Rollout Progress
 

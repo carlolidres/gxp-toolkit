@@ -6,10 +6,20 @@ export type AppVersionEntry = {
 
 export const APP_DEVELOPER = 'Carlo M. Lidres'
 
-export const APP_CURRENT_VERSION = 'v33'
+export const APP_CURRENT_VERSION = 'v34'
 
 /** Curated release notes — newest first. */
 export const APP_VERSION_HISTORY: AppVersionEntry[] = [
+  {
+    version: 'v34',
+    releaseDate: '2026-07-10',
+    changes: [
+      'Ant Design 6 UI migration across shell, auth, VRMS, VMP, APQR, and eDoc',
+      'APQR Scheduler — cycle-year filter, table search, manual date entry, full-cycle table load',
+      'APQR Form — editable Tabulation Status Date; blank coverage defaults on new schedules',
+      'Atmospheric light/dark theme backgrounds with reduced-motion support',
+    ],
+  },
   {
     version: 'v33',
     releaseDate: '2026-07-09',

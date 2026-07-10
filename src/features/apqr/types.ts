@@ -212,6 +212,7 @@ export interface ApqrSchedulerRowInput {
 export interface ApqrRecordInput {
   department?: string | null
   stability_tabulation_status?: StabilityTabulationStatus | null
+  stability_tabulation_status_date?: string | null
   no_ongoing_stability_justification?: string | null
   billing_reference_number?: string | null
   apqr_report_status?: ApqrReportStatus | string | null

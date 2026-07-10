@@ -24,16 +24,21 @@ import { logApqrAudit, buildFieldDescription } from '../../features/apqr/apqrAud
 import {
   appendRemark,
   computedScheduleDates,
-  currentCycleYear,
   emptyScheduleRow,
   formatOverrideRemark,
   generateNextApqrCycle,
   reviewCoverageNeedsReason,
   rowFromSchedulerEntry,
+  scheduleStatusLabel,
   stabilityTabulationConflict,
   type ScheduleRowDraft,
 } from '../../features/apqr/schedulerForm'
 import { saveSchedulerRows } from '../../features/apqr/apqrService'
+import {
+  apqrCycleYearFromCommitment,
+  defaultApqrCycleYear,
+  schedulerCycleYearOptions,
+} from '../../features/apqr/apqrDashboard'
 import { useApqrClients, useApqrScheduler } from '../../features/apqr/useApqrData'
 
 const SCHEDULER_PAGE_PROPS = {
@@ -70,8 +75,8 @@ export function ApqrSchedulerPage() {
   const [clientPickerOpen, setClientPickerOpen] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
   const [clientHighlight, setClientHighlight] = useState(0)
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(6)
+  const [tableSearch, setTableSearch] = useState('')
+  const [cycleYear, setCycleYear] = useState(() => defaultApqrCycleYear())
   const pickerRef = useRef<HTMLDivElement | null>(null)
   const clientSearchRef = useRef<HTMLInputElement | null>(null)
   const clientListId = useId()
@@ -99,16 +104,33 @@ export function ApqrSchedulerPage() {
     return [...names].sort((a, b) => a.localeCompare(b))
   }, [rows])
 
-  const totalRows = rows.length
-  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize))
-  const currentPage = Math.min(page, totalPages)
-  const pagedRows = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return rows.slice(start, start + pageSize)
-  }, [rows, currentPage, pageSize])
+  const cycleYearOptions = useMemo(() => {
+    const options = schedulerCycleYearOptions(rows)
+    return options.includes(cycleYear) ? options : [...options, cycleYear].sort((a, b) => b - a)
+  }, [rows, cycleYear])
 
-  const pageStart = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1
-  const pageEnd = Math.min(currentPage * pageSize, totalRows)
+  const filteredRows = useMemo(() => {
+    const byCycle = rows.filter(
+      (row) => apqrCycleYearFromCommitment(row.commitment_schedule) === cycleYear,
+    )
+    const q = tableSearch.trim().toLowerCase()
+    if (!q) return byCycle
+    return byCycle.filter((row) => {
+      const status = scheduleStatusLabel(row.commitment_schedule_status).toLowerCase()
+      const coverage = `${row.review_coverage_start} ${row.review_coverage_end}`.toLowerCase()
+      return (
+        row.product_name.toLowerCase().includes(q) ||
+        row.product_code.toLowerCase().includes(q) ||
+        (row.apqr_id ?? '').toLowerCase().includes(q) ||
+        (row.product_status ?? '').toLowerCase().includes(q) ||
+        status.includes(q) ||
+        coverage.includes(q) ||
+        (row.commitment_schedule ?? '').toLowerCase().includes(q) ||
+        row.stability_pull_out_date.toLowerCase().includes(q) ||
+        (row.apqr_generation_date ?? '').toLowerCase().includes(q)
+      )
+    })
+  }, [rows, tableSearch, cycleYear])
 
   useEffect(() => {
     const param = searchParams.get('client')
@@ -124,7 +146,6 @@ export function ApqrSchedulerPage() {
     const clientName = selectedClient?.client_name ?? ''
     setRows(scheduler.data.map((entry) => rowFromSchedulerEntry(entry, clientName)))
     setEditingKey(null)
-    setPage(1)
   }, [scheduler.data, selectedClient?.client_name])
 
   useEffect(() => {
@@ -163,6 +184,8 @@ export function ApqrSchedulerPage() {
     setClientId(id)
     setClientPickerOpen(false)
     setClientSearch('')
+    setTableSearch('')
+    setCycleYear(defaultApqrCycleYear())
     setForm(emptyScheduleRow(clients?.find((c) => c.id === id)?.client_name ?? ''))
     setEditingKey(null)
   }
@@ -200,6 +223,9 @@ export function ApqrSchedulerPage() {
     if (!draft.product_name.trim() || !draft.product_code.trim()) {
       return 'Product name and code are required.'
     }
+    if (!draft.review_coverage_start.trim() || !draft.review_coverage_end.trim()) {
+      return 'Review Coverage From and Review Coverage To are required.'
+    }
     if (draft.review_coverage_end < draft.review_coverage_start) {
       return 'Review coverage end date cannot be before the start date.'
     }
@@ -209,9 +235,23 @@ export function ApqrSchedulerPage() {
     ) {
       return 'A reason is required for non-standard review coverage.'
     }
+    if (draft.manual_calculated_dates) {
+      if (
+        !draft.commitment_schedule?.trim() ||
+        !draft.stability_pull_out_date.trim() ||
+        !draft.apqr_generation_date?.trim()
+      ) {
+        return 'Commitment Date, Stability Pull-Out Date, and APQR Generation Report Date must be set when manual date entry is enabled.'
+      }
+    }
     const dates = computedScheduleDates(draft.review_coverage_end)
-    const commitment = draft.commitment_schedule ?? dates.commitment_schedule
-    if (stabilityTabulationConflict(draft.stability_pull_out_date, commitment)) {
+    const commitment = draft.manual_calculated_dates
+      ? (draft.commitment_schedule ?? '')
+      : draft.commitment_schedule || dates.commitment_schedule
+    const stability = draft.manual_calculated_dates
+      ? draft.stability_pull_out_date
+      : draft.stability_pull_out_date || dates.stability_pull_out_date
+    if (stability && commitment && stabilityTabulationConflict(stability, commitment)) {
       return 'Stability tabulation completion exceeds commitment date. Adjust dates or add justification.'
     }
     return null
@@ -228,13 +268,33 @@ export function ApqrSchedulerPage() {
       return
     }
 
-    const submitted: ScheduleRowDraft = {
-      ...form,
-      product_name: form.product_name.trim(),
-      product_code: form.product_code.trim().toUpperCase(),
-      schedule_status_date: form.schedule_status_date ?? new Date().toISOString().slice(0, 10),
-      client_name: selectedClient?.client_name ?? form.client_name,
-    }
+    const autoDates = computedScheduleDates(form.review_coverage_end)
+    const submitted: ScheduleRowDraft = form.manual_calculated_dates
+      ? {
+          ...form,
+          product_name: form.product_name.trim(),
+          product_code: form.product_code.trim().toUpperCase(),
+          schedule_status_date: form.schedule_status_date ?? new Date().toISOString().slice(0, 10),
+          client_name: selectedClient?.client_name ?? form.client_name,
+          commitment_schedule_adjustment_reason:
+            form.commitment_schedule_adjustment_reason?.trim() || 'Manual date entry',
+          stability_pull_out_adjustment_reason:
+            form.stability_pull_out_adjustment_reason?.trim() || 'Manual date entry',
+          apqr_generation_adjustment_reason:
+            form.apqr_generation_adjustment_reason?.trim() || 'Manual date entry',
+        }
+      : {
+          ...form,
+          product_name: form.product_name.trim(),
+          product_code: form.product_code.trim().toUpperCase(),
+          schedule_status_date: form.schedule_status_date ?? new Date().toISOString().slice(0, 10),
+          client_name: selectedClient?.client_name ?? form.client_name,
+          ...autoDates,
+          commitment_schedule_adjustment_reason: undefined,
+          stability_pull_out_adjustment_reason: undefined,
+          apqr_generation_adjustment_reason: undefined,
+          manual_calculated_dates: false,
+        }
 
     const nextRows = editingKey
       ? rows.map((row, index) => (rowIdentity(row, index) === editingKey ? { ...submitted } : row))
@@ -243,9 +303,6 @@ export function ApqrSchedulerPage() {
     setBusy(true)
     try {
       await saveSchedulerRows(clientId, nextRows, nextRows.map((r) => r.id))
-      if (!editingKey) {
-        setPage(Math.max(1, Math.ceil(nextRows.length / pageSize)))
-      }
       await scheduler.reload()
       notify(editingKey ? 'Schedule entry updated.' : 'Schedule entry saved.')
       clearForm()
@@ -511,21 +568,17 @@ export function ApqrSchedulerPage() {
 
           <ApqrSchedulerScheduleTable
             rows={rows}
+            filteredRows={filteredRows}
+            search={tableSearch}
+            onSearchChange={setTableSearch}
             clientName={selectedClient.client_name}
-            cycleYear={currentCycleYear()}
-            pagedRows={pagedRows}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageStart={pageStart}
-            pageEnd={pageEnd}
-            totalRows={totalRows}
-            pageSize={pageSize}
+            cycleYear={cycleYear}
+            cycleYearOptions={cycleYearOptions}
+            onCycleYearChange={setCycleYear}
             canExport={canExport}
             canEdit={canMutate}
             busy={busy}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-            onExport={() => exportSchedulerScheduleCsv(rows, selectedClient.client_name)}
+            onExport={() => exportSchedulerScheduleCsv(filteredRows, selectedClient.client_name)}
             onSaveAll={() => void handleSaveAll()}
             onView={setViewRow}
             onLoad={(row) => loadIntoForm(row, null)}

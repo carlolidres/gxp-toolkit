@@ -81,14 +81,25 @@ export function ApqrSchedulerFormPanel({
   actorName: string
 }) {
   const productListId = useId()
+  const manualDatesId = useId()
+  const manualDates = Boolean(form.manual_calculated_dates)
   const systemDates = useMemo(
     () => computedScheduleDates(form.review_coverage_end),
     [form.review_coverage_end],
   )
-  const stabConflict = stabilityTabulationConflict(
-    form.stability_pull_out_date,
-    form.commitment_schedule ?? systemDates.commitment_schedule,
-  )
+  const displayCommitment = manualDates
+    ? (form.commitment_schedule ?? '')
+    : form.commitment_schedule || systemDates.commitment_schedule
+  const displayStability = manualDates
+    ? form.stability_pull_out_date
+    : form.stability_pull_out_date || systemDates.stability_pull_out_date
+  const displayGeneration = manualDates
+    ? (form.apqr_generation_date ?? '')
+    : form.apqr_generation_date || systemDates.apqr_generation_date
+  const stabConflict =
+    Boolean(displayStability) &&
+    Boolean(displayCommitment) &&
+    stabilityTabulationConflict(displayStability, displayCommitment)
   const remarks = form.scheduler_remarks?.length ? form.scheduler_remarks : ['']
   const coverageNeedsReason = reviewCoverageNeedsReason(
     form.review_coverage_start,
@@ -159,7 +170,33 @@ export function ApqrSchedulerFormPanel({
     })
   }
 
+  function handleManualDatesToggle(checked: boolean) {
+    if (!checked) {
+      const dates = computedScheduleDates(form.review_coverage_end)
+      onChange({
+        manual_calculated_dates: false,
+        stability_pull_out_date: dates.stability_pull_out_date,
+        commitment_schedule: dates.commitment_schedule,
+        apqr_generation_date: dates.apqr_generation_date,
+        stability_pull_out_adjustment_reason: undefined,
+        commitment_schedule_adjustment_reason: undefined,
+        apqr_generation_adjustment_reason: undefined,
+      })
+      return
+    }
+    onChange({
+      manual_calculated_dates: true,
+      commitment_schedule: displayCommitment,
+      stability_pull_out_date: displayStability,
+      apqr_generation_date: displayGeneration,
+    })
+  }
+
   function handleCoverageEndChange(nextEnd: string) {
+    if (manualDates) {
+      onChange({ review_coverage_end: nextEnd })
+      return
+    }
     applyCalculatedDates(nextEnd, true)
   }
 
@@ -176,7 +213,35 @@ export function ApqrSchedulerFormPanel({
     }
   }
 
+  function handleManualDateChange(field: AutoField, nextValue: string) {
+    const patch: Partial<ScheduleRowDraft> = { [field]: nextValue }
+    const systemValue = systemDates[field]
+    if (!nextValue || nextValue === systemValue) {
+      if (field === 'stability_pull_out_date') patch.stability_pull_out_adjustment_reason = undefined
+      if (field === 'commitment_schedule') patch.commitment_schedule_adjustment_reason = undefined
+      if (field === 'apqr_generation_date') patch.apqr_generation_adjustment_reason = undefined
+    } else {
+      if (field === 'stability_pull_out_date') {
+        patch.stability_pull_out_adjustment_reason =
+          form.stability_pull_out_adjustment_reason?.trim() || 'Manual date entry'
+      }
+      if (field === 'commitment_schedule') {
+        patch.commitment_schedule_adjustment_reason =
+          form.commitment_schedule_adjustment_reason?.trim() || 'Manual date entry'
+      }
+      if (field === 'apqr_generation_date') {
+        patch.apqr_generation_adjustment_reason =
+          form.apqr_generation_adjustment_reason?.trim() || 'Manual date entry'
+      }
+    }
+    onChange(patch)
+  }
+
   function handleAutoFieldChange(field: AutoField, nextValue: string) {
+    if (manualDates) {
+      handleManualDateChange(field, nextValue)
+      return
+    }
     const systemValue = systemDates[field]
     const patch = confirmOverride(field, nextValue, systemValue)
     if (patch) onChange(patch)
@@ -207,7 +272,7 @@ export function ApqrSchedulerFormPanel({
             APQR Schedule Form
           </h2>
           <p className="help-text">
-            Register product review coverage, commitment dates, and schedule status. Calculated dates remain editable with a documented reason.
+            Register product review coverage, commitment dates, and schedule status. Calculated dates auto-fill from coverage unless manual entry is enabled.
           </p>
         </div>
         <span
@@ -291,6 +356,8 @@ export function ApqrSchedulerFormPanel({
                 id="apqr-sched-coverage-start"
                 value={form.review_coverage_start}
                 disabled={!editable}
+                required
+                aria-required="true"
                 onChange={(e) => handleCoverageStartChange(e.target.value)}
               />
             </SchedulerFormField>
@@ -300,6 +367,8 @@ export function ApqrSchedulerFormPanel({
                 id="apqr-sched-coverage-end"
                 value={form.review_coverage_end}
                 disabled={!editable}
+                required
+                aria-required="true"
                 onChange={(e) => handleCoverageEndChange(e.target.value)}
               />
               {coverageNeedsReason && !form.review_coverage_adjustment_reason ? (
@@ -315,24 +384,41 @@ export function ApqrSchedulerFormPanel({
           className="apqr-scheduler-form-section apqr-scheduler-form-section--computed"
           aria-labelledby="apqr-sched-dates-heading"
         >
-          <h3 id="apqr-sched-dates-heading" className="apqr-scheduler-section-heading">
-            <ApqrIcon name="clock" />
-            Calculated dates
-          </h3>
-          <p className="apqr-scheduler-section-lead help-text">
-            Derived from review coverage. Override any value with a documented reason.
-          </p>
+          <div className="apqr-scheduler-computed-header">
+            <div className="apqr-scheduler-computed-header-text">
+              <h3 id="apqr-sched-dates-heading" className="apqr-scheduler-section-heading">
+                <ApqrIcon name="clock" />
+                Calculated dates
+              </h3>
+              <p className="apqr-scheduler-section-lead help-text">
+                {manualDates
+                  ? 'Manual entry enabled. Set Commitment, Stability Pull-Out, and APQR Generation dates before submit.'
+                  : 'Derived from review coverage. Dates stay blank until coverage end is set, then auto-calculate.'}
+              </p>
+            </div>
+            <label className="apqr-scheduler-manual-toggle" htmlFor={manualDatesId}>
+              <input
+                id={manualDatesId}
+                type="checkbox"
+                checked={manualDates}
+                disabled={!editable}
+                onChange={(e) => handleManualDatesToggle(e.target.checked)}
+              />
+              Manual date entry
+            </label>
+          </div>
           <div className="apqr-scheduler-form-grid apqr-scheduler-form-grid--dates">
             <SchedulerFormField
               label="Commitment Date"
               htmlFor="apqr-sched-commitment"
               hint="90 calendar days from review coverage end."
-              computed
+              computed={!manualDates}
             >
               <AppDateInput
                 id="apqr-sched-commitment"
-                value={form.commitment_schedule ?? systemDates.commitment_schedule}
-                disabled={!editable}
+                value={displayCommitment}
+                disabled={!editable || !manualDates}
+                readOnly={!manualDates}
                 onChange={(e) => handleAutoFieldChange('commitment_schedule', e.target.value)}
               />
             </SchedulerFormField>
@@ -341,12 +427,13 @@ export function ApqrSchedulerFormPanel({
               label="Stability Pull-Out Date"
               htmlFor="apqr-sched-stability"
               hint="60 calendar days before review coverage end."
-              computed
+              computed={!manualDates}
             >
               <AppDateInput
                 id="apqr-sched-stability"
-                value={form.stability_pull_out_date}
-                disabled={!editable}
+                value={displayStability}
+                disabled={!editable || !manualDates}
+                readOnly={!manualDates}
                 onChange={(e) => handleAutoFieldChange('stability_pull_out_date', e.target.value)}
               />
               {stabConflict ? (
@@ -360,12 +447,13 @@ export function ApqrSchedulerFormPanel({
               label="APQR Generation Report Date"
               htmlFor="apqr-sched-generation"
               hint="Auto-calculated from review coverage end."
-              computed
+              computed={!manualDates}
             >
               <AppDateInput
                 id="apqr-sched-generation"
-                value={form.apqr_generation_date ?? systemDates.apqr_generation_date}
-                disabled={!editable}
+                value={displayGeneration}
+                disabled={!editable || !manualDates}
+                readOnly={!manualDates}
                 onChange={(e) => handleAutoFieldChange('apqr_generation_date', e.target.value)}
               />
             </SchedulerFormField>

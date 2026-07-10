@@ -12,7 +12,7 @@ export const brandColors = {
   surface: '#ffffff',
   danger: '#b8453e',
   warning: '#b27615',
-  appBg: '#f4f7f9',
+  appBg: '#eef3f7',
   appText: '#243b53',
   success: '#247049',
 } as const
@@ -27,7 +27,7 @@ export const brandColorsDark = {
   surface: '#1a1a1a',
   danger: '#e07a72',
   warning: '#e0b35c',
-  appBg: '#0d0d0d',
+  appBg: '#0b0d12',
   appText: '#ececec',
   success: '#5ecf8e',
 } as const

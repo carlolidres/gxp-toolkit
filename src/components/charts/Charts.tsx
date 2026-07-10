@@ -73,8 +73,8 @@ export function DonutChart({ data }: { data: Array<{ name: string; value: number
     <div className="chart">
       <ResponsiveContainer>
         <PieChart>
-          <Pie data={data} dataKey="value" innerRadius={52} outerRadius={78} paddingAngle={2}>
-            {data.map((item, index) => <Cell key={item.name} fill={palette.series[index % palette.series.length]} />)}
+          <Pie data={data} dataKey="value" innerRadius={52} outerRadius={78} paddingAngle={2} stroke="none">
+            {data.map((item, index) => <Cell key={item.name} fill={palette.series[index % palette.series.length]} stroke="none" />)}
           </Pie>
           <Tooltip contentStyle={chartTooltipStyle(palette)} />
           <Legend wrapperStyle={{ color: palette.axis, fontSize: 11 }} />

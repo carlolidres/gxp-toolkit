@@ -734,7 +734,12 @@ export async function saveRecord(apqrId: string, input: ApqrRecordInput): Promis
     ...previous,
     ...input,
     ...deliveryMeta,
-    stability_tabulation_status_date: stabChanged ? ts.slice(0, 10) : previous.stability_tabulation_status_date,
+    stability_tabulation_status_date:
+      input.stability_tabulation_status_date !== undefined
+        ? input.stability_tabulation_status_date || null
+        : stabChanged
+          ? ts.slice(0, 10)
+          : previous.stability_tabulation_status_date,
     next_follow_up_due_date: nextFollowUpDue,
     updated_at: ts,
   }
@@ -749,6 +754,7 @@ export async function saveRecord(apqrId: string, input: ApqrRecordInput): Promis
     [
       { key: 'department', label: 'Department' },
       { key: 'stability_tabulation_status', label: 'Stability Tabulation Status' },
+      { key: 'stability_tabulation_status_date', label: 'Tabulation Status Date' },
       { key: 'apqr_report_status', label: 'APQR Report Status' },
       { key: 'sent_by', label: 'Sent By' },
       { key: 'date_sent', label: 'Date Sent' },

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  apqrCycleYearFromCommitment,
   apqrCycleYearOptions,
   buildTriageDistribution,
   buildUpcomingActions,
@@ -13,6 +14,7 @@ import {
   isStandardApqrCycleCoverage,
   resolveApqrIdYear,
   reviewCycleFromYear,
+  schedulerCycleYearOptions,
 } from './apqrDashboard'
 import type { ApqrDatabaseRow } from './types'
 
@@ -78,6 +80,19 @@ describe('apqrDashboard', () => {
     expect(options).toContain(2025)
     expect(options).toContain(2026)
     expect(options[0]).toBeGreaterThan(options[options.length - 1]!)
+  })
+
+  it('derives scheduler cycle year from commitment date year', () => {
+    expect(apqrCycleYearFromCommitment('2027-01-29')).toBe(2027)
+    expect(apqrCycleYearFromCommitment('2026-12-31')).toBe(2026)
+    expect(apqrCycleYearFromCommitment('')).toBeNull()
+    expect(apqrCycleYearFromCommitment(null)).toBeNull()
+    const options = schedulerCycleYearOptions(
+      [{ commitment_schedule: '2027-01-29' }, { commitment_schedule: '' }],
+      new Date('2026-07-04T12:00:00Z'),
+    )
+    expect(options).toContain(2026)
+    expect(options).toContain(2027)
   })
 
   it('resolves APQR ID year from calendar year of entry, not review coverage', () => {
