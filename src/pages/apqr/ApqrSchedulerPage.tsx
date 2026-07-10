@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Button } from 'antd'
 
 import {
   ApqrError,
@@ -40,9 +41,8 @@ const SCHEDULER_PAGE_PROPS = {
   title: 'APQR Scheduler',
   description: 'Register products, review periods, and commitment schedules.',
   action: (
-    <Link className="button secondary" to="/apqr/registry">
-      <ApqrIcon name="users" />
-      Client Registry
+    <Link to="/apqr/registry">
+      <Button className="button secondary" icon={<ApqrIcon name="users" />}>Client Registry</Button>
     </Link>
   ),
 } as const

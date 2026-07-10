@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Card, Input } from 'antd'
 
 import { ApqrError, ApqrIcon, ApqrLoading, ApqrPage } from '../../components/apqr/ApqrComponents'
 import { formatAuditTimestamp, listApqrAuditEvents } from '../../features/apqr/apqrService'
@@ -45,7 +46,7 @@ export function ApqrAuditPage() {
     <ApqrPage {...AUDIT_PAGE_PROPS}>
       {audit.error ? <ApqrError message={audit.error} /> : null}
 
-      <section className="panel apqr-audit-panel" aria-labelledby="apqr-audit-list-title">
+      <Card className="panel apqr-audit-panel" aria-labelledby="apqr-audit-list-title">
         <div className="panel-heading apqr-audit-heading">
           <div className="apqr-audit-heading-title">
             <h2 id="apqr-audit-list-title">
@@ -58,7 +59,7 @@ export function ApqrAuditPage() {
           </div>
           <label className="apqr-search-field apqr-audit-search">
             <ApqrIcon name="search" />
-            <input
+            <Input
               type="search"
               value={search}
               placeholder="Search user, description, field, values…"
@@ -104,7 +105,7 @@ export function ApqrAuditPage() {
             <AuditEmptyState hasEvents={totalEvents > 0} hasActiveSearch={hasActiveSearch} />
           ) : null}
         </div>
-      </section>
+      </Card>
     </ApqrPage>
   )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Button, Input } from 'antd'
 
 import { ApqrSearchableCombobox } from '../../components/apqr/ApqrSearchableCombobox'
 import { AppDateInput } from '../../components/forms/AppDateInput'
@@ -303,7 +304,7 @@ export function ApqrFormPage() {
           <label className="apqr-search-field apqr-form-lookup-search" htmlFor="apqr-form-lookup-id">
             <ApqrIcon name="search" />
             <span className="sr-only">APQR ID</span>
-            <input
+            <Input
               id="apqr-form-lookup-id"
               type="search"
               placeholder="4 chars, e.g. aB12"
@@ -323,10 +324,10 @@ export function ApqrFormPage() {
               aria-label="APQR ID"
             />
           </label>
-          <button type="button" className="button primary apqr-form-lookup-load" onClick={openLookup}>
+          <Button type="primary" className="button primary apqr-form-lookup-load" onClick={openLookup}>
             <ApqrIcon name="document" />
             Load
-          </button>
+          </Button>
           {data?.record ? (
             <div className="apqr-form-record-status">
               <span className="apqr-dashboard-toolbar-label" id="apqr-form-record-status-label">
@@ -485,7 +486,7 @@ export function ApqrFormPage() {
               </Field>
               <div className="apqr-form-action-chip apqr-form-followup-chip">
                 <span className="apqr-field-label">Follow-Up History</span>
-                <button type="button" className="button secondary apqr-form-chip-btn" onClick={scrollToFollowUps}>
+                <Button className="button secondary apqr-form-chip-btn" onClick={scrollToFollowUps}>
                   <ApqrIcon name="clock" />
                   View History
                   {followUps.length > 0 ? (
@@ -493,7 +494,7 @@ export function ApqrFormPage() {
                       {followUps.length}
                     </span>
                   ) : null}
-                </button>
+                </Button>
               </div>
               <Field label="APR Reference Number" required>
                 <input
@@ -533,14 +534,13 @@ export function ApqrFormPage() {
                   <span className="apqr-form-chip-status tone-neutral">None recorded</span>
                 )}
                 {canEdit ? (
-                  <button
-                    type="button"
+                  <Button
                     className="button secondary apqr-form-chip-btn"
                     onClick={() => setDelayPanelOpen(true)}
                   >
                     <ApqrIcon name="warning" />
                     Add Delay Info
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             </div>
@@ -645,10 +645,10 @@ export function ApqrFormPage() {
 
             {canEdit ? (
               <div className="form-actions apqr-form-save">
-                <button type="button" className="button primary" disabled={busy} onClick={() => void handleSave()}>
+                <Button type="primary" className="button primary" loading={busy} onClick={() => void handleSave()}>
                   <ApqrIcon name="save" />
                   Save Changes
-                </button>
+                </Button>
               </div>
             ) : null}
           </section>
@@ -659,8 +659,8 @@ export function ApqrFormPage() {
               title="Follow-Up History"
               action={
                 canEdit ? (
-                  <button
-                    type="button"
+                  <Button
+                    type="primary"
                     className="button primary"
                     onClick={() => {
                       if (followUpFormOpen && !editingFollowUpId) {
@@ -673,7 +673,7 @@ export function ApqrFormPage() {
                   >
                     <ApqrIcon name="plus" />
                     Add Follow-Up
-                  </button>
+                  </Button>
                 ) : null
               }
             />
@@ -727,19 +727,19 @@ export function ApqrFormPage() {
                     </Field>
                   </div>
                   <div className="apqr-form-followup-compose__actions">
-                    <button type="button" className="button secondary" onClick={resetFollowUpForm}>
+                    <Button className="button secondary" onClick={resetFollowUpForm}>
                       <ApqrIcon name="close" />
                       Cancel
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
+                      type="primary"
                       className="button primary"
                       disabled={busy || !followUpDate || !followUpRemarks.trim()}
                       onClick={() => void handleSaveFollowUp()}
                     >
                       <ApqrIcon name={editingFollowUpId ? 'save' : 'check'} />
                       {editingFollowUpId ? 'Update Follow-Up' : 'Save Follow-Up'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { Button, Input } from 'antd'
 
 import {
   ApqrDeliveryBadge,
@@ -242,7 +243,7 @@ export function ApqrDatabasePage() {
           <div className="apqr-table-toolbar">
             <label className="apqr-search-field">
               <ApqrIcon name="search" />
-              <input
+              <Input
                 type="search"
                 value={search}
                 placeholder="Search APQR ID, client, product, APR ref…"
@@ -250,8 +251,7 @@ export function ApqrDatabasePage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </label>
-            <button
-              type="button"
+            <Button
               className={`button secondary${filtersOpen || activeFilterCount > 0 ? ' is-active' : ''}`}
               aria-expanded={filtersOpen}
               aria-controls="apqr-database-filters"
@@ -264,10 +264,9 @@ export function ApqrDatabasePage() {
                   {activeFilterCount}
                 </span>
               ) : null}
-            </button>
+            </Button>
             <div className="apqr-columns-menu">
-              <button
-                type="button"
+              <Button
                 className={`button secondary${columnsOpen ? ' is-active' : ''}`}
                 aria-expanded={columnsOpen}
                 aria-controls="apqr-database-columns-popover"
@@ -275,7 +274,7 @@ export function ApqrDatabasePage() {
               >
                 <ApqrIcon name="columns" />
                 Columns
-              </button>
+              </Button>
               {columnsOpen ? (
                 <div
                   id="apqr-database-columns-popover"
@@ -306,34 +305,31 @@ export function ApqrDatabasePage() {
               ) : null}
             </div>
             {canExport ? (
-              <button
-                type="button"
+              <Button
                 className="button secondary apqr-icon-btn"
                 aria-label="Export"
                 onClick={() => exportDatabaseCsv(filtered)}
               >
                 <ApqrIcon name="export" />
-              </button>
+              </Button>
             ) : null}
             <div className="apqr-view-toggle" role="group" aria-label="View mode">
-              <button
-                type="button"
+              <Button
                 className={`button secondary apqr-icon-btn${viewMode === 'list' ? ' is-active' : ''}`}
                 aria-label="List view"
                 aria-pressed={viewMode === 'list'}
                 onClick={() => setViewMode('list')}
               >
                 <ApqrIcon name="list" />
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
                 className={`button secondary apqr-icon-btn${viewMode === 'grid' ? ' is-active' : ''}`}
                 aria-label="Grid view"
                 aria-pressed={viewMode === 'grid'}
                 onClick={() => setViewMode('grid')}
               >
                 <ApqrIcon name="grid" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>

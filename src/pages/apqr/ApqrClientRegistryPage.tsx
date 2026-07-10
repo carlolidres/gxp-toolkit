@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Button, Input, Select } from 'antd'
 
 import { ApqrError, ApqrLoading, ApqrPackageBadge, ApqrPage, ApqrIcon } from '../../components/apqr/ApqrComponents'
 import { ApqrContactRoleEditor } from '../../components/apqr/ApqrContactRoleEditor'
@@ -216,7 +217,7 @@ export function ApqrClientRegistryPage() {
 
           <div className="apqr-registry-form-top">
             <RegistryFormField label="Code" htmlFor="apqr-client-code">
-              <input
+              <Input
                 id="apqr-client-code"
                 value={form.code}
                 autoComplete="off"
@@ -238,7 +239,7 @@ export function ApqrClientRegistryPage() {
               />
             </RegistryFormField>
             <RegistryFormField label="Client Name" htmlFor="apqr-client-name">
-              <input
+              <Input
                 id="apqr-client-name"
                 value={form.client_name}
                 autoComplete="organization"
@@ -246,14 +247,12 @@ export function ApqrClientRegistryPage() {
               />
             </RegistryFormField>
             <RegistryFormField label="APQR Package" htmlFor="apqr-client-package">
-              <select
+              <Select
                 id="apqr-client-package"
                 value={form.apqr_package}
-                onChange={(e) => setForm({ ...form, apqr_package: e.target.value as ApqrPackage })}
-              >
-                <option value="Billable">Billable</option>
-                <option value="Not Billable">Not Billable</option>
-              </select>
+                onChange={(value) => setForm({ ...form, apqr_package: value as ApqrPackage })}
+                options={[{ value: 'Billable', label: 'Billable' }, { value: 'Not Billable', label: 'Not Billable' }]}
+              />
             </RegistryFormField>
           </div>
 
@@ -285,14 +284,14 @@ export function ApqrClientRegistryPage() {
           </div>
 
           <div className="form-actions apqr-registry-actions">
-            <button type="button" className="button primary" disabled={busy} onClick={() => void handleSave()}>
+            <Button type="primary" className="button primary" loading={busy} onClick={() => void handleSave()}>
               <ApqrIcon name="save" />
               {busy ? 'Saving…' : 'Save'}
-            </button>
-            <button type="button" className="button secondary" disabled={busy} onClick={clearForm}>
+            </Button>
+            <Button className="button secondary" disabled={busy} onClick={clearForm}>
               <ApqrIcon name="clear" />
               Clear
-            </button>
+            </Button>
           </div>
         </section>
       )}
@@ -311,7 +310,7 @@ export function ApqrClientRegistryPage() {
           <div className="apqr-table-toolbar">
             <label className="apqr-search-field">
               <ApqrIcon name="search" />
-              <input
+              <Input
                 type="search"
                 value={search}
                 placeholder="Search code, name, AM, package…"
@@ -319,8 +318,7 @@ export function ApqrClientRegistryPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </label>
-            <button
-              type="button"
+            <Button
               className={`button secondary${filtersOpen || activeFilterCount > 0 ? ' is-active' : ''}`}
               aria-expanded={filtersOpen}
               aria-controls="apqr-registry-filters"
@@ -333,12 +331,12 @@ export function ApqrClientRegistryPage() {
                   {activeFilterCount}
                 </span>
               ) : null}
-            </button>
+            </Button>
             {canExport ? (
-              <button type="button" className="button secondary" onClick={() => exportClientCsv(filtered)}>
+              <Button className="button secondary" onClick={() => exportClientCsv(filtered)}>
                 <ApqrIcon name="export" />
                 Export
-              </button>
+              </Button>
             ) : null}
           </div>
         </div>

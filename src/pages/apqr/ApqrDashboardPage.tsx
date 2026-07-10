@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Button, Input, Select } from 'antd'
 import {
   Area,
   Bar,
@@ -137,29 +138,23 @@ export function ApqrDashboardPage() {
       description="Commitment-schedule triage and delivery performance."
       action={
         <div className="apqr-dashboard-toolbar">
-          <button
-            type="button"
+          <Button
             className={`button secondary apqr-toolbar-filters${filtersOpen ? ' is-active' : ''}`}
             onClick={() => setFiltersOpen((open) => !open)}
             aria-expanded={filtersOpen}
           >
             <ApqrIcon name="filter" />
             Filters
-          </button>
+          </Button>
           <div className="apqr-cycle-year-filter" role="group" aria-label="APQR cycle year">
             <span className="apqr-dashboard-toolbar-label">APQR Cycle Year</span>
             <label className="apqr-cycle-year-field">
-              <select
+              <Select
                 value={cycleYear}
-                onChange={(e) => setCycleYear(Number(e.target.value))}
+                onChange={(value) => setCycleYear(Number(value))}
                 aria-label="APQR cycle year"
-              >
-                {cycleYearOptions.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
+                options={cycleYearOptions.map((year) => ({ value: year, label: year }))}
+              />
               <ApqrIcon name="calendar" />
             </label>
           </div>
@@ -182,9 +177,9 @@ export function ApqrDashboardPage() {
             </p>
           </div>
           <div className="inline-form">
-            <button type="button" className="button secondary" onClick={() => setCycleYear(defaultApqrCycleYear())}>
+            <Button className="button secondary" onClick={() => setCycleYear(defaultApqrCycleYear())}>
               Reset to current cycle year
-            </button>
+            </Button>
           </div>
         </section>
       ) : null}
@@ -243,7 +238,7 @@ export function ApqrDashboardPage() {
           <div className="apqr-table-toolbar">
             <label className="apqr-search-field">
               <ApqrIcon name="search" />
-              <input
+              <Input
                 type="search"
                 value={search}
                 placeholder="Search APQR ID, client, product…"
@@ -251,13 +246,12 @@ export function ApqrDashboardPage() {
               />
             </label>
             <div className="apqr-columns-menu">
-              <button
-                type="button"
+              <Button
                 className={`button secondary${columnsOpen ? ' is-active' : ''}`}
                 onClick={() => setColumnsOpen((open) => !open)}
               >
                 Columns
-              </button>
+              </Button>
               {columnsOpen ? (
                 <div className="apqr-columns-popover apqr-triage-columns-popover" role="menu">
                   <p className="apqr-columns-popover-title">Visible columns</p>
@@ -281,10 +275,10 @@ export function ApqrDashboardPage() {
               ) : null}
             </div>
             {canExport ? (
-              <button type="button" className="button secondary" onClick={() => exportTriageCsv(filteredTable, visibleColumns)}>
+              <Button className="button secondary" onClick={() => exportTriageCsv(filteredTable, visibleColumns)}>
                 <ApqrIcon name="export" />
                 Export
-              </button>
+              </Button>
             ) : null}
           </div>
         </div>
