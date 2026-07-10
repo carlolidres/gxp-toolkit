@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { Button, Empty, Input, Select } from 'antd'
+import { Plus, Trash2 } from 'lucide-react'
 
 import { VrmsPage } from '../../components/vrms/VrmsPage'
 import { useToast } from '../../components/feedback/ToastProvider'
@@ -52,19 +54,13 @@ export function VrmsRegistryPage() {
         <div className="vrms-toolbar" style={{ gridTemplateColumns: canCreate ? '220px 1fr auto' : '220px 1fr' }}>
           <div>
             <label>Registry type</label>
-            <select value={selectedType} onChange={(event) => setSelectedType(event.target.value as VrmsRegistryType)}>
-              {registryTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
+            <Select value={selectedType} onChange={(value) => setSelectedType(value as VrmsRegistryType)} options={registryTypes.map((type) => ({ value: type, label: type }))} />
           </div>
           {canCreate ? (
             <>
               <div>
                 <label>Dropdown value</label>
-                <input
+                <Input
                   placeholder="Add new value"
                   value={newValue}
                   onKeyDown={(event) => {
@@ -73,21 +69,22 @@ export function VrmsRegistryPage() {
                   onChange={(event) => setNewValue(event.target.value)}
                 />
               </div>
-              <button type="button" className="vrms-btn-primary" disabled={busy} onClick={() => void handleAdd()}>
+              <Button type="primary" icon={<Plus size={15} />} className="vrms-btn-primary" loading={busy} onClick={() => void handleAdd()}>
                 Add value
-              </button>
+              </Button>
             </>
           ) : null}
         </div>
 
         <div className="vrms-registry-list">
+          {values.length === 0 ? <Empty description="No values in this registry." image={Empty.PRESENTED_IMAGE_SIMPLE} /> : null}
           {values.map((value) => (
             <div className="vrms-registry-item" key={value}>
               <span>{value}</span>
               {canDelete ? (
-                <button type="button" className="vrms-btn-secondary" disabled={busy} onClick={() => void handleDelete(value)}>
+                <Button icon={<Trash2 size={15} />} className="vrms-btn-secondary" disabled={busy} onClick={() => void handleDelete(value)}>
                   Delete
-                </button>
+                </Button>
               ) : null}
             </div>
           ))}

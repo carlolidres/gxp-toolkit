@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Empty, Spin, Table } from 'antd'
 
 import { VrmsPage } from '../../components/vrms/VrmsPage'
 import { useVrmsApp } from '../../context/VrmsAppContext'
@@ -28,32 +29,24 @@ export function VrmsAuditPage() {
     <VrmsPage title="Audit Trail" description="Create, update, and registry activity.">
       <section className="vrms-panel">
         {loading ? (
-          <div className="vrms-loading">Loading audit trail…</div>
+          <Spin tip="Loading audit trail…" />
+        ) : rows.length === 0 ? (
+          <Empty description="No audit events recorded." />
         ) : (
-          <div className="vrms-table-wrap">
-            <table className="vrms-table">
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>User</th>
-                  <th>Action</th>
-                  <th>Doc Tracer #</th>
-                  <th>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.timestamp}</td>
-                    <td>{row.userEmail}</td>
-                    <td>{row.action}</td>
-                    <td>{row.docTracer}</td>
-                    <td style={{ whiteSpace: 'normal', maxWidth: 480 }}>{row.details}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table<AuditEvent>
+            className="vrms-table"
+            dataSource={rows}
+            rowKey="id"
+            pagination={{ pageSize: 10, showSizeChanger: true }}
+            scroll={{ x: 900 }}
+            columns={[
+              { title: 'Timestamp', dataIndex: 'timestamp', key: 'timestamp' },
+              { title: 'User', dataIndex: 'userEmail', key: 'userEmail' },
+              { title: 'Action', dataIndex: 'action', key: 'action' },
+              { title: 'Doc Tracer #', dataIndex: 'docTracer', key: 'docTracer' },
+              { title: 'Details', dataIndex: 'details', key: 'details', render: (details) => <span style={{ whiteSpace: 'normal', maxWidth: 480 }}>{details}</span> },
+            ]}
+          />
         )}
       </section>
     </VrmsPage>

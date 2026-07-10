@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Button, Select } from 'antd'
+import { Check, Plus, Trash2 } from 'lucide-react'
 
 import { VrmsPage } from '../../components/vrms/VrmsPage'
 import { NaOptionalInput, NaOptionalTextarea } from '../../components/forms/NaOptionalField'
@@ -258,9 +260,9 @@ export function VrmsRoutingPage() {
           {form.routingTracker ? (
             <div className="vrms-tracker-callout">
               Tracker{' '}
-              <button type="button" className="vrms-tracker-link" onClick={() => void loadTracker(form.routingTracker)}>
+              <Button type="link" className="vrms-tracker-link" onClick={() => void loadTracker(form.routingTracker)}>
                 {form.routingTracker}
-              </button>
+              </Button>
             </div>
           ) : null}
 
@@ -294,23 +296,19 @@ export function VrmsRoutingPage() {
                       onChange={(event) => updateField(field.key, event.target.value)}
                     />
                   ) : field.registryType ? (
-                    <select
+                    <Select
                       value={value}
                       disabled={!canModifyForm}
-                      onChange={(event) => {
-                        const next = event.target.value
+                      onChange={(next) => {
                         if (field.key === 'status') handleStatusChange(next)
                         else if (field.key === 'sentRoutingTo') handleSentRoutingChange(next)
                         else updateField(field.key, next)
                       }}
-                    >
-                      <option value="">Select {field.label}</option>
-                      {(appData?.registries[field.registryType] ?? []).map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
+                      options={[
+                        { value: '', label: `Select ${field.label}` },
+                        ...(appData?.registries[field.registryType] ?? []).map((option) => ({ value: option, label: option })),
+                      ]}
+                    />
                   ) : (
                     <input
                       type={field.type ?? 'text'}
@@ -328,14 +326,14 @@ export function VrmsRoutingPage() {
 
           <div className="vrms-actions">
             {canSubmit ? (
-              <button type="button" className="vrms-btn-primary" disabled={saving} onClick={() => void handleSubmit()}>
+              <Button type="primary" className="vrms-btn-primary" loading={saving} onClick={() => void handleSubmit()}>
                 {saving ? 'Saving…' : 'Submit'}
-              </button>
+              </Button>
             ) : null}
             {canCreate ? (
-              <button type="button" className="vrms-btn-secondary" disabled={saving} onClick={clearForm}>
+              <Button className="vrms-btn-secondary" disabled={saving} onClick={clearForm}>
                 Clear
-              </button>
+              </Button>
             ) : null}
           </div>
         </section>
@@ -357,18 +355,15 @@ export function VrmsRoutingPage() {
                       <span>{item.Status}</span>
                     </div>
                     <label>Signatory/Approver Name</label>
-                    <select
+                    <Select
                       value={item.Name}
                       disabled={signed || (isRouting && index === 0) || !canModifyForm}
-                      onChange={(event) => updateSignatory(index, 'Name', event.target.value)}
-                    >
-                      <option value="">Select signatory</option>
-                      {allowedNames.map((name) => (
-                        <option key={name} value={name}>
-                          {name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => updateSignatory(index, 'Name', value)}
+                      options={[
+                        { value: '', label: 'Select signatory' },
+                        ...allowedNames.map((name) => ({ value: name, label: name })),
+                      ]}
+                    />
                     <div className="vrms-signatory-meta">
                       <div>
                         <label>Date/time forwarded</label>
@@ -386,24 +381,25 @@ export function VrmsRoutingPage() {
                       </div>
                       <div className="vrms-actions" style={{ margin: 0 }}>
                         {canApprove ? (
-                          <button
-                            type="button"
+                          <Button
+                            type="primary"
+                            icon={<Check size={15} />}
                             className="vrms-btn-primary"
                             disabled={!canSign || signingOrder !== null}
                             onClick={() => void handleSign(item.Order)}
                           >
                             {signingOrder === item.Order ? 'Signing…' : 'Signed'}
-                          </button>
+                          </Button>
                         ) : null}
                         {canDelete ? (
-                          <button
-                            type="button"
+                          <Button
+                            icon={<Trash2 size={15} />}
                             className="vrms-btn-secondary"
                             disabled={signed}
                             onClick={() => removeSignatory(index)}
                           >
                             Remove
-                          </button>
+                          </Button>
                         ) : null}
                       </div>
                     </div>
@@ -414,9 +410,9 @@ export function VrmsRoutingPage() {
           </div>
           {canEdit ? (
             <div className="vrms-actions">
-              <button type="button" className="vrms-btn-secondary" onClick={addSignatory}>
+              <Button icon={<Plus size={15} />} className="vrms-btn-secondary" onClick={addSignatory}>
                 Add Signatory
-              </button>
+              </Button>
             </div>
           ) : null}
           <p className="vrms-muted" style={{ padding: '0 30px 24px' }}>

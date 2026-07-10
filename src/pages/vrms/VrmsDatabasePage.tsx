@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Button, Input, Select, Spin } from 'antd'
+import { Download } from 'lucide-react'
 
 import { VrmsPage } from '../../components/vrms/VrmsPage'
 import { useMenuPermission } from '../../hooks/useMenuPermission'
@@ -90,7 +92,7 @@ export function VrmsDatabasePage() {
   if (loading && !appData) {
     return (
       <div className="page">
-        <div className="vrms-loading">Loading database…</div>
+        <Spin tip="Loading database…" />
       </div>
     )
   }
@@ -101,40 +103,28 @@ export function VrmsDatabasePage() {
         <div className="vrms-toolbar">
           <div>
             <label>Global search</label>
-            <input placeholder="Search all fields…" value={search} onChange={(event) => updateFilter('search', event.target.value)} />
+            <Input placeholder="Search all fields…" value={search} onChange={(event) => updateFilter('search', event.target.value)} />
           </div>
           <div>
             <label>Status</label>
-            <select value={status} onChange={(event) => updateFilter('status', event.target.value)} disabled={overdue}>
-              <option value="">All Statuses</option>
-              {(appData?.registries.Status ?? []).map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+            <Select value={status} onChange={(value) => updateFilter('status', value)} disabled={overdue} options={[
+              { value: '', label: 'All Statuses' },
+              ...(appData?.registries.Status ?? []).map((option) => ({ value: option, label: option })),
+            ]} />
           </div>
           <div>
             <label>Client</label>
-            <select value={client} onChange={(event) => updateFilter('client', event.target.value)}>
-              <option value="">All Clients</option>
-              {(appData?.registries.Client ?? []).map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+            <Select value={client} onChange={(value) => updateFilter('client', value)} options={[
+              { value: '', label: 'All Clients' },
+              ...(appData?.registries.Client ?? []).map((option) => ({ value: option, label: option })),
+            ]} />
           </div>
           <div>
             <label>Department</label>
-            <select value={department} onChange={(event) => updateFilter('department', event.target.value)}>
-              <option value="">All Departments</option>
-              {(appData?.registries.Department ?? []).map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+            <Select value={department} onChange={(value) => updateFilter('department', value)} options={[
+              { value: '', label: 'All Departments' },
+              ...(appData?.registries.Department ?? []).map((option) => ({ value: option, label: option })),
+            ]} />
           </div>
           <label className="vrms-checkbox-filter">
             <input
@@ -145,9 +135,7 @@ export function VrmsDatabasePage() {
             Overdue only
           </label>
           {canExport ? (
-            <button type="button" className="vrms-btn-secondary" onClick={() => exportCsv(filtered)}>
-              Export CSV
-            </button>
+            <Button icon={<Download size={15} />} className="vrms-btn-secondary" onClick={() => exportCsv(filtered)}>Export CSV</Button>
           ) : null}
         </div>
 
