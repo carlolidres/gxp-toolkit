@@ -3,8 +3,8 @@
 Last Updated: `2026-07-11`
 Version: `v34`
 Branch: `main` / `master`
-Commit: `(pending)` — VRMS Database toolbar + table viewport polish
-Deployment: `PENDING` — push to `master` triggers GitHub Pages
+Commit: `d9b6b33` — ui: fit VRMS Database toolbar and table to the viewport
+Deployment: `DEPLOYED` — GitHub Pages run [29127627352](https://github.com/carlolidres/gxp-toolkit/actions/runs/29127627352) (2026-07-11)
 
 ## Current Status
 
