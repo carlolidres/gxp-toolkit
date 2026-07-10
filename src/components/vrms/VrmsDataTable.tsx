@@ -1,5 +1,8 @@
+import { Button, Table, Tag } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
+
 import type { RoutingDocument } from '../../types/vrms'
-import { VrmsStatusBadge } from './VrmsStatusBadge'
+import { getVrmsStatusStyle } from '../../lib/vrmsStatus'
 
 type ColumnKey = keyof RoutingDocument
 
@@ -10,42 +13,52 @@ interface VrmsDataTableProps {
 }
 
 export function VrmsDataTable({ rows, columns, onTrackerClick }: VrmsDataTableProps) {
+  const antdColumns: ColumnsType<RoutingDocument> = columns.map((column) => ({
+    key: column.key,
+    title: column.label,
+    dataIndex: column.key,
+    render: (_value, row) => {
+      if (column.key === 'routingTracker' && onTrackerClick) {
+        return (
+          <Button type="link" className="vrms-tracker-link" onClick={() => onTrackerClick(row.routingTracker)}>
+            {row.routingTracker}
+          </Button>
+        )
+      }
+      if (column.key === 'status') {
+        return <VrmsStatusBadge status={row.status} />
+      }
+      return String(row[column.key] ?? '')
+    },
+  }))
+
   return (
     <div className="vrms-table-wrap">
-      <table className="vrms-table">
-        <thead>
-          <tr>
-            {columns.map((column) => (
-              <th key={column.key}>{column.label}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr>
-              <td colSpan={columns.length}>No records found.</td>
-            </tr>
-          ) : (
-            rows.map((row) => (
-              <tr key={row.routingTracker || row.docTracer}>
-                {columns.map((column) => (
-                  <td key={column.key}>
-                    {column.key === 'routingTracker' && onTrackerClick ? (
-                      <button type="button" className="vrms-tracker-link" onClick={() => onTrackerClick(row.routingTracker)}>
-                        {row.routingTracker}
-                      </button>
-                    ) : column.key === 'status' ? (
-                      <VrmsStatusBadge status={row.status} />
-                    ) : (
-                      String(row[column.key] ?? '')
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+      <Table<RoutingDocument>
+        className="vrms-table"
+        rowKey={(row) => row.routingTracker || row.docTracer}
+        columns={antdColumns}
+        dataSource={rows}
+        pagination={false}
+        size="middle"
+        locale={{ emptyText: 'No records found.' }}
+      />
     </div>
+  )
+}
+
+function VrmsStatusBadge({ status }: { status: string }) {
+  const style = getVrmsStatusStyle(status)
+  return (
+    <Tag
+      className="vrms-status-pill"
+      style={{
+        color: style.text,
+        background: style.background,
+        borderColor: style.border,
+      }}
+    >
+      {status || 'Blank'}
+    </Tag>
   )
 }

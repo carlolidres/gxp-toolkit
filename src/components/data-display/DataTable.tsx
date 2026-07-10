@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { Button, Space, Table, Tag } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 
 export interface TableColumn<T> {
   key: keyof T | string
@@ -6,28 +8,76 @@ export interface TableColumn<T> {
   render?: (row: T) => ReactNode
 }
 
-export function DataTable<T extends { id: string }>({ rows, columns }: { rows: T[]; columns: TableColumn<T>[] }) {
+export function DataTable<T extends { id: string }>({
+  rows,
+  columns,
+}: {
+  rows: T[]
+  columns: TableColumn<T>[]
+}) {
+  const antdColumns: ColumnsType<T> = columns.map((column) => ({
+    key: String(column.key),
+    title: column.label,
+    dataIndex: column.key as string,
+    render: (_value, row) =>
+      column.render ? column.render(row) : String(row[column.key as keyof T] ?? ''),
+  }))
+
   return (
     <div className="table-wrap">
-      <table>
-        <thead><tr>{columns.map((column) => <th key={String(column.key)}>{column.label}</th>)}</tr></thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              {columns.map((column) => <td key={String(column.key)}>{column.render ? column.render(row) : String(row[column.key as keyof T] ?? '')}</td>)}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <Table<T>
+        rowKey="id"
+        columns={antdColumns}
+        dataSource={rows}
+        pagination={false}
+        size="middle"
+        locale={{ emptyText: 'No records found.' }}
+      />
     </div>
   )
 }
 
-export function PaginationControls({ page, pageCount, onChange }: { page: number; pageCount: number; onChange: (page: number) => void }) {
-  return <div className="pagination"><button disabled={page === 1} onClick={() => onChange(page - 1)}>Previous</button><span>Page {page} of {pageCount}</span><button disabled={page === pageCount} onClick={() => onChange(page + 1)}>Next</button></div>
+export function PaginationControls({
+  page,
+  pageCount,
+  onChange,
+}: {
+  page: number
+  pageCount: number
+  onChange: (page: number) => void
+}) {
+  return (
+    <div className="pagination">
+      <Space>
+        <Button disabled={page === 1} onClick={() => onChange(page - 1)}>
+          Previous
+        </Button>
+        <span>
+          Page {page} of {pageCount}
+        </span>
+        <Button disabled={page === pageCount} onClick={() => onChange(page + 1)}>
+          Next
+        </Button>
+      </Space>
+    </div>
+  )
 }
 
 export function StatusBadge({ status, tone = 'neutral' }: { status: string; tone?: string }) {
-  return <span className={`status-badge ${tone}`}>{status}</span>
-}
+  const color =
+    tone === 'success'
+      ? 'success'
+      : tone === 'warning'
+        ? 'warning'
+        : tone === 'danger'
+          ? 'error'
+          : tone === 'info'
+            ? 'processing'
+            : 'default'
 
+  return (
+    <Tag className={`status-badge ${tone}`} color={color}>
+      {status}
+    </Tag>
+  )
+}

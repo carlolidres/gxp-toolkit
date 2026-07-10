@@ -1,4 +1,7 @@
 import type { ReactNode } from 'react'
+import { Space, Typography } from 'antd'
+
+const { Title, Paragraph, Text } = Typography
 
 export function VrmsPage({
   eyebrow,
@@ -17,11 +20,21 @@ export function VrmsPage({
     <div className="page">
       <div className="page-header">
         <div>
-          {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
-          <h1>{title}</h1>
-          {description ? <p>{description}</p> : null}
+          {eyebrow ? (
+            <Text className="eyebrow" type="secondary">
+              {eyebrow}
+            </Text>
+          ) : null}
+          <Title level={2} style={{ margin: 0 }}>
+            {title}
+          </Title>
+          {description ? (
+            <Paragraph type="secondary" style={{ marginBottom: 0 }}>
+              {description}
+            </Paragraph>
+          ) : null}
         </div>
-        {actions}
+        {actions ? <Space wrap>{actions}</Space> : null}
       </div>
       {children}
     </div>

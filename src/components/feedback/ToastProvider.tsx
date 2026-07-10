@@ -1,35 +1,41 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { App, message as staticMessage } from 'antd'
+import { createContext, useContext, useMemo, type ReactNode } from 'react'
 
-interface Toast {
-  id: number
-  message: string
+interface ToastContextValue {
+  notify: (message: string) => void
 }
 
-const ToastContext = createContext<{ notify: (message: string) => void } | null>(null)
+const ToastContext = createContext<ToastContextValue | null>(null)
 
-export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([])
-  const value = useMemo(() => ({
-    notify(message: string) {
-      const id = Date.now()
-      setToasts((current) => [...current, { id, message }])
-      window.setTimeout(() => setToasts((current) => current.filter((toast) => toast.id !== id)), 2800)
-    },
-  }), [])
+function ToastBridge({ children }: { children: ReactNode }) {
+  const { message } = App.useApp()
 
-  return (
-    <ToastContext.Provider value={value}>
-      {children}
-      <div className="toast-stack" aria-live="polite">
-        {toasts.map((toast) => <div className="toast" key={toast.id}>{toast.message}</div>)}
-      </div>
-    </ToastContext.Provider>
+  const value = useMemo<ToastContextValue>(
+    () => ({
+      notify(text: string) {
+        void message.info(text)
+      },
+    }),
+    [message],
   )
+
+  return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>
 }
 
-export function useToast() {
+/** Toast provider backed by Ant Design App message API. */
+export function ToastProvider({ children }: { children: ReactNode }) {
+  return <ToastBridge>{children}</ToastBridge>
+}
+
+export function useToast(): ToastContextValue {
   const context = useContext(ToastContext)
-  if (!context) throw new Error('useToast must be used inside ToastProvider')
+  if (!context) {
+    // Fallback for rare cases outside provider during tests.
+    return {
+      notify(text: string) {
+        void staticMessage.info(text)
+      },
+    }
+  }
   return context
 }
-
