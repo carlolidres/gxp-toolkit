@@ -28,6 +28,7 @@ function row(partial: Partial<ApqrDatabaseRow>): ApqrDatabaseRow {
     client_name: 'Client',
     account_manager: 'AM',
     apqr_package: 'Billable',
+    auto_compute_dates: true,
     product_name: 'Product',
     product_code: 'P1',
     department: 'Dry',

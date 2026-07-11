@@ -6,6 +6,8 @@ import {
   defaultStabilityPullOutDate,
   expectedStabilityTabulationCompletionDate,
   isStandardOneYearCoverage,
+  manualApqrGenerationFromCommitment,
+  manualStabilityPullOutDate,
 } from './scheduling'
 import { formatAppDate } from '../../utils/dateUtils'
 import type {
@@ -40,7 +42,7 @@ export function scheduleStatusLabel(status: CommitmentScheduleStatus): ApqrSched
   return STATUS_LABEL_BY_VALUE[status] ?? 'Drafting'
 }
 
-export function computedScheduleDates(reviewCoverageEnd: string) {
+export function computedScheduleDates(reviewCoverageEnd: string, autoComputeDates = true) {
   if (!reviewCoverageEnd.trim()) {
     return {
       stability_pull_out_date: '',
@@ -48,10 +50,18 @@ export function computedScheduleDates(reviewCoverageEnd: string) {
       commitment_schedule: '',
     }
   }
+  if (autoComputeDates) {
+    return {
+      stability_pull_out_date: defaultStabilityPullOutDate(reviewCoverageEnd),
+      apqr_generation_date: defaultApqrGenerationDate(reviewCoverageEnd),
+      commitment_schedule: defaultCommitmentSchedule(reviewCoverageEnd),
+    }
+  }
+  const commitment_schedule = defaultCommitmentSchedule(reviewCoverageEnd)
   return {
-    stability_pull_out_date: defaultStabilityPullOutDate(reviewCoverageEnd),
-    apqr_generation_date: defaultApqrGenerationDate(reviewCoverageEnd),
-    commitment_schedule: defaultCommitmentSchedule(reviewCoverageEnd),
+    stability_pull_out_date: manualStabilityPullOutDate(reviewCoverageEnd),
+    commitment_schedule,
+    apqr_generation_date: manualApqrGenerationFromCommitment(commitment_schedule),
   }
 }
 

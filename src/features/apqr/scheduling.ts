@@ -12,6 +12,19 @@ export function addCalendarDays(isoDate: string, days: number): string {
   return d.toISOString().slice(0, 10)
 }
 
+/** Shift an ISO date by whole calendar months, clamping day to the target month length. */
+export function addCalendarMonths(isoDate: string, months: number): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate.trim())
+  if (!match) return isoDate
+  const year = Number(match[1])
+  const monthIndex = Number(match[2]) - 1 + months
+  const day = Number(match[3])
+  const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate()
+  const clampedDay = Math.min(day, lastDay)
+  const d = new Date(Date.UTC(year, monthIndex, clampedDay))
+  return d.toISOString().slice(0, 10)
+}
+
 export function calendarDaysBetween(fromIso: string, toIso: string): number {
   const from = new Date(`${fromIso}T12:00:00Z`).getTime()
   const to = new Date(`${toIso}T12:00:00Z`).getTime()
@@ -30,6 +43,16 @@ export function defaultCommitmentSchedule(reviewCoverageEnd: string): string {
   return addCalendarDays(reviewCoverageEnd, 90)
 }
 
+/** Manual Dates: Stability Pull-Out = Review Coverage end − 2 calendar months. */
+export function manualStabilityPullOutDate(reviewCoverageEnd: string): string {
+  return addCalendarMonths(reviewCoverageEnd, -2)
+}
+
+/** Manual Dates: APQR Generation = Commitment − 2 calendar months. */
+export function manualApqrGenerationFromCommitment(commitmentDate: string): string {
+  return addCalendarMonths(commitmentDate, -2)
+}
+
 /** Shift a YYYY-MM value by whole calendar months. */
 export function addMonthYear(monthYear: string, months: number): string {
   const match = /^(\d{4})-(\d{2})$/.exec(monthYear.trim())
@@ -45,10 +68,15 @@ export function commitmentMonthFromGenerationMonth(generationMonth: string): str
   return addMonthYear(generationMonth, 2)
 }
 
+/** Manual Dates filter: Generation month is Commitment month − 2. */
+export function generationMonthFromCommitmentMonth(commitmentMonth: string): string {
+  return addMonthYear(commitmentMonth, -2)
+}
+
 export type ApqrLinkedDateField = 'pullout' | 'generation' | 'commitment'
 
 /**
- * Sync month-year filter values from one selected field:
+ * Sync month-year filter values from one selected field (Auto-Compute Dates):
  * pullout = coverage end − 60d, generation = coverage end + 30d,
  * commitment = generation month + 2 (always).
  */
@@ -77,6 +105,39 @@ export function linkedFilterMonthsFromField(
     pullout: defaultStabilityPullOutDate(coverageEnd).slice(0, 7),
     generation,
     commitment: commitmentMonthFromGenerationMonth(generation),
+  }
+}
+
+/**
+ * Manual Dates filter linking:
+ * - Commitment change → Generation = Commitment − 2 months (pullout unchanged)
+ * - Generation change → Generation only (commitment unchanged)
+ * - Pullout change → Pullout only
+ */
+export function linkedManualFilterMonthsFromField(
+  field: ApqrLinkedDateField,
+  monthYear: string,
+  current: { pullout: string; generation: string; commitment: string },
+): { pullout: string; generation: string; commitment: string } {
+  const selected = /^\d{4}-\d{2}$/.test(monthYear.trim()) ? monthYear.trim() : ''
+  if (field === 'commitment') {
+    return {
+      pullout: current.pullout,
+      generation: selected ? generationMonthFromCommitmentMonth(selected) : '',
+      commitment: selected,
+    }
+  }
+  if (field === 'generation') {
+    return {
+      pullout: current.pullout,
+      generation: selected,
+      commitment: current.commitment,
+    }
+  }
+  return {
+    pullout: selected,
+    generation: current.generation,
+    commitment: current.commitment,
   }
 }
 

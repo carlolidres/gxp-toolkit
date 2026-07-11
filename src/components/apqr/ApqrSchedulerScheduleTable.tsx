@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 
 import { ApqrIcon } from './ApqrComponents'
 import { formatApqrDate, formatReviewCoverage } from '../../features/apqr/apqrService'
+import { formatAppMonthYear } from '../../utils/dateUtils'
 import { scheduleStatusLabel, type ScheduleRowDraft } from '../../features/apqr/schedulerForm'
 import { useColumnResize } from '../../hooks/useColumnResize'
 import { exportRows } from '../../utils/exportUtils'
@@ -154,7 +155,7 @@ export function ApqrSchedulerScheduleTable({
                     {formatApqrDate(row.stability_pull_out_date)}
                   </td>
                   <td className="apqr-scheduler-date-cell" style={getColumnStyle('apqr_generation')}>
-                    {formatApqrDate(generationDate || null)}
+                    {formatAppMonthYear(generationDate || null)}
                   </td>
                   <td style={getColumnStyle('product_name')}>
                     {row.apqr_id ? (

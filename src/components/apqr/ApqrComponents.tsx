@@ -2,12 +2,15 @@ import type { ReactNode } from 'react'
 import { Alert, Input, Space, Spin, Tag, Tooltip, Typography } from 'antd'
 import {
   AlertTriangle,
+  BarChart3,
   Building2,
   CalendarDays,
+  ChartPie,
   Check,
   CheckCircle2,
   CircleAlert,
   CircleDashed,
+  ClipboardList,
   Clock3,
   Columns3,
   Database,
@@ -37,6 +40,7 @@ import {
   Tag as TagIcon,
   TimerOff,
   Trash2,
+  TrendingUp,
   Users,
   X,
   type LucideIcon,
@@ -375,6 +379,10 @@ const apqrIconMap = {
   send: Send,
   droplet: Droplets,
   tag: TagIcon,
+  chartPie: ChartPie,
+  chartLine: TrendingUp,
+  chartBar: BarChart3,
+  clipboard: ClipboardList,
 } as const
 
 export function ApqrIcon({

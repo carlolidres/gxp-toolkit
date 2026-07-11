@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Button, Input, Select } from 'antd'
+import { Button, Input } from 'antd'
 
 import { ApqrError, ApqrLoading, ApqrPackageBadge, ApqrPage, ApqrIcon } from '../../components/apqr/ApqrComponents'
 import { ApqrContactRoleEditor } from '../../components/apqr/ApqrContactRoleEditor'
@@ -26,6 +26,7 @@ const emptyForm = {
   technicalContacts: [emptyContact()],
   regulatoryContacts: [emptyContact()],
   apqr_package: 'Billable' as ApqrPackage,
+  auto_compute_dates: true,
 }
 
 type PackageFilter = 'all' | ApqrPackage
@@ -133,6 +134,7 @@ export function ApqrClientRegistryPage() {
       technicalContacts: parseContacts(client.technical),
       regulatoryContacts: parseContacts(client.regulatory),
       apqr_package: client.apqr_package,
+      auto_compute_dates: client.auto_compute_dates !== false,
     })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -155,6 +157,7 @@ export function ApqrClientRegistryPage() {
           technical: serializeContacts(form.technicalContacts),
           regulatory: serializeContacts(form.regulatoryContacts),
           apqr_package: form.apqr_package,
+          auto_compute_dates: form.auto_compute_dates,
         },
         editingId ?? undefined,
       )
@@ -247,12 +250,24 @@ export function ApqrClientRegistryPage() {
               />
             </RegistryFormField>
             <RegistryFormField label="APQR Package" htmlFor="apqr-client-package">
-              <Select
+              <select
                 id="apqr-client-package"
                 value={form.apqr_package}
-                onChange={(value) => setForm({ ...form, apqr_package: value as ApqrPackage })}
-                options={[{ value: 'Billable', label: 'Billable' }, { value: 'Not Billable', label: 'Not Billable' }]}
-              />
+                onChange={(e) => setForm({ ...form, apqr_package: e.target.value as ApqrPackage })}
+              >
+                <option value="Billable">Billable</option>
+                <option value="Not Billable">Not Billable</option>
+              </select>
+            </RegistryFormField>
+            <RegistryFormField label="Date Calculation" htmlFor="apqr-client-auto-compute">
+              <select
+                id="apqr-client-auto-compute"
+                value={form.auto_compute_dates ? 'auto' : 'manual'}
+                onChange={(e) => setForm({ ...form, auto_compute_dates: e.target.value === 'auto' })}
+              >
+                <option value="auto">Auto-Compute Dates</option>
+                <option value="manual">Manual Dates</option>
+              </select>
             </RegistryFormField>
           </div>
 

@@ -2399,49 +2399,124 @@ a.apqr-kpi-card:focus-visible {
 
 .apqr-dashboard-panels {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--content-gap);
+  grid-template-columns: minmax(0, 1fr) minmax(240px, clamp(260px, 22vw, 340px));
+  gap: clamp(8px, 0.9vw, 12px);
   margin-bottom: var(--content-gap);
   align-items: stretch;
 }
 
-.apqr-panel-triage {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.apqr-delivery-charts-stack {
-  grid-column: 2;
-  grid-row: 1;
+.apqr-dashboard-main {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: clamp(6px, 0.7vw, 8px);
+  min-width: 0;
+}
+
+.apqr-dashboard-charts-row {
+  display: flex;
+  align-items: stretch;
+  gap: clamp(6px, 0.7vw, 8px);
+  min-width: 0;
+}
+
+/* Beat .apqr-page .panel + .panel margin so Triage/Trend share one row height */
+.apqr-page .apqr-dashboard-charts-row > .panel,
+.apqr-page .apqr-dashboard-charts-row > .panel + .panel {
+  flex: 1 1 0;
+  width: 0;
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  align-self: stretch;
+}
+
+.apqr-panel-delivery-performance {
+  margin: 0;
   min-width: 0;
 }
 
 .apqr-panel-actions {
-  grid-column: 3;
-  grid-row: 1;
   display: flex;
   flex-direction: column;
-  min-height: 545px;
+  min-height: 0;
   min-width: 0;
+  height: 100%;
+}
+
+.apqr-panel-compact {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(14px, 1.6vw, 20px);
+  box-sizing: border-box;
+}
+
+.apqr-panel-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.apqr-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+
+.apqr-panel-header h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+  font-size: clamp(0.86rem, 0.8rem + 0.25vw, 0.95rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.apqr-panel-header-icon {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--teal) 12%, var(--surface));
+  color: var(--teal);
+}
+
+.apqr-panel-header-menu {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin-top: -2px;
+  border-radius: 8px;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.apqr-panel-compact > .help-text,
+.apqr-upcoming-header .help-text {
+  margin: 0 0 12px;
+  font-size: 0.75rem;
+  line-height: 1.35;
 }
 
 .apqr-upcoming-header {
   flex-shrink: 0;
 }
 
-.apqr-upcoming-header .help-text {
-  margin: 0;
-}
-
 .apqr-upcoming-scroll {
   flex: 1;
   min-height: 0;
-  margin-top: 12px;
+  margin-top: 4px;
   overflow-y: auto;
-  padding-right: 6px;
+  padding-right: 4px;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--muted) 40%, transparent) transparent;
@@ -2464,25 +2539,6 @@ a.apqr-kpi-card:focus-visible {
   background: color-mix(in srgb, var(--muted) 55%, transparent);
 }
 
-.apqr-delivery-charts-stack .panel {
-  width: 100%;
-  padding: clamp(12px, 1.4vw, 16px);
-}
-
-.apqr-delivery-charts-stack .help-text {
-  margin: 0 0 8px;
-  font-size: 0.75rem;
-  line-height: 1.35;
-}
-
-.apqr-panel-delivery-trend {
-  order: 1;
-}
-
-.apqr-panel-delivery-performance {
-  order: 2;
-}
-
 .apqr-panel-compact h2 {
   margin: 0 0 2px;
   font-size: 0.92rem;
@@ -2495,12 +2551,48 @@ a.apqr-kpi-card:focus-visible {
   margin: 0 -2px;
 }
 
+.apqr-panel-triage .apqr-donut-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.apqr-panel-delivery-trend .apqr-panel-body .apqr-chart-compact {
+  flex: 1 1 auto;
+  min-height: clamp(168px, 20vh, 215px);
+  height: auto;
+}
+
+.apqr-panel-delivery-trend .apqr-chart-summary {
+  margin-top: auto;
+}
+
+.apqr-performance-layout {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
+  gap: clamp(12px, 1.5vw, 20px);
+  align-items: stretch;
+  min-width: 0;
+}
+
+.apqr-chart-summary-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.apqr-performance-chart {
+  height: clamp(160px, 18vh, 200px);
+  min-width: 0;
+}
+
 .apqr-chart-summary {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
-  padding: 8px 10px;
+  margin-top: 10px;
+  padding: 9px 12px;
   border-radius: 8px;
   background: color-mix(in srgb, var(--apqr-chart-teal, #167d83) 10%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--apqr-chart-teal, #167d83) 18%, var(--border));
@@ -2523,11 +2615,11 @@ a.apqr-kpi-card:focus-visible {
 .apqr-chart-summary-tile {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 92%, var(--bg));
+  gap: 10px;
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
   font-size: 0.75rem;
   line-height: 1.25;
   min-width: 0;
@@ -2535,9 +2627,12 @@ a.apqr-kpi-card:focus-visible {
 
 .apqr-chart-summary-tile strong {
   display: block;
-  margin-top: 2px;
-  font-size: 1rem;
-  font-weight: 700;
+  margin-top: 4px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 .apqr-chart-summary-swatch {
@@ -2547,21 +2642,41 @@ a.apqr-kpi-card:focus-visible {
   border-radius: 2px;
 }
 
+.apqr-chart-summary-icon {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
 .apqr-chart-summary-tile.tone-on-time {
   color: #2f9e44;
+  background: color-mix(in srgb, #2f9e44 10%, var(--surface));
+  border-color: color-mix(in srgb, #2f9e44 18%, var(--border));
 }
 
 .apqr-chart-summary-tile.tone-overdue {
   color: #e03131;
+  background: color-mix(in srgb, #e03131 10%, var(--surface));
+  border-color: color-mix(in srgb, #e03131 18%, var(--border));
 }
 
 .apqr-donut-layout {
   display: grid;
-  gap: 12px;
+  grid-template-columns: minmax(140px, 1fr) minmax(120px, 0.85fr);
+  gap: clamp(10px, 1.2vw, 16px);
+  align-items: center;
+  flex: 1;
+  min-height: 0;
 }
 
 .apqr-donut-chart {
   position: relative;
+  height: clamp(180px, 22vh, 230px);
+  min-width: 0;
 }
 
 .apqr-donut-center {
@@ -2574,13 +2689,14 @@ a.apqr-kpi-card:focus-visible {
 }
 
 .apqr-donut-center strong {
-  font-size: 1.4rem;
+  font-size: clamp(1.35rem, 1.1rem + 0.5vw, 1.6rem);
   line-height: 1;
 }
 
 .apqr-donut-center span {
   color: var(--muted);
   font-size: 0.72rem;
+  margin-top: 2px;
 }
 
 .apqr-donut-legend {
@@ -2588,7 +2704,8 @@ a.apqr-kpi-card:focus-visible {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .apqr-donut-legend li {
@@ -2652,6 +2769,32 @@ a.apqr-kpi-card:focus-visible {
 
 .apqr-upcoming-item.tone-neutral {
   border-left-color: var(--muted);
+}
+
+.apqr-upcoming-icon {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 14%, transparent);
+  color: var(--muted);
+}
+
+.apqr-upcoming-icon.tone-danger {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+
+.apqr-upcoming-icon.tone-warning {
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  color: var(--warning-text);
+}
+
+.apqr-upcoming-icon.tone-info {
+  background: color-mix(in srgb, var(--blue) 16%, transparent);
+  color: var(--blue);
 }
 
 .apqr-upcoming-dot {
@@ -3027,26 +3170,38 @@ body.is-col-resizing {
   }
 }
 
-@media (max-width: 1400px) {
+@media (max-width: 1200px) {
   .apqr-dashboard-panels {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  .apqr-panel-triage {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .apqr-delivery-charts-stack {
-    grid-column: 2;
-    grid-row: 1;
+    grid-template-columns: 1fr;
   }
 
   .apqr-panel-actions {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    min-height: 0;
     max-height: 420px;
+  }
+}
+
+@media (max-width: 900px) {
+  .apqr-dashboard-charts-row {
+    flex-direction: column;
+  }
+
+  .apqr-page .apqr-dashboard-charts-row > .panel,
+  .apqr-page .apqr-dashboard-charts-row > .panel + .panel {
+    width: auto;
+    flex: 1 1 auto;
+  }
+
+  .apqr-performance-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .apqr-chart-summary-stack {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .apqr-donut-layout {
+    grid-template-columns: minmax(140px, 200px) 1fr;
   }
 }
 
@@ -3055,15 +3210,21 @@ body.is-col-resizing {
     grid-template-columns: 1fr;
   }
 
-  .apqr-panel-triage,
-  .apqr-delivery-charts-stack,
-  .apqr-panel-actions {
-    grid-column: 1;
-    grid-row: auto;
-  }
-
   .apqr-panel-actions {
     max-height: 360px;
+  }
+
+  .apqr-chart-summary-stack {
+    grid-template-columns: 1fr;
+  }
+
+  .apqr-donut-layout {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .apqr-donut-legend {
+    width: 100%;
   }
 
   .apqr-page .page-header {
@@ -3315,7 +3476,53 @@ body.is-col-resizing {
 }
 
 .apqr-registry-form-top {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: start;
+}
+
+/* Align Ant Input with combobox control height in the top row.
+   Windows native <select> ignores vertical padding/line-height unless appearance:none. */
+.apqr-registry-form-top .apqr-form-field .ant-input {
+  width: 100%;
+  height: 39px;
+  min-height: 39px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  line-height: 1.25;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.apqr-registry-form-top .apqr-form-field select {
+  width: 100%;
+  box-sizing: border-box;
+  height: 39px;
+  min-height: 39px;
+  /* appearance:none required on Windows so padding/line-height can center text.
+     Slightly heavier top padding optically centers DM Sans (caps sit high). */
+  padding: 10px 28px 6px 10px !important;
+  line-height: 1.4 !important;
+  font-size: 0.875rem;
+  font-weight: 500;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7c8f' d='M2.5 4.25L6 8.25l3.5-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+}
+
+.apqr-registry-form-top .apqr-form-field .apqr-combobox {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .apqr-registry-form-contacts {
@@ -4410,10 +4617,20 @@ body.is-col-resizing .apqr-client-table .apqr-col-resize-handle::after {
   grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
 }
 
-.apqr-scheduler-form-grid--coverage,
+.apqr-scheduler-form-grid--coverage {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr);
+  max-width: none;
+}
+
 .apqr-scheduler-form-grid--status {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   max-width: 640px;
+}
+
+.apqr-scheduler-field--coverage-reason textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  resize: vertical;
 }
 
 .apqr-scheduler-form-grid--dates {
@@ -4678,6 +4895,14 @@ body.is-col-resizing .apqr-scheduler-table .apqr-col-resize-handle::after {
   .apqr-scheduler-form-grid--product,
   .apqr-scheduler-form-grid--dates {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .apqr-scheduler-form-grid--coverage {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .apqr-scheduler-field--coverage-reason {
+    grid-column: 1 / -1;
   }
 
   .apqr-scheduler-field--wide {
@@ -6471,6 +6696,45 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   white-space: pre-line;
 }
 
+.apqr-form-coverage-value {
+  display: grid;
+  gap: 8px;
+}
+
+.apqr-form-coverage-reason {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--teal) 18%, var(--border));
+  background: color-mix(in srgb, var(--teal) 8%, var(--surface));
+  display: grid;
+  gap: 4px;
+}
+
+.apqr-form-coverage-reason.is-missing {
+  border-color: color-mix(in srgb, var(--warning, #c47a00) 28%, var(--border));
+  background: color-mix(in srgb, var(--warning, #c47a00) 10%, var(--surface));
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.apqr-form-coverage-reason-label {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.apqr-form-coverage-reason-text {
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .apqr-contact-lines {
   display: flex;
   flex-direction: column;
@@ -6599,7 +6863,6 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
 .apqr-form-field input:not(.app-date-input-native),
 .apqr-form-field select,
 .apqr-form-field textarea,
-.apqr-form-field .apqr-combobox,
 .apqr-form-field .app-date-input {
   width: 100%;
   min-height: 39px;
@@ -6611,6 +6874,32 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   font: inherit;
   font-weight: 500;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.apqr-form-field .apqr-combobox {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Combobox owns its chrome via .apqr-combobox-input-wrap — don't restyle the inner input. */
+.apqr-form-field .apqr-combobox input {
+  width: 100%;
+  min-height: 37px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px 0 0 8px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.apqr-form-field .apqr-combobox input:focus-visible {
+  border: 0;
+  box-shadow: none;
+  outline: none;
 }
 
 .apqr-form-field input:not(.app-date-input-native),

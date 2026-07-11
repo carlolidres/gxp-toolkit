@@ -18,7 +18,7 @@ import {
   apqrCycleYearOptions,
   defaultApqrCycleYear,
 } from '../../features/apqr/apqrDashboard'
-import type { ApqrDatabaseRow, ApqrDepartment, ApqrPriority, DeliveryClassification } from '../../features/apqr/types'
+import type { ApqrDatabaseRow, ApqrPriority, DeliveryClassification } from '../../features/apqr/types'
 import {
   apqrPriorityDisplay,
   commitmentMonthFromGenerationMonth,
@@ -26,6 +26,9 @@ import {
   defaultCommitmentSchedule,
   defaultStabilityPullOutDate,
   linkedFilterMonthsFromField,
+  linkedManualFilterMonthsFromField,
+  manualApqrGenerationFromCommitment,
+  manualStabilityPullOutDate,
   type ApqrLinkedDateField,
 } from '../../features/apqr/scheduling'
 import { useColumnResize } from '../../hooks/useColumnResize'
@@ -76,8 +79,6 @@ const COLUMN_LABELS: Record<ColumnKey, string> = {
 
 const DEFAULT_COLUMNS: ColumnKey[] = Object.keys(COLUMN_LABELS) as ColumnKey[]
 
-const DEPARTMENTS: ApqrDepartment[] = ['Dry', 'Liquids', 'Creams and Ointments', 'Topicals', 'Cosmetics']
-
 const DATABASE_PAGE_PROPS = {
   icon: 'database',
   headerClassName: 'apqr-page-header--database',
@@ -103,7 +104,7 @@ export function ApqrDatabasePage() {
   const [viewMode, setViewMode] = useState<ViewMode>('list')
 
   const autoComputeDatesId = useId()
-  const [departmentFilter, setDepartmentFilter] = useState<string>('all')
+  const [clientFilter, setClientFilter] = useState<string>('all')
   const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>('all')
   const [reportFilter, setReportFilter] = useState<ReportFilter>('all')
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all')
@@ -118,6 +119,16 @@ export function ApqrDatabasePage() {
   const { getColumnStyle, onResizeHandleMouseDown } = useColumnResize<ColumnKey>('apqr-database-column-widths')
   const rows = data ?? []
   const cycleYearOptions = useMemo(() => apqrCycleYearOptions(rows), [rows])
+  const clientOptions = useMemo(() => {
+    const byCode = new Map<string, string>()
+    for (const row of rows) {
+      if (!row.client_code || byCode.has(row.client_code)) continue
+      byCode.set(row.client_code, row.client_name)
+    }
+    return [...byCode.entries()]
+      .map(([code, name]) => ({ code, name }))
+      .sort((a, b) => a.name.localeCompare(b.name) || a.code.localeCompare(b.code))
+  }, [rows])
 
   const hasDateFilters = autoComputeDates
     ? generationDateFilter !== ''
@@ -127,7 +138,7 @@ export function ApqrDatabasePage() {
     summaryFilter !== 'all' ||
     cycleYearFilter !== 'all' ||
     hasDateFilters ||
-    departmentFilter !== 'all' ||
+    clientFilter !== 'all' ||
     deliveryFilter !== 'all' ||
     reportFilter !== 'all' ||
     priorityFilter !== 'all' ||
@@ -156,7 +167,9 @@ export function ApqrDatabasePage() {
         cycleYearFilter !== 'all' &&
         apqrCycleYearFromCommitment(
           autoComputeDates && row.review_coverage_end?.trim()
-            ? defaultCommitmentSchedule(row.review_coverage_end)
+            ? row.auto_compute_dates === false
+              ? row.commitment_schedule || defaultCommitmentSchedule(row.review_coverage_end)
+              : defaultCommitmentSchedule(row.review_coverage_end)
             : row.commitment_schedule,
         ) !== cycleYearFilter
       ) {
@@ -164,18 +177,32 @@ export function ApqrDatabasePage() {
       }
       if (autoComputeDates) {
         if (!row.review_coverage_end?.trim()) return false
-        // Match the linked driver month using dates computed from Review Coverage end
+        const rowAuto = row.auto_compute_dates !== false
         if (linkedDateDriver === 'commitment' && commitmentDateFilter) {
-          const computedGeneration = defaultApqrGenerationDate(row.review_coverage_end)
-          const computedCommitmentMonth = commitmentMonthFromGenerationMonth(computedGeneration.slice(0, 7))
-          if (computedCommitmentMonth !== commitmentDateFilter) return false
-        } else if (linkedDateDriver === 'pullout' && pulloutDateFilter) {
-          if (!dateInAppMonthYear(defaultStabilityPullOutDate(row.review_coverage_end), pulloutDateFilter)) {
-            return false
+          if (rowAuto) {
+            const computedGeneration = defaultApqrGenerationDate(row.review_coverage_end)
+            const computedCommitmentMonth = commitmentMonthFromGenerationMonth(computedGeneration.slice(0, 7))
+            if (computedCommitmentMonth !== commitmentDateFilter) return false
+          } else {
+            const commitment =
+              row.commitment_schedule || defaultCommitmentSchedule(row.review_coverage_end)
+            if (!dateInAppMonthYear(commitment, commitmentDateFilter)) return false
           }
+        } else if (linkedDateDriver === 'pullout' && pulloutDateFilter) {
+          const pullout = rowAuto
+            ? defaultStabilityPullOutDate(row.review_coverage_end)
+            : manualStabilityPullOutDate(row.review_coverage_end)
+          if (!dateInAppMonthYear(pullout, pulloutDateFilter)) return false
         } else if (generationDateFilter) {
-          if (!dateInAppMonthYear(defaultApqrGenerationDate(row.review_coverage_end), generationDateFilter)) {
-            return false
+          if (rowAuto) {
+            if (!dateInAppMonthYear(defaultApqrGenerationDate(row.review_coverage_end), generationDateFilter)) {
+              return false
+            }
+          } else {
+            const commitment =
+              row.commitment_schedule || defaultCommitmentSchedule(row.review_coverage_end)
+            const generation = manualApqrGenerationFromCommitment(commitment)
+            if (!dateInAppMonthYear(generation, generationDateFilter)) return false
           }
         }
       } else {
@@ -183,7 +210,7 @@ export function ApqrDatabasePage() {
         if (generationDateFilter && !dateInAppMonthYear(row.apqr_generation_date, generationDateFilter)) return false
         if (commitmentDateFilter && !dateInAppMonthYear(row.commitment_schedule, commitmentDateFilter)) return false
       }
-      if (departmentFilter !== 'all' && row.department !== departmentFilter) return false
+      if (clientFilter !== 'all' && row.client_code !== clientFilter) return false
       if (deliveryFilter === 'pending' && row.delivery_classification) return false
       if (deliveryFilter !== 'all' && deliveryFilter !== 'pending' && row.delivery_classification !== deliveryFilter) {
         return false
@@ -206,7 +233,7 @@ export function ApqrDatabasePage() {
   }, [
     rows,
     search,
-    departmentFilter,
+    clientFilter,
     deliveryFilter,
     reportFilter,
     priorityFilter,
@@ -230,7 +257,7 @@ export function ApqrDatabasePage() {
       if (generationDateFilter) count += 1
       if (commitmentDateFilter) count += 1
     }
-    if (departmentFilter !== 'all') count += 1
+    if (clientFilter !== 'all') count += 1
     if (deliveryFilter !== 'all') count += 1
     if (reportFilter !== 'all') count += 1
     if (priorityFilter !== 'all') count += 1
@@ -242,7 +269,7 @@ export function ApqrDatabasePage() {
     pulloutDateFilter,
     generationDateFilter,
     commitmentDateFilter,
-    departmentFilter,
+    clientFilter,
     deliveryFilter,
     reportFilter,
     priorityFilter,
@@ -271,16 +298,19 @@ export function ApqrDatabasePage() {
       applyLinkedMonths(linked)
       return
     }
-    setPulloutDateFilter('')
-    setGenerationDateFilter('')
-    setCommitmentDateFilter('')
+    // Manual Dates: keep current months; Commitment will drive Generation on change.
+    setLinkedDateDriver('commitment')
   }
 
   function handleDateFilterChange(field: ApqrLinkedDateField, value: string) {
     if (!autoComputeDates) {
-      if (field === 'pullout') setPulloutDateFilter(value)
-      else if (field === 'generation') setGenerationDateFilter(value)
-      else setCommitmentDateFilter(value)
+      const linked = linkedManualFilterMonthsFromField(field, value, {
+        pullout: pulloutDateFilter,
+        generation: generationDateFilter,
+        commitment: commitmentDateFilter,
+      })
+      setLinkedDateDriver(field)
+      applyLinkedMonths(linked)
       return
     }
     if (!value) {
@@ -304,7 +334,7 @@ export function ApqrDatabasePage() {
     setPulloutDateFilter('')
     setGenerationDateFilter('')
     setCommitmentDateFilter('')
-    setDepartmentFilter('all')
+    setClientFilter('all')
     setDeliveryFilter('all')
     setReportFilter('all')
     setPriorityFilter('all')
@@ -495,16 +525,14 @@ export function ApqrDatabasePage() {
                   checked={autoComputeDates}
                   onChange={(e) => handleAutoComputeToggle(e.target.checked)}
                 />
-                Auto-Compute Dates
+                {autoComputeDates ? 'Auto-Compute Dates' : 'Manual Dates'}
               </label>
             </div>
-            {autoComputeDates ? (
-              <p className="apqr-database-auto-compute-hint help-text">
-                For each APQR ID, Pullout = Review Coverage end − 60 days and Generation = end + 30 days. Commitment
-                is always Generation + 2 months. Changing any month syncs the other two; the table filters by the month
-                you last changed.
-              </p>
-            ) : null}
+            <p className="apqr-database-auto-compute-hint help-text">
+              {autoComputeDates
+                ? 'Auto-Compute: Pullout = coverage end − 60 days, Generation = end + 30 days, Commitment = Generation + 2 months. Per-client Manual Dates rows use Pullout = end − 2 months and Generation = Commitment − 2 months.'
+                : 'Manual Dates: edit months independently. Changing Commitment recalculates Generation (−2 months); changing Generation does not change Commitment. Table matches stored dates.'}
+            </p>
             <div className="apqr-database-filters-grid">
               <DatabaseFilterField label="APQR Cycle Year" htmlFor="apqr-db-filter-cycle-year">
                 <select
@@ -547,12 +575,16 @@ export function ApqrDatabasePage() {
                   onChange={(e) => handleDateFilterChange('commitment', e.target.value)}
                 />
               </DatabaseFilterField>
-              <DatabaseFilterField label="Department" htmlFor="apqr-db-filter-dept">
-                <select id="apqr-db-filter-dept" value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}>
-                  <option value="all">All departments</option>
-                  {DEPARTMENTS.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
+              <DatabaseFilterField label="Client" htmlFor="apqr-db-filter-client">
+                <select
+                  id="apqr-db-filter-client"
+                  value={clientFilter}
+                  onChange={(e) => setClientFilter(e.target.value)}
+                >
+                  <option value="all">All clients</option>
+                  {clientOptions.map((client) => (
+                    <option key={client.code} value={client.code}>
+                      {client.name}
                     </option>
                   ))}
                 </select>

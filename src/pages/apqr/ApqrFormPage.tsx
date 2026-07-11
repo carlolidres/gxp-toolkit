@@ -15,6 +15,7 @@ import { useToast } from '../../components/feedback/ToastProvider'
 import { useAuth } from '../../hooks/useAuth'
 import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { expectedStabilityTabulationCompletionDate } from '../../features/apqr/scheduling'
+import { reviewCoverageNeedsReason } from '../../features/apqr/schedulerForm'
 import {
   DELAY_CATEGORIES,
   addFollowUp,
@@ -403,7 +404,13 @@ export function ApqrFormPage() {
               <InfoField label="Product" value={data.sched.product_name} />
               <InfoField
                 label="Review Coverage"
-                value={formatReviewCoverage(data.sched.review_coverage_start, data.sched.review_coverage_end)}
+                value={
+                  <CoverageValue
+                    start={data.sched.review_coverage_start}
+                    end={data.sched.review_coverage_end}
+                    reason={data.sched.review_coverage_adjustment_reason}
+                  />
+                }
               />
               <InfoField label="Department" value={department} />
               <InfoField label="Stability Pull-Out" value={formatApqrDate(data.sched.stability_pull_out_date)} />
@@ -878,6 +885,39 @@ function ContactValue({ raw }: { raw: string }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function CoverageValue({
+  start,
+  end,
+  reason,
+}: {
+  start: string
+  end: string
+  reason: string | null | undefined
+}) {
+  const range = formatReviewCoverage(start, end)
+  const trimmedReason = reason?.trim() ?? ''
+  const needsReason = reviewCoverageNeedsReason(start, end)
+  if (!needsReason && !trimmedReason) {
+    return <span className="apqr-form-info-text">{range}</span>
+  }
+
+  return (
+    <div className="apqr-form-coverage-value">
+      <span className="apqr-form-info-text">{range}</span>
+      {trimmedReason ? (
+        <p className="apqr-form-coverage-reason">
+          <span className="apqr-form-coverage-reason-label">Why not 12 months</span>
+          <span className="apqr-form-coverage-reason-text">{trimmedReason}</span>
+        </p>
+      ) : (
+        <p className="apqr-form-coverage-reason is-missing">
+          Non-standard coverage — add a reason in APQR Scheduler.
+        </p>
+      )}
     </div>
   )
 }

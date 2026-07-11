@@ -29,6 +29,8 @@ export interface ApqrClient {
   technical: string | null
   regulatory: string | null
   apqr_package: ApqrPackage
+  /** When true, schedule dates use −60d/+30d/+90d. When false, Manual Dates rules apply. */
+  auto_compute_dates: boolean
   status: ClientStatus
   created_at: string
   updated_at: string
@@ -107,6 +109,7 @@ export interface ApqrDatabaseRow {
   client_name: string
   account_manager: string
   apqr_package: ApqrPackage
+  auto_compute_dates: boolean
   product_name: string
   product_code: string
   department: string | null
@@ -190,6 +193,7 @@ export interface ApqrClientInput {
   technical?: string
   regulatory?: string
   apqr_package: ApqrPackage
+  auto_compute_dates?: boolean
 }
 
 export interface ApqrSchedulerRowInput {

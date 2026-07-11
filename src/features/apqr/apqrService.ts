@@ -56,7 +56,10 @@ interface SeedBundle {
 
 const bundle = seedBundle as unknown as SeedBundle
 
-let clients = structuredClone(bundle.clients)
+let clients = (structuredClone(bundle.clients) as ApqrClient[]).map((c) => ({
+  ...c,
+  auto_compute_dates: c.auto_compute_dates !== false,
+}))
 let schedulerEntries = bundle.schedulerEntries.map((e) => ({
   ...e,
   is_active: Boolean(e.is_active ?? true),
@@ -77,6 +80,14 @@ function normalizeClientInput(input: ApqrClientInput): ApqrClientInput {
     qa: input.qa?.trim() || undefined,
     technical: input.technical?.trim() || undefined,
     regulatory: input.regulatory?.trim() || undefined,
+    auto_compute_dates: input.auto_compute_dates !== false,
+  }
+}
+
+function normalizeClient(row: ApqrClient): ApqrClient {
+  return {
+    ...row,
+    auto_compute_dates: row.auto_compute_dates !== false,
   }
 }
 
@@ -120,6 +131,7 @@ export function buildDatabaseRows(): ApqrDatabaseRow[] {
         client_name: client?.client_name ?? '',
         account_manager: client?.account_manager ?? '',
         apqr_package: client?.apqr_package ?? 'Billable',
+        auto_compute_dates: client?.auto_compute_dates !== false,
         product_name: sched.product_name,
         product_code: sched.product_code,
         department: record?.department ?? null,
@@ -231,7 +243,7 @@ async function syncApqrFromSupabase(): Promise<void> {
   if (recordsRes.error) throw new Error(supabaseErrorMessage('Failed to load APQR records', recordsRes.error))
   if (followUpsRes.error) throw new Error(supabaseErrorMessage('Failed to load APQR follow-ups', followUpsRes.error))
 
-  clients = (clientsRes.data ?? []) as ApqrClient[]
+  clients = ((clientsRes.data ?? []) as ApqrClient[]).map(normalizeClient)
   schedulerEntries = (schedulerRes.data ?? []).map((entry) => ({
     ...(entry as ApqrSchedulerEntry),
     is_active: Boolean((entry as ApqrSchedulerEntry).is_active ?? true),
@@ -262,6 +274,7 @@ function clientRow(client: ApqrClient) {
     technical: client.technical,
     regulatory: client.regulatory,
     apqr_package: client.apqr_package,
+    auto_compute_dates: client.auto_compute_dates !== false,
     status: client.status,
     created_at: client.created_at,
     updated_at: client.updated_at,
@@ -409,6 +422,7 @@ export async function saveClient(input: ApqrClientInput, existingId?: string): P
         { key: 'technical', label: 'Technical Contact' },
         { key: 'regulatory', label: 'Regulatory Contact' },
         { key: 'apqr_package', label: 'APQR Package' },
+        { key: 'auto_compute_dates', label: 'Auto-Compute Dates' },
       ],
     )
     try {
@@ -426,6 +440,7 @@ export async function saveClient(input: ApqrClientInput, existingId?: string): P
     qa: normalized.qa ?? null,
     technical: normalized.technical ?? null,
     regulatory: normalized.regulatory ?? null,
+    auto_compute_dates: normalized.auto_compute_dates !== false,
     status: 'active',
     created_at: ts,
     updated_at: ts,

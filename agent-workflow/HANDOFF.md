@@ -8,6 +8,16 @@ Deployment: `DEPLOYED` — GitHub Pages run [29133348277](https://github.com/car
 
 ## Current Status
 
+**APQR Dashboard panels layout** — Chart section restyled to match reference (`screenshot/ChatGPT Image Jul 11, 2026, 11_08_17 AM.png`): left main grid (Triage + Trend on top, Performance spanning below) with full-height Upcoming Actions on the right. Top-row Triage/Trend cards stretch to equal height; panel bodies flex-fill. Panel headers with icons; Performance metric tiles beside the bar chart; circular action icons. Responsive: stacks at ≤1200px / ≤900px / ≤720px with fluid gap/padding.
+
+**Client Registry select text centering** — APQR Package / Date Calculation switched from Ant Design 6 `Select` to native `<select>` (Ant 6 content layout clipped/misaligned value text). Styled with `appearance: none`, matched 39px control height, and optical padding so labels sit mid-field on Windows.
+
+**Client Auto-Compute / Manual Dates** — Registry **Date Calculation** beside APQR Package (`auto_compute_dates`). Auto: −60d/+30d/+90d. Manual: Pullout = coverage end − 2 months; Generation = Commitment − 2 months; Commitment change updates Generation; Generation does not change Commitment. Scheduler follows client setting; Database filters use the same Auto/Manual linking. Column applied on linked Supabase via MCP (`apqr_client_auto_compute_dates`); local migration file `20260711120000_apqr_client_auto_compute_dates.sql` (CLI `db push` still blocked by remote history drift).
+
+**APQR coverage remarks** — Form Product & Schedule shows “Why not 12 months” under Review Coverage when the range is not a standard year (or a reason is stored). Scheduler Review coverage section has a textarea to view/edit/add `review_coverage_adjustment_reason`; view dialog shows it too.
+
+**APQR Database Client filter** — Filter panel Client select (replaces Department) lists unique clients from loaded rows by `client_code`; matches on code.
+
 **APQR Database month-year date filters** — **Auto-Compute Dates** (default on): Pullout/Generation sync from coverage end (−60d / +30d); **Commitment is always Generation + 2 months**. Table matches the last-changed linked field using computed coverage-end dates (commitment driver uses generation month + 2). When off: clears three dates; independent stored-date filters.
 
 **APQR Database grid cards** — Card layout aligned to `screenshot/sample UI.png`: APQR ID + delivery status header, bold client / muted product, 2×2 meta panel with department icons and green commitment date, send + edit action buttons.
@@ -60,7 +70,7 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Dashboard chart layout | `PASSED` | Delivery Trend stacked above Performance; 6px stack gap; reference-style charts + summary footers |
+| Dashboard chart layout | `PASSED` | Reference grid: Triage+Trend top, Performance full-width below, Upcoming Actions full-height right; fluid gaps |
 | Dashboard KPI cards | `PASSED` | Container-query responsive grid, vertical card layout, trend pills |
 | Dashboard Upcoming Actions | `PASSED` | Fixed height, scrollable list, tone-accent cards |
 | Dashboard Triage Table | `PASSED` | Single-line toolbar, pagination, sticky header, drag-resize columns (`localStorage`) |
@@ -83,6 +93,7 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 
 | Check | Status | Result |
 |---|---|---|
+| `npm run type-check` | `PASSED` | 2026-07-11 — APQR dashboard panels layout |
 | `npm run test` (dateUtils) | `PASSED` | 2026-07-11 — month-year helpers (6/6) |
 | `npm run type-check` | `PASSED` | 2026-07-11 — month picker filters |
 | `npm run test` (apqrDashboard) | `PASSED` | 2026-07-10 — commitment-based cycle year helpers (8/8) |
@@ -99,10 +110,9 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 
 ## Next Action
 
-1. Owner visual check: APQR Database — Auto-Compute Dates on/off; linked months; Clear all filter.
-2. Owner visual check: APQR Database grid cards vs sample UI.
-3. Owner visual check: APQR Scheduler — manual date checkbox; blank coverage required; table search.
-4. Repair local/remote migration history (`20260708123542`, `20260709103218`) when doing Supabase work.
+1. Owner visual check: Registry Date Calculation; Scheduler Manual Dates; Database Auto/Manual filters.
+2. Owner visual check: APQR Form coverage remarks; Database Client filter; grid cards.
+3. Repair local/remote migration history (`20260708123542`, `20260709103218`, `20260709112155`) when doing Supabase CLI work.
 
 
 ## eDoc Rollout Progress

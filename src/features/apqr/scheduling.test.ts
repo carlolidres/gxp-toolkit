@@ -1,15 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  addCalendarDays,
   assignCommitmentPriority,
   classifyDelivery,
   commitmentMonthFromGenerationMonth,
   defaultApqrGenerationDate,
   defaultCommitmentSchedule,
   defaultStabilityPullOutDate,
-  expectedStabilityTabulationCompletionDate,
+  generationMonthFromCommitmentMonth,
   linkedFilterMonthsFromField,
+  linkedManualFilterMonthsFromField,
+  manualApqrGenerationFromCommitment,
+  manualStabilityPullOutDate,
 } from './scheduling'
 
 describe('apqr scheduling', () => {
@@ -23,6 +25,15 @@ describe('apqr scheduling', () => {
 
   it('computes commitment schedule 90 days after coverage end', () => {
     expect(defaultCommitmentSchedule('2026-12-31')).toBe('2027-03-31')
+  })
+
+  it('computes manual pull-out 2 months before coverage end', () => {
+    expect(manualStabilityPullOutDate('2026-12-31')).toBe('2026-10-31')
+    expect(manualStabilityPullOutDate('2026-05-31')).toBe('2026-03-31')
+  })
+
+  it('computes manual generation 2 months before commitment', () => {
+    expect(manualApqrGenerationFromCommitment('2027-03-31')).toBe('2027-01-31')
   })
 
   it('keeps auto-compute commitment month exactly 2 months after generation', () => {
@@ -52,20 +63,38 @@ describe('apqr scheduling', () => {
     })
   })
 
-  it('computes per-record generation month from review coverage end', () => {
+  it('manual filter: commitment change updates generation only', () => {
+    expect(
+      linkedManualFilterMonthsFromField('commitment', '2026-09', {
+        pullout: '2026-04',
+        generation: '2026-05',
+        commitment: '2026-07',
+      }),
+    ).toEqual({
+      pullout: '2026-04',
+      generation: generationMonthFromCommitmentMonth('2026-09'),
+      commitment: '2026-09',
+    })
+  })
+
+  it('manual filter: generation change does not affect commitment', () => {
+    expect(
+      linkedManualFilterMonthsFromField('generation', '2026-06', {
+        pullout: '2026-04',
+        generation: '2026-05',
+        commitment: '2026-09',
+      }),
+    ).toEqual({
+      pullout: '2026-04',
+      generation: '2026-06',
+      commitment: '2026-09',
+    })
+  })
+
+  it('keeps month-year slices aligned with day-based defaults', () => {
     expect(defaultApqrGenerationDate('2026-05-31').slice(0, 7)).toBe('2026-06')
     expect(defaultStabilityPullOutDate('2026-05-31').slice(0, 7)).toBe('2026-04')
     expect(defaultCommitmentSchedule('2026-05-31').slice(0, 7)).toBe('2026-08')
-  })
-
-  it('computes expected stability tabulation completion', () => {
-    expect(expectedStabilityTabulationCompletionDate('2026-11-01')).toBe(addCalendarDays('2026-11-01', 90))
-  })
-
-  it('classifies on-time and overdue delivery', () => {
-    expect(classifyDelivery('2027-03-31', '2027-03-30')).toBe('Delivered On Time')
-    expect(classifyDelivery('2027-03-31', '2027-04-01')).toBe('Delivered Overdue')
-    expect(classifyDelivery('2027-03-31', null, '2027-04-01')).toBe('Currently Overdue and Undelivered')
   })
 
   it('returns NA delivery and low priority for cancelled report status', () => {

@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS apqr_clients (
   regulatory      TEXT,
   apqr_package    TEXT NOT NULL DEFAULT 'Billable'
                     CHECK (apqr_package IN ('Billable', 'Not Billable')),
+  auto_compute_dates INTEGER NOT NULL DEFAULT 1,
   status          TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived')),
   created_at      TEXT NOT NULL,
   updated_at      TEXT NOT NULL,

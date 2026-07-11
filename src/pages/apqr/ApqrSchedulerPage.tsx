@@ -150,12 +150,13 @@ export function ApqrSchedulerPage() {
 
   useEffect(() => {
     if (!selectedClient) return
-    setForm((prev) => ({
+    setForm({
       ...emptyScheduleRow(selectedClient.client_name),
-      ...prev,
       client_name: selectedClient.client_name,
-    }))
-  }, [selectedClient?.id, selectedClient?.client_name])
+      manual_calculated_dates: selectedClient.auto_compute_dates === false,
+    })
+    setEditingKey(null)
+  }, [selectedClient?.id, selectedClient?.client_name, selectedClient?.auto_compute_dates])
 
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {
@@ -215,7 +216,10 @@ export function ApqrSchedulerPage() {
   }
 
   function clearForm() {
-    setForm(emptyScheduleRow(selectedClient?.client_name ?? ''))
+    setForm({
+      ...emptyScheduleRow(selectedClient?.client_name ?? ''),
+      manual_calculated_dates: selectedClient?.auto_compute_dates === false,
+    })
     setEditingKey(null)
   }
 
@@ -228,12 +232,6 @@ export function ApqrSchedulerPage() {
     }
     if (draft.review_coverage_end < draft.review_coverage_start) {
       return 'Review coverage end date cannot be before the start date.'
-    }
-    if (
-      reviewCoverageNeedsReason(draft.review_coverage_start, draft.review_coverage_end) &&
-      !draft.review_coverage_adjustment_reason?.trim()
-    ) {
-      return 'A reason is required for non-standard review coverage.'
     }
     if (draft.manual_calculated_dates) {
       if (
@@ -257,8 +255,38 @@ export function ApqrSchedulerPage() {
     return null
   }
 
+  function promptCoverageReason(draft: ScheduleRowDraft, label?: string): string | null {
+    if (
+      !reviewCoverageNeedsReason(draft.review_coverage_start, draft.review_coverage_end) ||
+      draft.review_coverage_adjustment_reason?.trim()
+    ) {
+      return draft.review_coverage_adjustment_reason?.trim() || null
+    }
+    const productLabel = label || draft.product_name.trim() || draft.product_code.trim() || 'this entry'
+    const reason = window
+      .prompt(
+        `Review coverage for ${productLabel} is not a standard 12-month period.\n\nEnter the reason why coverage is not 12 months:`,
+      )
+      ?.trim()
+    return reason || null
+  }
+
   async function handleSubmit() {
-    const error = validateForm(form)
+    let draft = form
+    if (
+      reviewCoverageNeedsReason(draft.review_coverage_start, draft.review_coverage_end) &&
+      !draft.review_coverage_adjustment_reason?.trim()
+    ) {
+      const reason = promptCoverageReason(draft)
+      if (!reason) {
+        notify('A reason is required for non-standard review coverage before saving.')
+        return
+      }
+      draft = { ...draft, review_coverage_adjustment_reason: reason }
+      setForm(draft)
+    }
+
+    const error = validateForm(draft)
     if (error) {
       notify(error)
       return
@@ -268,27 +296,27 @@ export function ApqrSchedulerPage() {
       return
     }
 
-    const autoDates = computedScheduleDates(form.review_coverage_end)
-    const submitted: ScheduleRowDraft = form.manual_calculated_dates
+    const autoDates = computedScheduleDates(draft.review_coverage_end)
+    const submitted: ScheduleRowDraft = draft.manual_calculated_dates
       ? {
-          ...form,
-          product_name: form.product_name.trim(),
-          product_code: form.product_code.trim().toUpperCase(),
-          schedule_status_date: form.schedule_status_date ?? new Date().toISOString().slice(0, 10),
-          client_name: selectedClient?.client_name ?? form.client_name,
+          ...draft,
+          product_name: draft.product_name.trim(),
+          product_code: draft.product_code.trim().toUpperCase(),
+          schedule_status_date: draft.schedule_status_date ?? new Date().toISOString().slice(0, 10),
+          client_name: selectedClient?.client_name ?? draft.client_name,
           commitment_schedule_adjustment_reason:
-            form.commitment_schedule_adjustment_reason?.trim() || 'Manual date entry',
+            draft.commitment_schedule_adjustment_reason?.trim() || 'Manual date entry',
           stability_pull_out_adjustment_reason:
-            form.stability_pull_out_adjustment_reason?.trim() || 'Manual date entry',
+            draft.stability_pull_out_adjustment_reason?.trim() || 'Manual date entry',
           apqr_generation_adjustment_reason:
-            form.apqr_generation_adjustment_reason?.trim() || 'Manual date entry',
+            draft.apqr_generation_adjustment_reason?.trim() || 'Manual date entry',
         }
       : {
-          ...form,
-          product_name: form.product_name.trim(),
-          product_code: form.product_code.trim().toUpperCase(),
-          schedule_status_date: form.schedule_status_date ?? new Date().toISOString().slice(0, 10),
-          client_name: selectedClient?.client_name ?? form.client_name,
+          ...draft,
+          product_name: draft.product_name.trim(),
+          product_code: draft.product_code.trim().toUpperCase(),
+          schedule_status_date: draft.schedule_status_date ?? new Date().toISOString().slice(0, 10),
+          client_name: selectedClient?.client_name ?? draft.client_name,
           ...autoDates,
           commitment_schedule_adjustment_reason: undefined,
           stability_pull_out_adjustment_reason: undefined,
@@ -315,9 +343,30 @@ export function ApqrSchedulerPage() {
 
   async function handleSaveAll() {
     if (!clientId || !canMutate || rows.length === 0) return
+
+    const nextRows = [...rows]
+    for (let index = 0; index < nextRows.length; index += 1) {
+      const row = nextRows[index]
+      if (
+        !reviewCoverageNeedsReason(row.review_coverage_start, row.review_coverage_end) ||
+        row.review_coverage_adjustment_reason?.trim()
+      ) {
+        continue
+      }
+      const reason = promptCoverageReason(row)
+      if (!reason) {
+        notify(
+          `A reason is required for non-standard review coverage on ${row.product_name || row.product_code || 'an entry'} before saving.`,
+        )
+        return
+      }
+      nextRows[index] = { ...row, review_coverage_adjustment_reason: reason }
+    }
+
     setBusy(true)
     try {
-      await saveSchedulerRows(clientId, rows, rows.map((r) => r.id))
+      setRows(nextRows)
+      await saveSchedulerRows(clientId, nextRows, nextRows.map((r) => r.id))
       notify('Successfully Saved')
       await scheduler.reload()
       clearForm()
@@ -367,7 +416,12 @@ export function ApqrSchedulerPage() {
   }
 
   function loadIntoForm(row: ScheduleRowDraft, editKey: string | null) {
-    setForm({ ...row, client_name: selectedClient?.client_name ?? row.client_name })
+    setForm({
+      ...row,
+      client_name: selectedClient?.client_name ?? row.client_name,
+      manual_calculated_dates:
+        selectedClient?.auto_compute_dates === false || Boolean(row.manual_calculated_dates),
+    })
     setEditingKey(editKey)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -554,6 +608,7 @@ export function ApqrSchedulerPage() {
           <ApqrSchedulerFormPanel
             form={form}
             clientName={selectedClient.client_name}
+            clientAutoComputeDates={selectedClient.auto_compute_dates !== false}
             productSuggestions={productSuggestions}
             editable={canMutate}
             busy={busy}

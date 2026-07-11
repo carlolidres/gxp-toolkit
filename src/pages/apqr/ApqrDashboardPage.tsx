@@ -204,26 +204,32 @@ export function ApqrDashboardPage() {
       </div>
 
       <section className="apqr-dashboard-panels">
-        <article className="panel apqr-panel-compact apqr-panel-triage">
-          <h2>APQR Commitment Triage Distribution</h2>
-          <p className="help-text">{scopedRows.length} active records in range</p>
-          <TriageDonutChart data={triage} total={scopedRows.length} />
-        </article>
-        <div className="apqr-delivery-charts-stack">
-          <article className="panel apqr-panel-compact apqr-panel-delivery-trend">
-            <h2>Monthly APQR Delivery Trend</h2>
-            <p className="help-text">Last 12 months by Final APQR Delivery Date</p>
-            <DeliveryTrendChart data={monthly} />
-          </article>
+        <div className="apqr-dashboard-main">
+          <div className="apqr-dashboard-charts-row">
+            <article className="panel apqr-panel-compact apqr-panel-triage">
+              <PanelHeader title="APQR Commitment Triage Distribution" icon="chartPie" />
+              <p className="help-text">{scopedRows.length} active records in range</p>
+              <div className="apqr-panel-body">
+                <TriageDonutChart data={triage} total={scopedRows.length} />
+              </div>
+            </article>
+            <article className="panel apqr-panel-compact apqr-panel-delivery-trend">
+              <PanelHeader title="Monthly APQR Delivery Trend" icon="chartLine" />
+              <p className="help-text">Last 12 months by Final APQR Delivery Date</p>
+              <div className="apqr-panel-body">
+                <DeliveryTrendChart data={monthly} />
+              </div>
+            </article>
+          </div>
           <article className="panel apqr-panel-compact apqr-panel-delivery-performance">
-            <h2>Monthly APQR Delivery Performance</h2>
+            <PanelHeader title="Monthly APQR Delivery Performance" icon="chartBar" />
             <p className="help-text">Green = on time · Red = delivered overdue</p>
             <DeliveryPerformanceChart data={monthly} />
           </article>
         </div>
         <article className="panel apqr-panel-compact apqr-panel-actions">
           <div className="apqr-upcoming-header">
-            <h2>Upcoming Actions</h2>
+            <PanelHeader title="Upcoming Actions" icon="clipboard" />
             <p className="help-text">Next items requiring attention</p>
           </div>
           <div className="apqr-upcoming-scroll">
@@ -504,6 +510,22 @@ function KpiIcon({ name }: { name: string }) {
   )
 }
 
+function PanelHeader({ title, icon }: { title: string; icon: string }) {
+  return (
+    <div className="apqr-panel-header">
+      <h2>
+        <span className="apqr-panel-header-icon" aria-hidden>
+          <ApqrIcon name={icon} />
+        </span>
+        {title}
+      </h2>
+      <span className="apqr-panel-header-menu" aria-hidden>
+        <ApqrIcon name="more" />
+      </span>
+    </div>
+  )
+}
+
 function TriageDonutChart({ data, total }: { data: ReturnType<typeof buildTriageDistribution>; total: number }) {
   const palette = useChartPalette()
   if (!total) {
@@ -688,8 +710,28 @@ function DeliveryPerformanceChart({ data }: { data: ReturnType<typeof buildMonth
   const axis = deliveryAxisProps(palette)
 
   return (
-    <>
-      <div className="chart apqr-chart-compact">
+    <div className="apqr-performance-layout">
+      <div className="apqr-chart-summary-stack">
+        <div className="apqr-chart-summary-tile tone-on-time">
+          <span className="apqr-chart-summary-icon" aria-hidden>
+            <ApqrIcon name="check" />
+          </span>
+          <span>
+            Delivered On Time
+            <strong>{onTimeTotal}</strong>
+          </span>
+        </div>
+        <div className="apqr-chart-summary-tile tone-overdue">
+          <span className="apqr-chart-summary-icon" aria-hidden>
+            <ApqrIcon name="warning" />
+          </span>
+          <span>
+            Delivered Overdue
+            <strong>{overdueTotal}</strong>
+          </span>
+        </div>
+      </div>
+      <div className="chart apqr-chart-compact apqr-performance-chart">
         <ResponsiveContainer>
           <BarChart data={recent} layout="vertical" margin={{ top: 4, right: 12, left: 8, bottom: 18 }}>
             <CartesianGrid stroke={palette.grid} strokeDasharray="4 4" horizontal={false} />
@@ -724,23 +766,7 @@ function DeliveryPerformanceChart({ data }: { data: ReturnType<typeof buildMonth
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="apqr-chart-summary-row">
-        <div className="apqr-chart-summary-tile tone-on-time">
-          <span className="apqr-chart-summary-swatch" style={{ background: DELIVERY_ON_TIME_COLOR }} aria-hidden />
-          <span>
-            Delivered On Time
-            <strong>{onTimeTotal}</strong>
-          </span>
-        </div>
-        <div className="apqr-chart-summary-tile tone-overdue">
-          <span className="apqr-chart-summary-swatch" style={{ background: DELIVERY_OVERDUE_COLOR }} aria-hidden />
-          <span>
-            Delivered Overdue
-            <strong>{overdueTotal}</strong>
-          </span>
-        </div>
-      </div>
-    </>
+    </div>
   )
 }
 
@@ -754,7 +780,9 @@ function UpcomingActionsList({ items }: { items: ReturnType<typeof buildUpcoming
       {items.map((item) => (
         <li key={item.id}>
           <Link to={item.link} className={`apqr-upcoming-item tone-${item.tone}`}>
-            <span className={`apqr-upcoming-dot tone-${item.tone}`} aria-hidden />
+            <span className={`apqr-upcoming-icon tone-${item.tone}`} aria-hidden>
+              <ApqrIcon name={item.tone === 'danger' || item.tone === 'warning' ? 'warning' : 'calendar'} />
+            </span>
             <span className="apqr-upcoming-copy">
               <strong>{item.title}</strong>
               <span>{item.productName}</span>
