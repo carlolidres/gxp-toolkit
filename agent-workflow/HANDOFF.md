@@ -8,6 +8,10 @@ Deployment: `DEPLOYED` — GitHub Pages run [29138018718](https://github.com/car
 
 ## Current Status
 
+**APQR Form Product Code** — Product & Schedule Product field shows `product_code` as a muted secondary line under the product name.
+
+**User Management spacing** — User list cards use `gap-2`; Role/Status row has `mb-4`; permissions info alert uses `px-4 pt-3.5 pb-0`.
+
 **APQR Dashboard panels layout** — Chart section restyled to match reference (`screenshot/ChatGPT Image Jul 11, 2026, 11_08_17 AM.png`): left main grid (Triage + Trend on top, Performance spanning below) with full-height Upcoming Actions on the right. Top-row Triage/Trend cards stretch to equal height; panel bodies flex-fill. Panel headers with icons; Performance metric tiles beside the bar chart; circular action icons. Responsive: stacks at ≤1200px / ≤900px / ≤720px with fluid gap/padding.
 
 **Client Registry select text centering** — APQR Package / Date Calculation switched from Ant Design 6 `Select` to native `<select>` (Ant 6 content layout clipped/misaligned value text). Styled with `appearance: none`, matched 39px control height, and optical padding so labels sit mid-field on Windows.

@@ -198,7 +198,7 @@ export function UserManagementPage() {
           </header>
 
           <ul
-            className="user-mgmt-user-list-scroll m-0 max-h-[min(70vh,720px)] list-none overflow-y-auto p-2"
+            className="user-mgmt-user-list-scroll m-0 flex max-h-[min(70vh,720px)] list-none flex-col gap-2 overflow-y-auto p-2"
             role="listbox"
             aria-label="Select a user"
           >
@@ -278,7 +278,7 @@ export function UserManagementPage() {
                   ) : null}
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="user-role" className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                       <UserCog className="size-3.5" aria-hidden="true" />
@@ -348,7 +348,7 @@ export function UserManagementPage() {
                   ) : null}
                 </div>
 
-                <p className="mt-4 flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--teal)_20%,var(--border))] bg-[var(--alert-info-bg)] px-3 py-2.5 text-sm text-[var(--muted)]">
+                <p className="mt-4 flex items-start gap-2 rounded-lg border border-[color-mix(in_srgb,var(--teal)_20%,var(--border))] bg-[var(--alert-info-bg)] px-4 pt-3.5 pb-0 text-sm text-[var(--muted)]">
                   {draftRole === 'Admin' ? (
                     <>
                       <Shield className="mt-0.5 size-4 shrink-0 text-[var(--teal)]" aria-hidden="true" />

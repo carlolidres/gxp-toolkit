@@ -401,7 +401,17 @@ export function ApqrFormPage() {
               }
             />
             <div className="apqr-form-info-grid">
-              <InfoField label="Product" value={data.sched.product_name} />
+              <InfoField
+                label="Product"
+                value={
+                  <>
+                    <span className="apqr-form-info-text">{data.sched.product_name}</span>
+                    {data.sched.product_code ? (
+                      <span className="apqr-form-info-code">{data.sched.product_code}</span>
+                    ) : null}
+                  </>
+                }
+              />
               <InfoField
                 label="Review Coverage"
                 value={

@@ -6692,6 +6692,15 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   overflow-wrap: anywhere;
 }
 
+.apqr-form-info-code {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 .apqr-form-info-text.is-multiline {
   white-space: pre-line;
 }
