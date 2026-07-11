@@ -3,8 +3,8 @@
 Last Updated: `2026-07-11`
 Version: `v34`
 Branch: `main` / `master`
-Commit: `5d67b2e` — ui: APQR Database filters, grid cards, and compact status icons
-Deployment: `DEPLOYED` — GitHub Pages run [29133348277](https://github.com/carlolidres/gxp-toolkit/actions/runs/29133348277) (2026-07-11)
+Commit: `ee2efd9` — ui: APQR dashboard layout, auto-compute dates, and module polish
+Deployment: `DEPLOYED` — GitHub Pages run [29138018718](https://github.com/carlolidres/gxp-toolkit/actions/runs/29138018718) (2026-07-11)
 
 ## Current Status
 
