@@ -3,8 +3,8 @@
 Last Updated: `2026-07-11`
 Version: `v34`
 Branch: `main` / `master`
-Commit: `ee2efd9` — ui: APQR dashboard layout, auto-compute dates, and module polish
-Deployment: `DEPLOYED` — GitHub Pages run [29138018718](https://github.com/carlolidres/gxp-toolkit/actions/runs/29138018718) (2026-07-11)
+Commit: `2e712f9` — ui: show APQR product code and tighten User Management spacing
+Deployment: `DEPLOYED` — GitHub Pages run [29139119921](https://github.com/carlolidres/gxp-toolkit/actions/runs/29139119921) (2026-07-11)
 
 ## Current Status
 
