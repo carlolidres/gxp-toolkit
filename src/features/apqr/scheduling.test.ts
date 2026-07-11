@@ -4,10 +4,12 @@ import {
   addCalendarDays,
   assignCommitmentPriority,
   classifyDelivery,
+  commitmentMonthFromGenerationMonth,
   defaultApqrGenerationDate,
   defaultCommitmentSchedule,
   defaultStabilityPullOutDate,
   expectedStabilityTabulationCompletionDate,
+  linkedFilterMonthsFromField,
 } from './scheduling'
 
 describe('apqr scheduling', () => {
@@ -21,6 +23,39 @@ describe('apqr scheduling', () => {
 
   it('computes commitment schedule 90 days after coverage end', () => {
     expect(defaultCommitmentSchedule('2026-12-31')).toBe('2027-03-31')
+  })
+
+  it('keeps auto-compute commitment month exactly 2 months after generation', () => {
+    expect(commitmentMonthFromGenerationMonth('2026-07')).toBe('2026-09')
+    expect(commitmentMonthFromGenerationMonth('2026-11')).toBe('2027-01')
+  })
+
+  it('syncs linked month filters with commitment = generation + 2 months', () => {
+    expect(linkedFilterMonthsFromField('generation', '2026-07')).toEqual({
+      pullout: '2026-04',
+      generation: '2026-07',
+      commitment: '2026-09',
+    })
+  })
+
+  it('syncs linked month filters from a pullout month', () => {
+    const linked = linkedFilterMonthsFromField('pullout', '2026-04')
+    expect(linked?.pullout).toBe('2026-04')
+    expect(linked?.commitment).toBe(commitmentMonthFromGenerationMonth(linked!.generation))
+  })
+
+  it('syncs linked month filters from a commitment month as generation − 2', () => {
+    expect(linkedFilterMonthsFromField('commitment', '2026-09')).toEqual({
+      pullout: '2026-04',
+      generation: '2026-07',
+      commitment: '2026-09',
+    })
+  })
+
+  it('computes per-record generation month from review coverage end', () => {
+    expect(defaultApqrGenerationDate('2026-05-31').slice(0, 7)).toBe('2026-06')
+    expect(defaultStabilityPullOutDate('2026-05-31').slice(0, 7)).toBe('2026-04')
+    expect(defaultCommitmentSchedule('2026-05-31').slice(0, 7)).toBe('2026-08')
   })
 
   it('computes expected stability tabulation completion', () => {

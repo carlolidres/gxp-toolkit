@@ -126,6 +126,7 @@ export function buildDatabaseRows(): ApqrDatabaseRow[] {
         review_coverage_start: sched.review_coverage_start,
         review_coverage_end: sched.review_coverage_end,
         stability_pull_out_date: pullOut,
+        apqr_generation_date: sched.apqr_generation_date ?? null,
         expected_stability_tabulation_completion_date: expectedStab,
         stability_tabulation_status: record?.stability_tabulation_status ?? null,
         commitment_schedule: sched.commitment_schedule,

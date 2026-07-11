@@ -41,6 +41,7 @@ function row(partial: Partial<ApqrDatabaseRow>): ApqrDatabaseRow {
     review_coverage_start: '2026-11-01',
     review_coverage_end: '2027-10-31',
     stability_pull_out_date: '2027-08-01',
+    apqr_generation_date: '2027-11-30',
     expected_stability_tabulation_completion_date: '2027-10-30',
     stability_tabulation_status: 'Not Sent',
     commitment_schedule: '2028-01-31',

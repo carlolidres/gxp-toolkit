@@ -113,6 +113,7 @@ export interface ApqrDatabaseRow {
   review_coverage_start: string
   review_coverage_end: string
   stability_pull_out_date: string | null
+  apqr_generation_date: string | null
   expected_stability_tabulation_completion_date: string | null
   stability_tabulation_status: StabilityTabulationStatus | null
   commitment_schedule: string

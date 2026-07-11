@@ -3,10 +3,18 @@
 Last Updated: `2026-07-11`
 Version: `v34`
 Branch: `main` / `master`
-Commit: `d9b6b33` — ui: fit VRMS Database toolbar and table to the viewport
-Deployment: `DEPLOYED` — GitHub Pages run [29127627352](https://github.com/carlolidres/gxp-toolkit/actions/runs/29127627352) (2026-07-11)
+Commit: `PENDING` — APQR Database filters, cards, compact status icons
+Deployment: `PENDING` — push to `master` triggers GitHub Pages
 
 ## Current Status
+
+**APQR Database month-year date filters** — **Auto-Compute Dates** (default on): Pullout/Generation sync from coverage end (−60d / +30d); **Commitment is always Generation + 2 months**. Table matches the last-changed linked field using computed coverage-end dates (commitment driver uses generation month + 2). When off: clears three dates; independent stored-date filters.
+
+**APQR Database grid cards** — Card layout aligned to `screenshot/sample UI.png`: APQR ID + delivery status header, bold client / muted product, 2×2 meta panel with department icons and green commitment date, send + edit action buttons.
+
+**APQR compact status icons** — Delivery, priority, and report status badges render as borderless one-line icons with hover tooltips (full name + description). Filter/sort option text and accessible labels keep complete status names.
+
+**APQR Database date filters** — Filter panel adds Pullout Date, APQR Generation Date, and Commitment Date. APQR Cycle Year filters by commitment date calendar year (aligned with Scheduler). `apqr_generation_date` included on database rows.
 
 **VRMS Database UI polish** — Toolbar stays on one responsive row; table uses fixed layout with ellipsis headers; table wrap capped to viewport height with internal scroll and sticky headers.
 
@@ -75,6 +83,8 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 
 | Check | Status | Result |
 |---|---|---|
+| `npm run test` (dateUtils) | `PASSED` | 2026-07-11 — month-year helpers (6/6) |
+| `npm run type-check` | `PASSED` | 2026-07-11 — month picker filters |
 | `npm run test` (apqrDashboard) | `PASSED` | 2026-07-10 — commitment-based cycle year helpers (8/8) |
 | `npm run type-check` | `PASSED` | 2026-07-10 — manual date entry checkbox + scheduler search + blank coverage |
 | `npm run build` | `PASSED` | 2026-07-10 — atmospheric backgrounds |
@@ -89,10 +99,11 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 
 ## Next Action
 
-1. Owner visual check: APQR Scheduler — manual date checkbox; blank coverage required; table search.
-2. Owner visual check: toggle light/dark on dashboard and login; adjust glow intensity if desired.
-3. Commit atmospheric CSS + scheduler changes when ready; then frontend deploy.
-4. Repair local/remote migration history (`20260708123542`, `20260709103218`) when doing Supabase work.
+1. Owner visual check: APQR Database — Auto-Compute Dates on/off; linked months; Clear all filter.
+2. Owner visual check: APQR Database grid cards vs sample UI.
+3. Owner visual check: APQR Scheduler — manual date checkbox; blank coverage required; table search.
+4. Confirm GitHub Pages deploy after `master` push.
+5. Repair local/remote migration history (`20260708123542`, `20260709103218`) when doing Supabase work.
 
 
 ## eDoc Rollout Progress

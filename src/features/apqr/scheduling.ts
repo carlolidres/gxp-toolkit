@@ -30,6 +30,56 @@ export function defaultCommitmentSchedule(reviewCoverageEnd: string): string {
   return addCalendarDays(reviewCoverageEnd, 90)
 }
 
+/** Shift a YYYY-MM value by whole calendar months. */
+export function addMonthYear(monthYear: string, months: number): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(monthYear.trim())
+  if (!match) return monthYear
+  const year = Number(match[1])
+  const monthIndex = Number(match[2]) - 1 + months
+  const d = new Date(Date.UTC(year, monthIndex, 1))
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+/** Auto-compute filter: Commitment month is always Generation month + 2. */
+export function commitmentMonthFromGenerationMonth(generationMonth: string): string {
+  return addMonthYear(generationMonth, 2)
+}
+
+export type ApqrLinkedDateField = 'pullout' | 'generation' | 'commitment'
+
+/**
+ * Sync month-year filter values from one selected field:
+ * pullout = coverage end − 60d, generation = coverage end + 30d,
+ * commitment = generation month + 2 (always).
+ */
+export function linkedFilterMonthsFromField(
+  field: ApqrLinkedDateField,
+  monthYear: string,
+): { pullout: string; generation: string; commitment: string } | null {
+  if (!/^\d{4}-\d{2}$/.test(monthYear.trim())) return null
+  const selected = monthYear.trim()
+
+  if (field === 'commitment') {
+    const generation = addMonthYear(selected, -2)
+    const coverageEnd = addCalendarDays(`${generation}-01`, -30)
+    return {
+      pullout: defaultStabilityPullOutDate(coverageEnd).slice(0, 7),
+      generation,
+      commitment: selected,
+    }
+  }
+
+  const anchor = `${selected}-01`
+  const coverageEnd = field === 'pullout' ? addCalendarDays(anchor, 60) : addCalendarDays(anchor, -30)
+  const generation = defaultApqrGenerationDate(coverageEnd).slice(0, 7)
+
+  return {
+    pullout: defaultStabilityPullOutDate(coverageEnd).slice(0, 7),
+    generation,
+    commitment: commitmentMonthFromGenerationMonth(generation),
+  }
+}
+
 export function expectedStabilityTabulationCompletionDate(stabilityPullOutDate: string): string {
   return addCalendarDays(stabilityPullOutDate, 90)
 }

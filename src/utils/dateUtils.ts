@@ -23,6 +23,40 @@ export function formatAppDate(value: string | null | undefined, empty = '—'): 
   return `${String(parts.day).padStart(2, '0')} ${APP_MONTHS[parts.month - 1]} ${parts.year}`
 }
 
+/** Parse YYYY-MM (optional day/time suffix) without timezone drift. */
+export function parseIsoMonthYear(value: string): { year: number; month: number } | null {
+  const match = /^(\d{4})-(\d{2})/.exec(value.trim())
+  if (!match) return null
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  if (month < 1 || month > 12) return null
+
+  return { year, month }
+}
+
+/** Display format for month filters: Mmm YYYY (e.g. Jul 2026). */
+export function formatAppMonthYear(value: string | null | undefined, empty = '—'): string {
+  if (!value?.trim()) return empty
+
+  const parts = parseIsoMonthYear(value)
+  if (!parts) return value
+
+  return `${APP_MONTHS[parts.month - 1]} ${parts.year}`
+}
+
+/** Current calendar month as YYYY-MM. */
+export function currentAppMonthYear(now = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
+/** True when an ISO date falls in the given YYYY-MM month. */
+export function dateInAppMonthYear(isoDate: string | null | undefined, monthYear: string): boolean {
+  if (!monthYear.trim()) return true
+  if (!isoDate?.trim()) return false
+  return isoDate.trim().slice(0, 7) === monthYear.trim()
+}
+
 /** Date + time display: dd Mmm YYYY, hh:mm am/pm */
 export function formatAppDateTime(value: string | null | undefined, empty = '—'): string {
   if (!value?.trim()) return empty

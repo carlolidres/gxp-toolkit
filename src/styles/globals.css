@@ -5291,6 +5291,38 @@ body.is-col-resizing .apqr-scheduler-table .apqr-col-resize-handle::after {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+.apqr-database-auto-compute-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--teal) 28%, var(--border));
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--app-text);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.apqr-database-auto-compute-toggle input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--teal);
+  cursor: pointer;
+}
+
+.apqr-database-auto-compute-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 .apqr-database-filters-title {
@@ -5404,6 +5436,11 @@ body.is-col-resizing .apqr-scheduler-table .apqr-col-resize-handle::after {
   font: inherit;
   font-size: 0.8rem;
   transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.apqr-database-filters .app-date-input {
+  width: 100%;
+  min-height: 36px;
 }
 
 .apqr-database-filters select:focus-visible {
@@ -5522,11 +5559,6 @@ body.is-col-resizing .apqr-scheduler-table .apqr-col-resize-handle::after {
   box-shadow: 0 1px 0 var(--border);
   overflow: hidden;
   vertical-align: middle;
-}
-
-.apqr-database-table thead th.apqr-database-actions-col {
-  z-index: 4;
-  background: var(--table-header-bg);
 }
 
 .apqr-database-table .apqr-th-label {
@@ -5656,16 +5688,6 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   border-color: var(--border);
 }
 
-.apqr-database-actions-col {
-  width: 4rem;
-  min-width: 4rem;
-  max-width: 4rem;
-  padding-left: 8px;
-  padding-right: 8px;
-  text-align: center;
-  white-space: nowrap;
-}
-
 .apqr-database-table .apqr-row-actions {
   justify-content: center;
 }
@@ -5765,8 +5787,8 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
 
 .apqr-database-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 16px;
 }
 
 .apqr-database-grid .apqr-database-empty {
@@ -5775,17 +5797,18 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
 
 .apqr-database-card {
   display: grid;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: 12px;
+  padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--surface);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--app-text) 4%, transparent);
   transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
 
 .apqr-database-card:hover {
   border-color: color-mix(in srgb, var(--teal) 28%, var(--border));
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--app-text) 6%, transparent);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--app-text) 7%, transparent);
 }
 
 .apqr-database-card header {
@@ -5796,14 +5819,16 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
 }
 
 .apqr-database-card-id {
-  color: var(--teal);
-  font-size: 0.88rem;
-  font-weight: 700;
+  color: var(--navy);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
   text-decoration: none;
   line-height: 1.3;
 }
 
 .apqr-database-card-id:hover {
+  color: var(--teal);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -5816,57 +5841,224 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   text-align: right;
 }
 
+.apqr-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  border: 0;
+  border-radius: 8px;
+  line-height: 0;
+  flex-shrink: 0;
+  vertical-align: middle;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.apqr-status-icon svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.apqr-status-icon.tone-success {
+  color: var(--success-text);
+  background: var(--badge-success-bg);
+}
+
+.apqr-status-icon.tone-warning {
+  color: var(--warning-text);
+  background: var(--badge-warning-bg);
+}
+
+.apqr-status-icon.tone-error,
+.apqr-status-icon.tone-danger {
+  color: var(--danger-text);
+  background: var(--badge-danger-bg);
+}
+
+.apqr-status-icon.tone-processing,
+.apqr-status-icon.tone-info {
+  color: var(--info-text);
+  background: var(--badge-info-bg);
+}
+
+.apqr-status-icon.tone-default,
+.apqr-status-icon.tone-neutral {
+  color: var(--muted);
+  background: var(--badge-neutral-bg);
+}
+
+.apqr-status-tooltip {
+  display: grid;
+  gap: 2px;
+  max-width: 240px;
+}
+
+.apqr-status-tooltip strong {
+  font-weight: 700;
+}
+
+.apqr-status-tooltip span {
+  display: block;
+  font-weight: 400;
+  opacity: 0.92;
+}
+
+.apqr-database-table .apqr-status-icon,
+.apqr-database-card .apqr-status-icon,
+.apqr-triage-table .apqr-status-icon {
+  margin-inline: 0;
+}
+
+.apqr-database-card-meta .apqr-status-icon {
+  margin-top: 0;
+}
+
 .apqr-database-card-client {
   margin: 0;
-  font-weight: 700;
-  font-size: 0.9rem;
+  color: var(--navy);
+  font-weight: 800;
+  font-size: 0.92rem;
   line-height: 1.35;
 }
 
 .apqr-database-card-product {
-  margin: 0;
+  margin: -4px 0 0;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   line-height: 1.35;
 }
 
 .apqr-database-card-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 12px;
+  gap: 0;
   margin: 0;
-  padding-top: 4px;
-  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-radius: 10px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface-muted) 35%, var(--surface));
+}
+
+.apqr-database-card-meta > div {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  min-width: 0;
+  border-right: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+}
+
+.apqr-database-card-meta > div:nth-child(2n) {
+  border-right: 0;
+}
+
+.apqr-database-card-meta > div:nth-child(n + 3) {
+  border-bottom: 0;
 }
 
 .apqr-database-card-meta dt {
   margin: 0;
   color: var(--muted);
-  font-size: 0.64rem;
+  font-size: 0.62rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .apqr-database-card-meta dd {
-  margin: 3px 0 0;
+  margin: 0;
   font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--navy);
+  min-width: 0;
 }
 
 .apqr-database-card-meta .status-pill {
   max-width: 100%;
 }
 
+.apqr-database-card-meta-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.apqr-database-card-meta-value svg {
+  flex-shrink: 0;
+}
+
+.apqr-database-card-meta-value--commitment {
+  color: var(--success-text);
+}
+
+.apqr-database-card-meta-value--commitment svg {
+  color: var(--success-text);
+}
+
+.apqr-database-card-dept-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.apqr-database-card-dept-icon.dept-liquids {
+  color: var(--info-text);
+  background: var(--badge-info-bg);
+}
+
+.apqr-database-card-dept-icon.dept-dry {
+  color: var(--success-text);
+  background: var(--badge-success-bg);
+}
+
+.apqr-database-card-dept-icon.dept-creams,
+.apqr-database-card-dept-icon.dept-topicals,
+.apqr-database-card-dept-icon.dept-cosmetics,
+.apqr-database-card-dept-icon.dept-default {
+  color: var(--teal);
+  background: var(--teal-soft);
+}
+
 .apqr-database-card-actions {
   display: flex;
-  gap: 6px;
-  padding-top: 4px;
-  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.apqr-database-card-actions .apqr-icon-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apqr-database-card-action-primary {
+  border: 0;
+  background: var(--badge-info-bg);
+  color: var(--info-text);
 }
 
 .apqr-database-card-actions .apqr-icon-btn:hover {
   border-color: color-mix(in srgb, var(--teal) 36%, var(--border));
   background: color-mix(in srgb, var(--teal) 8%, var(--surface));
+}
+
+.apqr-database-card-action-primary:hover {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--badge-info-bg) 70%, var(--info-text));
+  color: var(--info-text);
 }
 
 .apqr-form-lookup {

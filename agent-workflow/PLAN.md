@@ -4,20 +4,22 @@ Last Updated: `2026-07-11`
 
 Plan Owner: `Cursor`
 
-Status: `COMPLETE`
+Status: `IMPLEMENTED`
 
 ## Objective
 
-Ship VRMS Database toolbar/table viewport polish: commit, push to `main`/`master`, deploy GitHub Pages.
+Auto-Compute Dates: sync linked month pickers; match each APQR by dates computed from its Review Coverage end.
 
 ## Acceptance
 
-1. [x] Database toolbar single responsive row
-2. [x] Table headers fit container with ellipsis
-3. [x] Table wrap capped to viewport with internal scroll
-4. [x] Committed and pushed to `main` and `master`
-5. [x] GitHub Pages deploy succeeded — run [29127627352](https://github.com/carlolidres/gxp-toolkit/actions/runs/29127627352)
+1. [x] Auto-Compute on: pickers sync (−60d / +30d / +90d from coverage end)
+2. [x] Auto-Compute on: table matches computed generation month from each row’s `review_coverage_end`
+3. [x] Default current month; filter by generation month
+4. [x] Auto-Compute off: clear dates; independent stored-date filters
+5. [x] Tests + type-check
+6. [ ] Owner browser check
 
 ## Remaining
 
-- None for this task
+- Owner visual check
+- Confirm GitHub Pages deploy after push

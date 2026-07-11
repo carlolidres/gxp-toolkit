@@ -1,16 +1,22 @@
 import type { ReactNode } from 'react'
-import { Alert, Input, Space, Spin, Tag, Typography } from 'antd'
+import { Alert, Input, Space, Spin, Tag, Tooltip, Typography } from 'antd'
 import {
   AlertTriangle,
   Building2,
   CalendarDays,
   Check,
+  CheckCircle2,
+  CircleAlert,
+  CircleDashed,
+  Clock3,
   Columns3,
   Database,
   Download,
+  Droplets,
   Eraser,
   ExternalLink,
   Eye,
+  FileCheck2,
   FileText,
   Filter,
   History,
@@ -27,9 +33,13 @@ import {
   RotateCcw,
   Save,
   Search,
+  Send,
+  Tag as TagIcon,
+  TimerOff,
   Trash2,
   Users,
   X,
+  type LucideIcon,
 } from 'lucide-react'
 
 import { useApqrActorSync } from '../../features/apqr/apqrAudit'
@@ -53,6 +63,115 @@ const priorityTone: Record<ApqrPriority, string> = {
   Completed: 'success',
   'Overdue Stability Action': 'error',
   'Critical Stability Action': 'warning',
+}
+
+const priorityMeta: Record<ApqrPriority, { description: string; Icon: LucideIcon }> = {
+  'Overdue Commitment': {
+    description: 'Commitment date has passed and delivery is still outstanding.',
+    Icon: TimerOff,
+  },
+  'Critical Commitment': {
+    description: 'Commitment is due very soon and needs immediate attention.',
+    Icon: CircleAlert,
+  },
+  'High-Priority Commitment': {
+    description: 'Commitment is approaching and should be prioritized.',
+    Icon: AlertTriangle,
+  },
+  'Moderate Priority': {
+    description: 'Commitment is on track with moderate urgency.',
+    Icon: Clock3,
+  },
+  'Low Priority': {
+    description: 'Commitment has comfortable lead time remaining.',
+    Icon: CircleDashed,
+  },
+  Completed: {
+    description: 'APQR workflow for this record is complete.',
+    Icon: CheckCircle2,
+  },
+  'Overdue Stability Action': {
+    description: 'Stability pull-out or tabulation action is overdue.',
+    Icon: TimerOff,
+  },
+  'Critical Stability Action': {
+    description: 'Stability action is due soon and needs follow-up.',
+    Icon: CircleAlert,
+  },
+}
+
+const deliveryMeta: Record<DeliveryClassification, { description: string; Icon: LucideIcon; tone: string }> = {
+  'Delivered On Time': {
+    description: 'Final delivery occurred on or before the commitment date.',
+    Icon: CheckCircle2,
+    tone: 'success',
+  },
+  'Delivered Overdue': {
+    description: 'Final delivery occurred after the commitment date.',
+    Icon: Clock3,
+    tone: 'warning',
+  },
+  'Currently Overdue and Undelivered': {
+    description: 'Commitment date has passed and the APQR is still undelivered.',
+    Icon: TimerOff,
+    tone: 'error',
+  },
+  NA: {
+    description: 'Delivery classification is not applicable for this record.',
+    Icon: CircleDashed,
+    tone: 'default',
+  },
+}
+
+const reportStatusMeta: Record<ApqrReportStatus, { description: string; Icon: LucideIcon; tone: string }> = {
+  'Draft Sent': {
+    description: 'Draft APQR report has been sent to the client.',
+    Icon: Send,
+    tone: 'processing',
+  },
+  'For Client Approval': {
+    description: 'Report is awaiting client approval.',
+    Icon: FileCheck2,
+    tone: 'warning',
+  },
+  'Client Approved': {
+    description: 'Client has approved the APQR report.',
+    Icon: CheckCircle2,
+    tone: 'success',
+  },
+}
+
+function ApqrStatusIcon({
+  label,
+  description,
+  tone,
+  Icon,
+}: {
+  label: string
+  description: string
+  tone: string
+  Icon: LucideIcon
+}) {
+  return (
+    <Tooltip
+      title={
+        <div className="apqr-status-tooltip">
+          <strong>{label}</strong>
+          <span>{description}</span>
+        </div>
+      }
+    >
+      <span
+        className={`apqr-status-icon tone-${tone}`}
+        aria-label={`${label}. ${description}`}
+        role="img"
+        tabIndex={0}
+      >
+        <Icon size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />
+        <span className="visually-hidden">{label}</span>
+      </span>
+    </Tooltip>
+  )
 }
 
 export function ApqrPage({
@@ -124,10 +243,22 @@ export function ApqrError({ message }: { message: string }) {
 }
 
 export function ApqrPriorityBadge({ priority, label }: { priority: ApqrPriority; label?: string }) {
+  const meta = priorityMeta[priority]
+  const displayLabel = label ?? priority
+  if (!meta) {
+    return (
+      <Tag className={`status-pill ${priorityTone[priority] ?? 'default'}`} color={priorityTone[priority] ?? 'default'}>
+        {displayLabel}
+      </Tag>
+    )
+  }
   return (
-    <Tag className={`status-pill ${priorityTone[priority] ?? 'default'}`} color={priorityTone[priority] ?? 'default'}>
-      {label ?? priority}
-    </Tag>
+    <ApqrStatusIcon
+      label={displayLabel}
+      description={meta.description}
+      tone={priorityTone[priority] ?? 'default'}
+      Icon={meta.Icon}
+    />
   )
 }
 
@@ -145,13 +276,6 @@ export function ApqrCommitmentStatusBadge({ status }: { status: CommitmentSchedu
   )
 }
 
-const deliveryTone: Record<DeliveryClassification, string> = {
-  'Delivered On Time': 'success',
-  'Delivered Overdue': 'warning',
-  'Currently Overdue and Undelivered': 'error',
-  NA: 'default',
-}
-
 export function ApqrDeliveryBadge({
   classification,
   fallbackStatus,
@@ -160,36 +284,47 @@ export function ApqrDeliveryBadge({
   fallbackStatus?: CommitmentScheduleStatus | null
 }) {
   if (classification) {
+    const meta = deliveryMeta[classification]
     return (
-      <Tag className={`status-pill ${deliveryTone[classification]}`} color={deliveryTone[classification]}>
-        {classification}
-      </Tag>
+      <ApqrStatusIcon
+        label={classification}
+        description={meta.description}
+        tone={meta.tone}
+        Icon={meta.Icon}
+      />
     )
   }
   if (fallbackStatus === 'For Client Approval') {
     return (
-      <Tag className="status-pill processing" color="processing">
-        {fallbackStatus}
-      </Tag>
+      <ApqrStatusIcon
+        label={fallbackStatus}
+        description="Commitment schedule is awaiting client approval."
+        tone="processing"
+        Icon={FileCheck2}
+      />
     )
   }
-  return <>—</>
-}
-
-const reportStatusTone: Record<ApqrReportStatus, string> = {
-  'Draft Sent': 'processing',
-  'For Client Approval': 'warning',
-  'Client Approved': 'success',
+  return (
+    <ApqrStatusIcon
+      label="Not yet delivered"
+      description="No final delivery date recorded yet."
+      tone="default"
+      Icon={CircleDashed}
+    />
+  )
 }
 
 export function ApqrReportStatusBadge({ status }: { status: ApqrReportStatus | string | null }) {
   if (!status) return <>—</>
-  const tone = reportStatusTone[status as ApqrReportStatus] ?? 'default'
-  return (
-    <Tag className={`status-pill ${tone}`} color={tone}>
-      {status}
-    </Tag>
-  )
+  const meta = reportStatusMeta[status as ApqrReportStatus]
+  if (!meta) {
+    return (
+      <Tag className="status-pill default" color="default">
+        {status}
+      </Tag>
+    )
+  }
+  return <ApqrStatusIcon label={status} description={meta.description} tone={meta.tone} Icon={meta.Icon} />
 }
 
 const packageTone: Record<ApqrPackage, string> = {
@@ -237,6 +372,9 @@ const apqrIconMap = {
   cycle: RefreshCw,
   load: Download,
   package: Package,
+  send: Send,
+  droplet: Droplets,
+  tag: TagIcon,
 } as const
 
 export function ApqrIcon({

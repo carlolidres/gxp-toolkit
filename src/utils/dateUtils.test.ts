@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatAppDate, formatAppDateTime, parseIsoDate } from './dateUtils'
+import {
+  currentAppMonthYear,
+  dateInAppMonthYear,
+  formatAppDate,
+  formatAppDateTime,
+  formatAppMonthYear,
+  parseIsoDate,
+} from './dateUtils'
 
 describe('dateUtils', () => {
   it('formats ISO dates as dd Mmm YYYY', () => {
@@ -15,5 +22,23 @@ describe('dateUtils', () => {
 
   it('formats datetime values with the same date pattern', () => {
     expect(formatAppDateTime('2025-01-01T14:30:00')).toMatch(/^01 Jan 2025, \d{2}:\d{2} (am|pm)$/)
+  })
+
+  it('formats month-year values as Mmm YYYY', () => {
+    expect(formatAppMonthYear('2026-07')).toBe('Jul 2026')
+    expect(formatAppMonthYear('2026-07-15')).toBe('Jul 2026')
+    expect(formatAppMonthYear(null)).toBe('—')
+  })
+
+  it('returns the current calendar month as YYYY-MM', () => {
+    expect(currentAppMonthYear(new Date(2026, 6, 11))).toBe('2026-07')
+  })
+
+  it('matches ISO dates that fall within a YYYY-MM month', () => {
+    expect(dateInAppMonthYear('2026-07-01', '2026-07')).toBe(true)
+    expect(dateInAppMonthYear('2026-07-31', '2026-07')).toBe(true)
+    expect(dateInAppMonthYear('2026-06-30', '2026-07')).toBe(false)
+    expect(dateInAppMonthYear(null, '2026-07')).toBe(false)
+    expect(dateInAppMonthYear('2026-07-01', '')).toBe(true)
   })
 })
