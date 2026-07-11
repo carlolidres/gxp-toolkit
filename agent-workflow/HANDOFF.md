@@ -3,8 +3,8 @@
 Last Updated: `2026-07-11`
 Version: `v34`
 Branch: `main` / `master`
-Commit: `PENDING` — APQR Database filters, cards, compact status icons
-Deployment: `PENDING` — push to `master` triggers GitHub Pages
+Commit: `5d67b2e` — ui: APQR Database filters, grid cards, and compact status icons
+Deployment: `DEPLOYED` — GitHub Pages run [29133348277](https://github.com/carlolidres/gxp-toolkit/actions/runs/29133348277) (2026-07-11)
 
 ## Current Status
 
@@ -102,8 +102,7 @@ Primary menu submenus: Dashboard, Client Registry, APQR Scheduler, APQR Database
 1. Owner visual check: APQR Database — Auto-Compute Dates on/off; linked months; Clear all filter.
 2. Owner visual check: APQR Database grid cards vs sample UI.
 3. Owner visual check: APQR Scheduler — manual date checkbox; blank coverage required; table search.
-4. Confirm GitHub Pages deploy after `master` push.
-5. Repair local/remote migration history (`20260708123542`, `20260709103218`) when doing Supabase work.
+4. Repair local/remote migration history (`20260708123542`, `20260709103218`) when doing Supabase work.
 
 
 ## eDoc Rollout Progress

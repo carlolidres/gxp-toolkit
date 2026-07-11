@@ -22,4 +22,3 @@ Auto-Compute Dates: sync linked month pickers; match each APQR by dates computed
 ## Remaining
 
 - Owner visual check
-- Confirm GitHub Pages deploy after push
