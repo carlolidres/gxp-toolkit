@@ -78,7 +78,7 @@ export function ForgotPasswordPage() {
   return (
     <div className="login-page">
       <section className="login-story">
-        <GxpLogo variant="lockup" showTagline />
+        <GxpLogo variant="lockup" showTagline tone="light" className="login-story-brand" />
         <div>
           <span className="eyebrow">Account recovery</span>
           <h1>Request a reset. An administrator must approve it.</h1>

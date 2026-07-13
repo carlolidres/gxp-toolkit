@@ -111,3 +111,18 @@ CREATE TABLE IF NOT EXISTS vmp_qc_instruments (
 
 CREATE INDEX IF NOT EXISTS idx_vmp_qc_instruments_record
   ON vmp_qc_instruments(masterlist_record_id, is_active);
+
+-- VRMS reusable dropdown suggestions (mirrors public.registry_values on Supabase).
+-- Stored routing documents keep their own text values; deleting a suggestion does not rewrite history.
+CREATE TABLE IF NOT EXISTS registry_values (
+  id            TEXT PRIMARY KEY,
+  registry_type TEXT NOT NULL,
+  value         TEXT NOT NULL,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (registry_type, value)
+);
+
+CREATE INDEX IF NOT EXISTS idx_registry_values_type ON registry_values(registry_type);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_registry_values_type_value_ci
+  ON registry_values(registry_type, lower(trim(value)));
+

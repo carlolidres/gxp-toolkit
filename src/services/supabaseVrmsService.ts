@@ -21,6 +21,7 @@ import {
   formatVrmsDateTime,
   formatVrmsDisplayDateTime,
   isValidRegistryValue,
+  normalizeRegistryValue,
 } from '../utils/vrmsLogic'
 import type { VrmsRepository } from './vrmsRepository'
 
@@ -229,7 +230,7 @@ export const supabaseVrmsService: VrmsRepository = {
   },
 
   async addRegistryValue(type, value, userEmail) {
-    const trimmed = String(value || '').trim()
+    const trimmed = normalizeRegistryValue(String(value || ''))
     if (!trimmed) throw new Error('Value is required.')
     if (!isValidRegistryValue(trimmed)) {
       throw new Error(
@@ -263,14 +264,20 @@ export const supabaseVrmsService: VrmsRepository = {
   },
 
   async deleteRegistryValue(type, value, userEmail) {
-    const trimmed = String(value || '').trim()
+    const trimmed = normalizeRegistryValue(String(value || ''))
     if (!trimmed) throw new Error('Registry value is required.')
     const client = await requireAuthenticatedClient()
+    const registryValues = await loadRegistryValues()
+    const match = registryValues.find(
+      (row) => row.registryType === type && row.value.toLowerCase() === trimmed.toLowerCase(),
+    )
+    if (!match) return this.getAppData(userEmail)
+
     const { data: removed, error } = await client
       .from('registry_values')
       .delete()
       .eq('registry_type', type)
-      .eq('value', trimmed)
+      .eq('value', match.value)
       .select('id')
     if (error) throw new Error(error.message)
     if (!removed?.length) return this.getAppData(userEmail)
@@ -279,7 +286,7 @@ export const supabaseVrmsService: VrmsRepository = {
       'Deleted registry value',
       '',
       '',
-      `${type} registry value "${trimmed}" was removed by ${userEmail} on ${formatVrmsDisplayDateTime(new Date())}.`,
+      `${type} registry value "${match.value}" was removed by ${userEmail} on ${formatVrmsDisplayDateTime(new Date())}.`,
       userEmail,
     )
 

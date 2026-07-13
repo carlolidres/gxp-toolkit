@@ -1,0 +1,144 @@
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+@source "./ToastContent.tsx";
+@source "./ToastProvider.tsx";
+
+.ant-message.ant-message-top {
+  z-index: 1400 !important;
+  top: 64px !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  pointer-events: none;
+}
+
+.ant-message .ant-message-notice {
+  pointer-events: auto;
+  padding: 0;
+  text-align: center;
+}
+
+.ant-message .ant-message-notice-wrapper.gxp-toast-notice {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  max-width: min(440px, calc(100vw - 32px));
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ant-message .gxp-toast-notice .ant-message-notice-icon {
+  display: none !important;
+}
+
+.ant-message .gxp-toast-notice .ant-message-notice-title {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.gxp-toast {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: auto;
+  max-width: min(440px, calc(100vw - 32px));
+  padding: 11px 16px 11px 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  color: var(--app-text);
+  box-shadow:
+    0 10px 28px rgba(27, 47, 67, 0.1),
+    0 1px 0 color-mix(in srgb, #fff 70%, transparent) inset;
+  backdrop-filter: blur(14px);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+.gxp-toast::before {
+  content: '';
+  position: absolute;
+  inset-block: 9px;
+  inset-inline-start: 0;
+  width: 3px;
+  border-radius: 0 4px 4px 0;
+  background: var(--toast-accent, var(--blue));
+}
+
+.gxp-toast--error {
+  --toast-accent: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 24%, var(--border));
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+}
+
+.gxp-toast--success {
+  --toast-accent: var(--success-text);
+  border-color: color-mix(in srgb, var(--success-text) 24%, var(--border));
+  background: color-mix(in srgb, var(--success-text) 7%, var(--surface));
+}
+
+.gxp-toast--warning {
+  --toast-accent: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 24%, var(--border));
+  background: color-mix(in srgb, var(--warning) 7%, var(--surface));
+}
+
+.gxp-toast--info {
+  --toast-accent: var(--blue);
+  border-color: color-mix(in srgb, var(--blue) 22%, var(--border));
+  background: color-mix(in srgb, var(--blue) 6%, var(--surface));
+}
+
+.gxp-toast--loading {
+  --toast-accent: var(--teal);
+  border-color: color-mix(in srgb, var(--teal) 22%, var(--border));
+  background: color-mix(in srgb, var(--teal) 6%, var(--surface));
+}
+
+.gxp-toast__icon {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  color: var(--toast-accent, var(--blue));
+  opacity: 0.92;
+}
+
+.gxp-toast__icon--spin {
+  animation: gxp-toast-spin 0.85s linear infinite;
+}
+
+@keyframes gxp-toast-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.gxp-toast__message {
+  margin: 0;
+  min-width: 0;
+  font: 600 0.875rem/1.35 'DM Sans', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gxp-toast__icon--spin {
+    animation: none;
+  }
+
+  .ant-message .ant-message-notice-wrapper {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-theme='dark'] .gxp-toast {
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.35),
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset;
+}

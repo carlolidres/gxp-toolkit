@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
-import { Button } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import { Button, Drawer, Tooltip } from 'antd'
 import {
   Bug,
   Check,
   Clock3,
+  Copy,
   Inbox,
   Lightbulb,
   Loader2,
@@ -13,31 +14,37 @@ import {
   X,
 } from 'lucide-react'
 
-import { Modal } from './Modal'
 import { FormField, SelectInput, Textarea } from '../forms/FormControls'
 import { useAuth } from '../../hooks/useAuth'
 import { useToast } from './ToastProvider'
 import { feedbackService } from '../../services/feedbackService'
 import type { FeedbackCategory, FeedbackMessage } from '../../types/feedback'
+import { CATEGORY_LABELS, STATUS_LABELS, formatMessageClipboardText, formatTimestamp } from './messageFormat'
 import './messages-modal.css'
 
-const CATEGORY_LABELS: Record<FeedbackCategory, string> = {
-  improvement: 'Suggest an improvement',
-  bug: 'Report a bug',
-}
+function useMessagesDrawerWidth() {
+  const [width, setWidth] = useState('min(520px, 100vw)')
 
-const STATUS_LABELS: Record<FeedbackMessage['status'], string> = {
-  unread: 'Unread',
-  read: 'Open',
-  addressed: 'Addressed',
-  rejected: 'Rejected',
-}
+  useEffect(() => {
+    function updateWidth() {
+      const viewport = window.innerWidth
+      if (viewport <= 720) {
+        setWidth('100vw')
+        return
+      }
+      if (viewport <= 1100) {
+        setWidth('min(70vw, 640px)')
+        return
+      }
+      setWidth('min(40vw, 560px)')
+    }
 
-function formatTimestamp(value: string | undefined) {
-  if (!value) return 'N/A'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString()
+    updateWidth()
+    window.addEventListener('resize', updateWidth)
+    return () => window.removeEventListener('resize', updateWidth)
+  }, [])
+
+  return width
 }
 
 function CategoryIcon({ category }: { category: FeedbackCategory }) {
@@ -64,26 +71,34 @@ export function MessagesModal({
 }) {
   const { user } = useAuth()
   const { notify } = useToast()
+  const drawerWidth = useMessagesDrawerWidth()
   const [category, setCategory] = useState<FeedbackCategory>('improvement')
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+
+  const canSend = Boolean(content.trim()) && !submitting
 
   useEffect(() => {
     if (!isOpen || !isAdmin) return
     void onAcknowledgeUnread()
   }, [isAdmin, isOpen, onAcknowledgeUnread])
 
+  function clearCompose() {
+    setCategory('improvement')
+    setContent('')
+  }
+
   async function handleSubmit() {
-    if (!user) return
+    if (!user || !canSend) return
     setSubmitting(true)
     try {
       await feedbackService.submitMessage(user, { category, content })
-      setContent('')
-      notify('Message sent to the administrator.')
+      clearCompose()
+      notify('Message sent to the administrator.', 'success')
       await onRefresh()
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'Could not send message.')
+      notify(err instanceof Error ? err.message : 'Could not send message.', 'error')
     } finally {
       setSubmitting(false)
     }
@@ -94,49 +109,58 @@ export function MessagesModal({
     setUpdatingId(messageId)
     try {
       await feedbackService.updateStatus(user, messageId, { status })
-      notify(`Message marked ${status}.`)
+      notify(`Message marked ${status}.`, 'success')
       await onRefresh()
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'Could not update message status.')
+      notify(err instanceof Error ? err.message : 'Could not update message status.', 'error')
     } finally {
       setUpdatingId(null)
     }
   }
 
+  async function handleCopy(message: FeedbackMessage) {
+    try {
+      await navigator.clipboard.writeText(formatMessageClipboardText(message))
+      notify('Message copied to clipboard.', 'success')
+    } catch {
+      notify('Could not copy message to clipboard.', 'error')
+    }
+  }
+
+  const title = useMemo(() => (isAdmin ? 'Messages' : 'Message administrator'), [isAdmin])
+
   return (
-    <Modal
-      isOpen={isOpen}
-      title={isAdmin ? 'Messages' : 'Message administrator'}
-      className="modal--messages"
+    <Drawer
+      open={isOpen}
       onClose={onClose}
-      footer={
-        <>
-          <Button onClick={onClose}>Close</Button>
-          <Button
-            type="primary"
-            disabled={submitting || !content.trim()}
-            loading={submitting}
-            onClick={() => void handleSubmit()}
-          >
-            {submitting ? 'Sending…' : 'Send message'}
-          </Button>
-        </>
-      }
+      title={title}
+      width={drawerWidth}
+      className="messages-drawer"
+      destroyOnHidden
+      maskClosable={false}
+      keyboard
+      styles={{
+        body: { padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+        header: { flexShrink: 0 },
+      }}
+      footer={null}
     >
-      <div className="messages-modal-panel flex flex-col gap-6 p-5 sm:p-6">
+      <div className="messages-modal-panel flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-5 sm:p-6">
         <section
           aria-labelledby="messages-compose-title"
-          className="rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 sm:p-5"
+          className="messages-compose rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 sm:p-5"
         >
           <div className="mb-4 flex items-center gap-2.5">
             <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--teal-soft)] text-[var(--teal)]">
               <MessageSquarePlus className="size-4" aria-hidden />
             </span>
             <div>
-              <h3 id="messages-compose-title" className="text-sm font-semibold text-[var(--app-text)]">
+              <h3 id="messages-compose-title" className="text-[0.9375rem] font-semibold text-[var(--app-text)]">
                 {isAdmin ? 'New message' : 'Send feedback'}
               </h3>
-              <p className="text-xs text-[var(--muted)]">Share improvements or report issues to the administrator.</p>
+              <p className="text-[0.8125rem] text-[var(--muted)]">
+                Share improvements or report issues to the administrator.
+              </p>
             </div>
           </div>
 
@@ -159,11 +183,19 @@ export function MessagesModal({
             <FormField label="Message">
               <Textarea
                 value={content}
-                rows={5}
+                rows={6}
                 placeholder="Describe your suggestion or the bug you encountered."
                 onChange={(event) => setContent(event.target.value)}
               />
             </FormField>
+            <div className="messages-compose-actions">
+              <Button onClick={clearCompose} disabled={submitting || (!content && category === 'improvement')}>
+                Clear
+              </Button>
+              <Button type="primary" disabled={!canSend} loading={submitting} onClick={() => void handleSubmit()}>
+                {submitting ? 'Sending…' : 'Send message'}
+              </Button>
+            </div>
           </div>
         </section>
 
@@ -174,7 +206,7 @@ export function MessagesModal({
                 <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--surface-subtle)] text-[var(--blue)]">
                   <Inbox className="size-4" aria-hidden />
                 </span>
-                <h3 id="messages-inbox-title" className="text-sm font-semibold text-[var(--app-text)]">
+                <h3 id="messages-inbox-title" className="text-[0.9375rem] font-semibold text-[var(--app-text)]">
                   Inbox
                 </h3>
               </div>
@@ -203,8 +235,10 @@ export function MessagesModal({
                   key={message.id}
                   className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow)] transition-[box-shadow,border-color] hover:border-[color-mix(in_srgb,var(--teal)_25%,var(--border))] hover:shadow-md"
                 >
-                  <MessageMeta message={message} />
-                  <p className="mt-3 mb-0 whitespace-pre-wrap text-sm leading-relaxed text-[var(--app-text)]">{message.content}</p>
+                  <MessageMeta message={message} onCopy={() => void handleCopy(message)} />
+                  <p className="mt-3 mb-0 whitespace-pre-wrap text-[0.9375rem] leading-relaxed text-[var(--app-text)]">
+                    {message.content}
+                  </p>
                   {(message.status === 'unread' || message.status === 'read') && (
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button
@@ -241,7 +275,7 @@ export function MessagesModal({
               <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--surface-subtle)] text-[var(--blue)]">
                 <Inbox className="size-4" aria-hidden />
               </span>
-              <h3 id="messages-history-title" className="text-sm font-semibold text-[var(--app-text)]">
+              <h3 id="messages-history-title" className="text-[0.9375rem] font-semibold text-[var(--app-text)]">
                 Your previous messages
               </h3>
             </div>
@@ -251,31 +285,57 @@ export function MessagesModal({
                   key={message.id}
                   className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow)]"
                 >
-                  <MessageMeta message={message} />
-                  <p className="mt-3 mb-0 whitespace-pre-wrap text-sm leading-relaxed text-[var(--app-text)]">{message.content}</p>
+                  <MessageMeta message={message} onCopy={() => void handleCopy(message)} />
+                  <p className="mt-3 mb-0 whitespace-pre-wrap text-[0.9375rem] leading-relaxed text-[var(--app-text)]">
+                    {message.content}
+                  </p>
                 </li>
               ))}
             </ul>
           </section>
         ) : null}
       </div>
-    </Modal>
+    </Drawer>
   )
 }
 
-function MessageMeta({ message }: { message: FeedbackMessage }) {
+function MessageMeta({
+  message,
+  onCopy,
+}: {
+  message: FeedbackMessage
+  onCopy: () => void
+}) {
   return (
     <div className="grid gap-2">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <UserRound className="size-4 shrink-0 text-[var(--muted)]" aria-hidden />
-          <strong className="truncate text-sm font-semibold text-[var(--app-text)]">{message.senderName}</strong>
+          <strong className="truncate text-[0.9375rem] font-semibold text-[var(--app-text)]">
+            {message.senderName}
+          </strong>
         </div>
-        <span className={`messages-status-badge messages-status-badge--${message.status}`}>
-          {STATUS_LABELS[message.status]}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={`messages-status-badge messages-status-badge--${message.status}`}>
+            {STATUS_LABELS[message.status]}
+          </span>
+          <Tooltip title="Copy message">
+            <Button
+              type="text"
+              size="small"
+              className="messages-copy-btn"
+              aria-label="Copy message"
+              icon={<Copy className="size-3.5" aria-hidden />}
+              onClick={(event) => {
+                event.stopPropagation()
+                event.preventDefault()
+                onCopy()
+              }}
+            />
+          </Tooltip>
+        </div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-[var(--muted)]">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[0.8125rem] text-[var(--muted)]">
         <span className="inline-flex items-center gap-1.5">
           <Tag className="size-3.5 shrink-0" aria-hidden />
           {CATEGORY_LABELS[message.category]}
@@ -286,10 +346,8 @@ function MessageMeta({ message }: { message: FeedbackMessage }) {
         </span>
       </div>
       {message.statusUpdatedAt ? (
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-[var(--muted)]">
-          <span>
-            Updated by {message.statusUpdatedByName ?? 'Administrator'}
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[0.8125rem] text-[var(--muted)]">
+          <span>Updated by {message.statusUpdatedByName ?? 'Administrator'}</span>
           <time dateTime={message.statusUpdatedAt}>{formatTimestamp(message.statusUpdatedAt)}</time>
         </div>
       ) : null}

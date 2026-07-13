@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Button, Select } from 'antd'
+import { Button } from 'antd'
 import {
   CalendarDays,
   Check,
@@ -16,14 +16,24 @@ import {
 } from 'lucide-react'
 
 import { VrmsPage } from '../../components/vrms/VrmsPage'
+import { VrmsRegistrySelect } from '../../components/vrms/VrmsRegistrySelect'
 import { NaOptionalInput, NaOptionalTextarea } from '../../components/forms/NaOptionalField'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { useVrmsApp } from '../../context/VrmsAppContext'
 import { VRMS_ROUTING_FORM_FIELDS, type VrmsFormField } from '../../lib/vrmsFormConfig'
 import { NA_OPTIONAL_VALUE, isNaOptionalValue } from '../../lib/naOptionalField'
-import { formatVrmsDateTime, getStatusKey, normalizeOptionalField, validateRoutingPayload } from '../../utils/vrmsLogic'
-import type { RoutingDocument, SaveRoutingDocumentPayload, VrmsSignatory } from '../../types/vrms'
+import {
+  formatVrmsDateTime,
+  getStatusKey,
+  isInlineCreatableRegistryType,
+  isValidRegistryValue,
+  normalizeOptionalField,
+  normalizeRegistryValue,
+  registryValuesEqual,
+  validateRoutingPayload,
+} from '../../utils/vrmsLogic'
+import type { RoutingDocument, SaveRoutingDocumentPayload, VrmsRegistryType, VrmsSignatory } from '../../types/vrms'
 
 const REMARKS_DISPLAY_MAX = 1000
 
@@ -112,8 +122,10 @@ function buildRoutingPayload(
 }
 
 export function VrmsRoutingPage() {
-  const { appData, saveDocument, signDocumentSignatory, getDocumentByTracker } = useVrmsApp()
+  const { appData, saveDocument, signDocumentSignatory, getDocumentByTracker, addRegistryValue, deleteRegistryValue } =
+    useVrmsApp()
   const { canCreate, canEdit, canApprove, canDelete } = useMenuPermission('routing')
+  const { canCreate: canCreateRegistry, canDelete: canDeleteRegistry } = useMenuPermission('registry')
   const { notify } = useToast()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -133,6 +145,37 @@ export function VrmsRoutingPage() {
     JSON.stringify(buildRoutingPayload(form, signatories, isCancelled)) !== persistedSnapshotRef.current
   const canModifyForm = canCreate || canEdit
   const canSubmit = form.routingTracker ? canEdit : canCreate
+
+  function collectNewRegistryValues(nextForm: typeof initialForm): Array<{ type: VrmsRegistryType; value: string }> {
+    const pending: Array<{ type: VrmsRegistryType; value: string }> = []
+    for (const field of VRMS_ROUTING_FORM_FIELDS) {
+      if (!field.registryType || !isInlineCreatableRegistryType(field.registryType)) continue
+      const raw = normalizeRegistryValue(String(nextForm[field.key as keyof typeof nextForm] ?? ''))
+      if (!raw || !isValidRegistryValue(raw)) continue
+      const existing = appData?.registries[field.registryType] ?? []
+      if (existing.some((option) => registryValuesEqual(option, raw))) continue
+      pending.push({ type: field.registryType, value: raw })
+    }
+    return pending
+  }
+
+  async function handleRemoveRegistryOption(type: VrmsRegistryType, value: string) {
+    const activeValue = VRMS_ROUTING_FORM_FIELDS.find((field) => field.registryType === type)
+    const current = activeValue ? String(form[activeValue.key as keyof typeof form] ?? '') : ''
+    if (registryValuesEqual(current, value)) {
+      const confirmed = window.confirm(
+        `"${value}" is selected in the current unsaved form. Remove it from suggestions anyway? The form value will stay until you change it.`,
+      )
+      if (!confirmed) return
+    }
+    try {
+      await deleteRegistryValue(type, value)
+      notify(`Removed “${value}” from ${type} suggestions.`, 'success')
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Failed to remove suggestion.', 'error')
+      throw err
+    }
+  }
 
   const loadTracker = useCallback(
     async (tracker: string) => {
@@ -218,12 +261,17 @@ export function VrmsRoutingPage() {
     try {
       const payload = buildRoutingPayload(form, signatories, isCancelled)
       validateRoutingPayload(payload)
+      const pendingRegistry = canCreateRegistry ? collectNewRegistryValues(form) : []
       const data = await saveDocument(payload)
+      for (const item of pendingRegistry) {
+        await addRegistryValue(item.type, item.value)
+      }
       const saved = data.documents.find((doc) => doc.docTracer === form.docTracer)
       const routingTracker = saved?.routingTracker ?? form.routingTracker
       const docTracer = saved?.docTracer ?? form.docTracer
       resetFormState()
       setSaveSuccess({ routingTracker, docTracer })
+      notify('Document routing record saved successfully.', 'success')
       navigate('/routing')
     } catch (err) {
       const message =
@@ -231,7 +279,7 @@ export function VrmsRoutingPage() {
           ? err.message
           : 'Could not save the routing record. Check required fields and your connection, then try again.'
       setSaveError(message)
-      notify(message)
+      notify(message, 'error')
     } finally {
       setSaving(false)
     }
@@ -347,22 +395,21 @@ export function VrmsRoutingPage() {
                         ) : null}
                       </div>
                     ) : field.registryType ? (
-                      <Select
-                        className="vrms-routing-select"
+                      <VrmsRegistrySelect
                         value={value}
                         disabled={!canModifyForm}
+                        placeholder={`Select ${field.label}`}
+                        options={appData?.registries[field.registryType] ?? []}
+                        allowCreate={
+                          canCreateRegistry && isInlineCreatableRegistryType(field.registryType)
+                        }
+                        canRemove={canDeleteRegistry}
+                        onRemoveOption={(option) => handleRemoveRegistryOption(field.registryType!, option)}
                         onChange={(next) => {
                           if (field.key === 'status') handleStatusChange(next)
                           else if (field.key === 'sentRoutingTo') handleSentRoutingChange(next)
                           else updateField(field.key, next)
                         }}
-                        options={[
-                          { value: '', label: `Select ${field.label}` },
-                          ...(appData?.registries[field.registryType] ?? []).map((option) => ({
-                            value: option,
-                            label: option,
-                          })),
-                        ]}
                       />
                     ) : (
                       <input
@@ -446,15 +493,14 @@ export function VrmsRoutingPage() {
                         </span>
                       </div>
                       <label className="vrms-routing-field-label">Signatory/Approver Name</label>
-                      <Select
-                        className="vrms-routing-select"
+                      <VrmsRegistrySelect
                         value={item.Name}
                         disabled={signed || (isRouting && index === 0) || !canModifyForm}
+                        placeholder="Select signatory"
+                        options={allowedNames}
+                        allowCreate={false}
+                        canRemove={false}
                         onChange={(value) => updateSignatory(index, 'Name', value)}
-                        options={[
-                          { value: '', label: 'Select signatory' },
-                          ...allowedNames.map((name) => ({ value: name, label: name })),
-                        ]}
                       />
                       <div className="vrms-signatory-meta">
                         <div>

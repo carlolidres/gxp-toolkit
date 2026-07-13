@@ -3,6 +3,7 @@ import {
   applySignDocumentSignatory,
   formatVrmsDisplayDateTime,
   isValidRegistryValue,
+  normalizeRegistryValue,
 } from '../utils/vrmsLogic'
 import type { VrmsRepository } from './vrmsRepository'
 import {
@@ -81,7 +82,7 @@ export const mockVrmsService: VrmsRepository = {
   async addRegistryValue(type, value, userEmail) {
     await mockDelay(250)
     ensureStoreRegistryDefaults()
-    const trimmed = String(value || '').trim()
+    const trimmed = normalizeRegistryValue(String(value || ''))
     if (!trimmed) throw new Error('Value is required.')
     if (!isValidRegistryValue(trimmed)) {
       throw new Error(
@@ -114,18 +115,19 @@ export const mockVrmsService: VrmsRepository = {
   async deleteRegistryValue(type, value, userEmail) {
     await mockDelay(250)
     ensureStoreRegistryDefaults()
-    const trimmed = String(value || '').trim()
+    const trimmed = normalizeRegistryValue(String(value || ''))
     const store = getVrmsStore()
     const index = store.registryValues.findIndex(
-      (row) => row.registryType === type && row.value.trim() === trimmed,
+      (row) => row.registryType === type && row.value.trim().toLowerCase() === trimmed.toLowerCase(),
     )
     if (index !== -1) {
+      const removed = store.registryValues[index]
       store.registryValues.splice(index, 1)
       appendAuditEvent(
         'Deleted registry value',
         '',
         '',
-        `${type} registry value "${trimmed}" was removed by ${userEmail} on ${formatVrmsDisplayDateTime(new Date())}.`,
+        `${type} registry value "${removed.value}" was removed by ${userEmail} on ${formatVrmsDisplayDateTime(new Date())}.`,
         userEmail,
       )
     }

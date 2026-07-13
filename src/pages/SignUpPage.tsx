@@ -100,7 +100,7 @@ export function SignUpPage() {
   return (
     <div className="login-page">
       <section className="login-story">
-        <GxpLogo variant="lockup" showTagline />
+        <GxpLogo variant="lockup" showTagline tone="light" className="login-story-brand" />
         <div>
           <span className="eyebrow">Join VRMS</span>
           <h1>Create a validated routing workspace account.</h1>

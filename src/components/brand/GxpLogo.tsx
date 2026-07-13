@@ -22,7 +22,11 @@ export function GxpLogo({
 }) {
   if (variant === 'lockup') {
     return (
-      <span className={['gxp-brand-lockup', className].filter(Boolean).join(' ')}>
+      <span
+        className={['gxp-brand-lockup', tone === 'light' ? 'gxp-brand-lockup--light' : '', className]
+          .filter(Boolean)
+          .join(' ')}
+      >
         <span className="gxp-brand-mark" aria-hidden="true">
           <ShieldCheck size={iconSize.lg} strokeWidth={iconStroke} />
         </span>

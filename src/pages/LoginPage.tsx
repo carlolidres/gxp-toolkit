@@ -92,7 +92,7 @@ export function LoginPage() {
   return (
     <div className="login-page">
       <section className="login-story">
-        <GxpLogo variant="lockup" showTagline />
+        <GxpLogo variant="lockup" showTagline tone="light" className="login-story-brand" />
         <div>
           <span className="eyebrow">Validation Routing Monitoring System</span>
           <h1>Quality operations, composed for reuse.</h1>

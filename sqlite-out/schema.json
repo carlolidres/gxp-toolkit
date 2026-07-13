@@ -2,11 +2,11 @@
   "meta": {
     "project": "gxp-toolkit",
     "source": "database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql",
-    "generatedAt": "2026-07-09T10:33:04.574Z",
+    "generatedAt": "2026-07-13T09:04:16.440Z",
     "schemaVersion": null,
-    "tableCount": 30,
+    "tableCount": 31,
     "edgeCount": 75,
-    "indexCount": 26
+    "indexCount": 27
   },
   "nodes": [
     {
@@ -916,6 +916,68 @@
           "columns": [
             "masterlist_record_id",
             "is_active"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "registry_values",
+      "type": "table",
+      "columnCount": 4,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "registry_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "value",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "(datetime('now'))",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_registry_values_type",
+          "unique": false,
+          "table": "registry_values",
+          "columns": [
+            "registry_type"
           ]
         }
       ]
@@ -3830,7 +3892,7 @@
     {
       "id": "apqr_clients",
       "type": "table",
-      "columnCount": 13,
+      "columnCount": 14,
       "primaryKeys": [
         "id"
       ],
@@ -3916,6 +3978,16 @@
           "unique": false,
           "default": "'Billable'",
           "check": "apqr_package IN ('Billable', 'Not Billable')",
+          "references": null
+        },
+        {
+          "name": "auto_compute_dates",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": null,
           "references": null
         },
         {
@@ -6062,6 +6134,14 @@
       "columns": [
         "masterlist_record_id",
         "is_active"
+      ]
+    },
+    {
+      "name": "idx_registry_values_type",
+      "unique": false,
+      "table": "registry_values",
+      "columns": [
+        "registry_type"
       ]
     },
     {

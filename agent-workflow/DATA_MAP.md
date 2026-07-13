@@ -1,6 +1,6 @@
 # Data Map
 
-Last Updated: `2026-07-09`
+Last Updated: `2026-07-13`
 
 ## Purpose
 
@@ -115,8 +115,12 @@ Purpose: Stores selectable controlled values used by VRMS forms.
 
 Key rules:
 
-- `(registry_type, value)` is unique.
+- `(registry_type, value)` is unique (legacy exact match).
+- Case/whitespace-insensitive uniqueness is enforced by `idx_registry_values_type_value_ci` after migration `20260713170000_registry_values_ci_unique_and_rls.sql`.
+- Insert/update/delete require Registry menu `create` / `edit` / `delete` (or admin) via `has_registry_menu_action`.
 - Registry changes create audit events through app behavior.
+- Deleting a suggestion does not rewrite historical `routing_documents` text values.
+- SQLite reference table is included in `database/sqlite/schema.sql` for agent schema mapping.
 
 ### `profiles`
 

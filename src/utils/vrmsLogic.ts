@@ -88,6 +88,31 @@ export function isValidRegistryValue(value: string): boolean {
   return Boolean(text) && text.length <= 120 && /^[A-Za-z0-9][A-Za-z0-9 .,_/#()&+\-']*$/.test(text)
 }
 
+/** Trim and collapse outer whitespace for registry option persistence. */
+export function normalizeRegistryValue(value: string): string {
+  return String(value || '').trim().replace(/\s+/g, ' ')
+}
+
+export function registryValuesEqual(a: string, b: string): boolean {
+  return normalizeRegistryValue(a).toLowerCase() === normalizeRegistryValue(b).toLowerCase()
+}
+
+/** Registry types that may accept inline create on the routing form. */
+export const VRMS_INLINE_CREATABLE_REGISTRY_TYPES = [
+  'Category',
+  'Report / Protocol',
+  'Client',
+  'Department',
+  'Prepared by',
+  'Checked by',
+] as const
+
+export function isInlineCreatableRegistryType(
+  type: string,
+): type is (typeof VRMS_INLINE_CREATABLE_REGISTRY_TYPES)[number] {
+  return (VRMS_INLINE_CREATABLE_REGISTRY_TYPES as readonly string[]).includes(type)
+}
+
 export function generateUniqueTracker(existingTrackers: string[]): string {
   const existing = new Set(existingTrackers.map((tracker) => tracker.trim()).filter(Boolean))
 

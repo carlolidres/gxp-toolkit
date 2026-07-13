@@ -100,7 +100,6 @@ export function VrmsAppProvider({ children }: { children: ReactNode }) {
         const data = await service.saveDocument(payload, userEmail)
         setAppData(data)
         bumpDataRevision()
-        notify('Document routing record saved successfully.')
         return data
       } catch (err) {
         bumpDataRevision()
@@ -111,7 +110,7 @@ export function VrmsAppProvider({ children }: { children: ReactNode }) {
         throw new Error(message)
       }
     },
-    [bumpDataRevision, notify, service, userEmail],
+    [bumpDataRevision, service, userEmail],
   )
 
   const signDocumentSignatory = useCallback(
@@ -143,10 +142,9 @@ export function VrmsAppProvider({ children }: { children: ReactNode }) {
       const data = await service.addRegistryValue(type, value, userEmail)
       setAppData(data)
       bumpDataRevision()
-      notify('Registry value added.')
       return data
     },
-    [bumpDataRevision, notify, service, userEmail],
+    [bumpDataRevision, service, userEmail],
   )
 
   const deleteRegistryValue = useCallback(
@@ -155,10 +153,9 @@ export function VrmsAppProvider({ children }: { children: ReactNode }) {
       const data = await service.deleteRegistryValue(type, value, userEmail)
       setAppData(data)
       bumpDataRevision()
-      notify('Registry value removed.')
       return data
     },
-    [bumpDataRevision, notify, service, userEmail],
+    [bumpDataRevision, service, userEmail],
   )
 
   const value = useMemo(

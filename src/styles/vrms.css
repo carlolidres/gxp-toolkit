@@ -792,11 +792,26 @@
 .vrms-toolbar select,
 .vrms-formgrid input,
 .vrms-formgrid select,
-.vrms-formgrid textarea,
 .vrms-signatory-row input,
 .vrms-signatory-row select {
   width: 100%;
-  min-height: 38px;
+  height: 40px;
+  min-height: 40px;
+  /* Chrome/Edge top-align single-line text when padding-block is non-zero with fixed height. */
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  box-sizing: border-box;
+  line-height: normal;
+}
+
+.vrms-formgrid textarea,
+.vrms-signatory-row textarea {
+  width: 100%;
+  min-height: 88px;
+  height: auto;
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 7px;
@@ -988,28 +1003,43 @@
   gap: 16px;
   flex: 1;
   padding: 18px 20px 20px;
+  width: 100%;
+  max-width: 100%;
+  margin-inline: 0;
+  box-sizing: border-box;
 }
 
 .vrms-routing-formgrid {
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 16px;
+  gap: 16px 18px;
+  width: 100%;
+  margin: 0;
+  align-items: start;
 }
 
 .vrms-routing-formgrid > div {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   min-width: 0;
+  width: 100%;
+}
+
+.vrms-routing-formgrid > div.wide {
+  grid-column: 1 / -1;
 }
 
 .vrms-routing-field-label {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
+  margin: 0 0 6px;
   color: var(--muted);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.01em;
+  line-height: 1.3;
 }
 
 .vrms-routing-field-label-icon {
@@ -1052,16 +1082,110 @@
   width: 100%;
 }
 
-.vrms-routing-select.ant-select .ant-select-selector {
-  min-height: 38px !important;
+/* Ant Design 6 Select: root is the control (no .ant-select-selector). */
+.vrms-routing-select.ant-select {
+  width: 100%;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding-block: 0 !important;
+  padding-inline: 11px !important;
+  display: flex !important;
+  align-items: center !important;
+  line-height: normal !important;
   border-radius: 9px !important;
   background: var(--surface) !important;
-  border-color: color-mix(in srgb, var(--border) 85%, var(--muted) 15%) !important;
 }
 
-.vrms-routing-select.ant-select-focused .ant-select-selector {
+.vrms-routing-select.ant-select .ant-select-content {
+  display: flex !important;
+  align-items: center !important;
+  flex: 1;
+  min-width: 0;
+  height: 100% !important;
+  line-height: normal !important;
+}
+
+.vrms-routing-select.ant-select .ant-select-input {
+  inset-block: 0 !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 0.9375rem !important;
+  line-height: 40px !important;
+}
+
+.vrms-routing-select.ant-select .ant-select-suffix,
+.vrms-routing-select.ant-select .ant-select-clear {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-block: 0 !important;
+}
+
+.vrms-routing-select.ant-select-focused {
   border-color: var(--teal) !important;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 18%, transparent) !important;
+}
+
+.vrms-routing-select.ant-select-disabled {
+  opacity: 0.72;
+  background: var(--surface-muted) !important;
+}
+
+.vrms-registry-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.vrms-registry-option-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vrms-registry-option-remove.ant-btn {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.vrms-registry-option-remove.ant-btn:hover,
+.vrms-registry-option-remove.ant-btn:focus-visible {
+  color: var(--danger-text);
+  background: color-mix(in srgb, var(--danger-text) 10%, transparent);
+}
+
+.vrms-registry-create-option,
+.vrms-registry-inline-create {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px dashed color-mix(in srgb, var(--teal) 35%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--teal) 8%, transparent);
+  color: var(--teal);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vrms-registry-create-option:hover,
+.vrms-registry-inline-create:hover,
+.vrms-registry-create-option:focus-visible,
+.vrms-registry-inline-create:focus-visible {
+  border-color: var(--teal);
+  outline: none;
+}
+
+@media (max-width: 900px) {
+  .vrms-routing-formgrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .vrms-routing-textarea-wrap {

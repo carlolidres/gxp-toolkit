@@ -58,6 +58,22 @@ describe('vrmsLogic', () => {
     ).toThrow(/Equipment\/Product/)
   })
 
+  it('normalizes and compares registry values without mutating historical casing', async () => {
+    const { normalizeRegistryValue, registryValuesEqual, isValidRegistryValue } = await import('./vrmsLogic')
+    expect(normalizeRegistryValue('  Acme   Labs ')).toBe('Acme Labs')
+    expect(registryValuesEqual('Acme Labs', 'acme labs')).toBe(true)
+    expect(isValidRegistryValue('Acme Labs')).toBe(true)
+    expect(isValidRegistryValue('')).toBe(false)
+  })
+
+  it('adds registry values once after case-insensitive duplicate checks', async () => {
+    resetVrmsStore()
+    const first = await mockVrmsService.addRegistryValue('Client', '  New Client ', 'tester@example.com')
+    expect(first.registries.Client).toContain('New Client')
+    const second = await mockVrmsService.addRegistryValue('Client', 'new client', 'tester@example.com')
+    expect(second.registries.Client.filter((value) => value.toLowerCase() === 'new client')).toHaveLength(1)
+  })
+
   it('includes signatory names in document search haystack', () => {
     const haystack = buildDocumentSearchHaystack({
       routingTracker: 'aB3x',

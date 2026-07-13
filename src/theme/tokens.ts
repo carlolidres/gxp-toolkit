@@ -48,7 +48,7 @@ function buildToken(colors: typeof brandColors | typeof brandColorsDark) {
     colorTextSecondary: colors.muted,
     borderRadius: 10,
     fontFamily,
-    fontSize: 14,
+    fontSize: 15,
     controlHeight: 40,
     wireframe: false,
   }
@@ -65,14 +65,19 @@ export function createAntTheme(mode: 'light' | 'dark'): ThemeConfig {
         borderRadius: 10,
         controlHeight: 40,
         fontWeight: 600,
+        fontSize: 15,
       },
       Input: {
         borderRadius: 10,
         controlHeight: 40,
+        fontSize: 15,
       },
       Select: {
         borderRadius: 10,
         controlHeight: 40,
+        fontSize: 15,
+        optionFontSize: 15,
+        zIndexPopup: 1200,
       },
       Card: {
         borderRadiusLG: 14,
@@ -85,16 +90,28 @@ export function createAntTheme(mode: 'light' | 'dark'): ThemeConfig {
       Menu: {
         itemBorderRadius: 8,
         itemMarginInline: 8,
+        fontSize: 15,
       },
       Table: {
         headerBg: mode === 'dark' ? '#222' : '#f5f8fa',
         borderColor: colors.border,
+        fontSize: 14,
       },
       Modal: {
         borderRadiusLG: 14,
       },
       Drawer: {
         paddingLG: 20,
+        zIndexPopup: 1100,
+      },
+      Message: {
+        contentBg: colors.surface,
+        contentPadding: '10px 14px',
+        fontSize: 15,
+        zIndexPopup: 1400,
+      },
+      Notification: {
+        zIndexPopup: 1400,
       },
       Tag: {
         borderRadiusSM: 999,

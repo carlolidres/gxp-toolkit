@@ -1,10 +1,10 @@
-# SQLite Schema Report — GxP Toolkit (2026-07-09)
+# SQLite Schema Report — GxP Toolkit (2026-07-13)
 
 ## Summary
 - Source: `database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql`
 - Schema version: **unknown**
-- Tables: **30** · Foreign keys: **75** · Indexes: **26**
-- Generated: 2026-07-09T10:33:04.574Z
+- Tables: **31** · Foreign keys: **75** · Indexes: **27**
+- Generated: 2026-07-13T09:04:16.440Z
 
 ## Agent Usage
 
@@ -133,6 +133,18 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 
 **Indexes:**
 - `idx_vmp_qc_instruments_record` (masterlist_record_id, is_active)
+
+### `registry_values`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `registry_type` | TEXT | NO |  |  |  |  |  |
+| `value` | TEXT | NO |  |  |  |  |  |
+| `created_at` | TEXT | NO |  |  | (datetime('now')) |  |  |
+
+**Indexes:**
+- `idx_registry_values_type` (registry_type)
 
 ### `edoc_organizations`
 
@@ -522,6 +534,7 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `technical` | TEXT | YES |  |  |  |  |  |
 | `regulatory` | TEXT | YES |  |  |  |  |  |
 | `apqr_package` | TEXT | NO |  |  | 'Billable' | `apqr_package IN ('Billable', 'Not Billab…` |  |
+| `auto_compute_dates` | INTEGER | NO |  |  | 1 |  |  |
 | `status` | TEXT | NO |  |  | 'active' | `status IN ('active', 'archived')` |  |
 | `created_at` | TEXT | NO |  |  |  |  |  |
 | `updated_at` | TEXT | NO |  |  |  |  |  |
@@ -753,6 +766,7 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `idx_vmp_masterlist_is_draft` | `vmp_masterlist_records` | is_draft |  |
 | `idx_vmp_field_options_lookup` | `vmp_field_options` | field_type, validation_area, site_id, department_id, is_active |  |
 | `idx_vmp_qc_instruments_record` | `vmp_qc_instruments` | masterlist_record_id, is_active |  |
+| `idx_registry_values_type` | `registry_values` | registry_type |  |
 | `idx_edoc_documents_org_status` | `edoc_documents` | organization_id, status |  |
 | `idx_edoc_documents_owner` | `edoc_documents` | owner_id, status |  |
 | `idx_edoc_versions_document` | `edoc_document_versions` | document_id, version_number |  |
@@ -931,6 +945,12 @@ erDiagram
     text created_by
     text updated_at
     text updated_by
+  }
+  registry_values {
+    text id PK
+    text registry_type
+    text value
+    text created_at
   }
   edoc_organizations {
     text id PK
@@ -1186,6 +1206,7 @@ erDiagram
     text technical
     text regulatory
     text apqr_package
+    integer auto_compute_dates
     text status
     text created_at
     text updated_at

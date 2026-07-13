@@ -72,7 +72,7 @@ export function ResetPasswordPage() {
   return (
     <div className="login-page">
       <section className="login-story">
-        <GxpLogo variant="lockup" showTagline />
+        <GxpLogo variant="lockup" showTagline tone="light" className="login-story-brand" />
         <div>
           <span className="eyebrow">Password reset</span>
           <h1>{mandatoryChange ? 'Create a new password to continue.' : 'Choose a secure new password.'}</h1>

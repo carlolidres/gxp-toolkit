@@ -3,12 +3,21 @@
 
 @source "./MessagesModal.tsx";
 
-.modal--messages {
-  width: min(720px, 100%);
+.messages-drawer.ant-drawer .ant-drawer-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 100dvh;
 }
 
-.modal--messages .modal-body {
-  padding: 0;
+.messages-drawer .ant-drawer-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+}
+
+.messages-drawer .ant-drawer-body {
+  min-height: 0;
 }
 
 .messages-modal-panel {
@@ -24,11 +33,33 @@
   border-radius: 999px;
 }
 
+.messages-compose {
+  border-color: color-mix(in srgb, var(--border) 88%, var(--muted) 12%);
+  box-shadow: none;
+}
+
+.messages-compose-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.messages-copy-btn.ant-btn {
+  color: var(--muted);
+}
+
+.messages-copy-btn.ant-btn:hover,
+.messages-copy-btn.ant-btn:focus-visible {
+  color: var(--teal);
+  background: color-mix(in srgb, var(--teal) 10%, transparent);
+}
+
 .messages-status-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -59,4 +90,10 @@
   color: var(--danger-text);
   background: var(--badge-danger-bg);
   border-color: color-mix(in srgb, var(--danger-text) 25%, var(--border));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .messages-drawer .ant-drawer-content-wrapper {
+    transition: none !important;
+  }
 }
