@@ -3,8 +3,8 @@
 Last Updated: `2026-07-13`
 Version: `v35`
 Branch: `main`
-Commit: `2b3b4b9`
-Deployment: `IN_PROGRESS` (GitHub Pages via push to master)
+Commit: `2b3b4b9` (feature) · `329b940` (HANDOFF)
+Deployment: `DEPLOYED` — GitHub Pages run [29246065807](https://github.com/carlolidres/gxp-toolkit/actions/runs/29246065807)
 
 ## Current Status
 
