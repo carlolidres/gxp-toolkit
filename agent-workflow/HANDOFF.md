@@ -3,8 +3,8 @@
 Last Updated: `2026-07-21`
 Version: `v36`
 Branch: `main` → deploy via `master`
-Commit: `a81b80f`
-Deployment: `PENDING` — pushing to `master` for GitHub Pages
+Commit: `a81b80f` (feature) · `cf91564` (HANDOFF)
+Deployment: `DEPLOYED` — GitHub Pages run [29832776324](https://github.com/carlolidres/gxp-toolkit/actions/runs/29832776324)
 
 ## Current Status
 
@@ -36,7 +36,7 @@ Deployment: `PENDING` — pushing to `master` for GitHub Pages
 | `npm run type-check` | `PASSED` | 2026-07-21 (eDoc create wizard UI) |
 | `npm run test` (focused) | `PASSED` | vrmsLogic + MessagesModal clipboard (13) — prior v35 |
 | `npm run lint` | `PASSED` | 0 errors; 16 pre-existing warnings — prior v35 |
-| `npm run build` | `PENDING` | GitHub Actions deploy job |
+| `npm run build` | `PASSED` | GitHub Actions deploy job 29832776324 |
 | `npm run verify:vrms-csv` | `PASSED` | all registry/document/audit counts match — prior |
 | `npm run db:map` | `PASSED` | 31 tables, 75 FKs, 27 indexes — prior |
 | `npm run verify:schema` | `FAILED` | Pre-existing mock/seed ID mismatch (users/documents); unrelated |
@@ -44,8 +44,8 @@ Deployment: `PENDING` — pushing to `master` for GitHub Pages
 
 ## Next Action
 
-1. Commit `v36`, push `main` + `master`, confirm GitHub Pages deploy.
-2. Owner visual check: eDoc Create wizard + APQR Database defaults.
+1. Owner visual check: eDoc Create wizard + APQR Database defaults (light/dark, mobile).
+2. Continue eDoc Storage RLS test 3.4 when ready.
 
 ## Risks / Limitations
 
@@ -56,7 +56,7 @@ Deployment: `PENDING` — pushing to `master` for GitHub Pages
 
 ## Prior stable release
 
-- Last deployed: `v35` commit `2b3b4b9` — GitHub Pages run [29246065807](https://github.com/carlolidres/gxp-toolkit/actions/runs/29246065807) (2026-07-13).
+- Last deployed before this: `v35` commit `2b3b4b9` — GitHub Pages run [29246065807](https://github.com/carlolidres/gxp-toolkit/actions/runs/29246065807) (2026-07-13).
 
 ## eDoc Rollout Progress
 
