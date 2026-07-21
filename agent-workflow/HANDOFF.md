@@ -3,8 +3,8 @@
 Last Updated: `2026-07-21`
 Version: `v36`
 Branch: `main` → deploy via `master`
-Commit: _(pending commit)_
-Deployment: `PENDING`
+Commit: `a81b80f`
+Deployment: `PENDING` — pushing to `master` for GitHub Pages
 
 ## Current Status
 
