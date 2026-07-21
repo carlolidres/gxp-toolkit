@@ -149,13 +149,23 @@
 }
 
 .gxp-antd-shell .topbar-brand-logo.gxp-brand-mark {
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
   border-radius: 9px;
   box-shadow: 0 2px 8px var(--glow-color-soft);
+}
+
+.gxp-antd-shell .app-main.sidebar-collapsed .topbar-brand-logo.gxp-brand-mark {
+  display: inline-flex;
+}
+
+@media (max-width: 800px) {
+  .gxp-antd-shell .topbar-brand-logo.gxp-brand-mark {
+    display: inline-flex;
+  }
 }
 
 .gxp-antd-shell .topbar-profile-chip {

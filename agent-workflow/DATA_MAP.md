@@ -1,6 +1,6 @@
 # Data Map
 
-Last Updated: `2026-07-13`
+Last Updated: `2026-07-21`
 
 ## Purpose
 
@@ -30,6 +30,7 @@ Workflow app status: `workflow-app/` uses its own local SQLite store for approva
 |---|---|---|
 | `supabase/migrations/20260616000000_initial_gxp_toolkit_schema.sql` through `20260627100000_app_feedback_messages.sql` | VRMS schema, auth profiles, grants, menu permissions, RLS fixes, feedback | Review before applying |
 | `supabase/migrations/20260704100000_edoc_supabase_module.sql` | eDoc module: `edoc_*` tables, RLS, RPCs, storage buckets, inbox view | Applied staging 2026-07-04 |
+| `supabase/migrations/20260713170000_registry_values_ci_unique_and_rls.sql` | Registry CI unique index + `has_registry_menu_action` RLS | Applied remote 2026-07-13 |
 | `supabase/scripts/verify_edoc_rls.sql` | Static eDoc RLS/schema validation | Run after eDoc migration |
 | `supabase/seed.vrms.generated.sql` | Local generated seed from `src/data/vrmsProductionData.json` | Generated and gitignored; review before applying |
 | `scripts/generate-vrms-supabase-seed.mjs` | Generates the local Supabase seed SQL | Edit when data shape changes |
@@ -77,6 +78,22 @@ Audit import note: the source audit CSV has misleading headers for document-rela
 | eDoc document | `edoc_documents` | Controlled PDF document metadata and lifecycle status | `id`; unique `(organization_id, document_number)` | Same |
 | eDoc route assignment | `edoc_route_step_assignees` / `edoc_assignment_inbox` view | Inbox tasks for review/approve/sign/acknowledge | `id` | Same |
 | eDoc audit event | `edoc_audit_events` | Append-only eDoc workflow audit (trigger-protected on Supabase) | `id` | Same |
+
+## eDoc Create-and-Send Draft Flow
+
+UI: `src/pages/edoc/EdocCreateDocumentPage.tsx` → service `edocService.createAndSendDraft` → RPC `edoc_create_and_start_route` (`p_payload`).
+
+Payload type: `EdocCreateDraftInput` in `src/features/edoc/types.ts`.
+
+| Wizard step | Collected fields | Persistence notes |
+|---|---|---|
+| Metadata | `documentNumber`, `title`, `priority`, `dueAt`, `description` | Required: number + title. Other metadata keys (`documentType`, `category`, `department`, `businessUnit`, `confidentiality`, `tags`, `retentionClass`) keep client defaults and are still sent in `p_payload`. |
+| PDF upload | `file.name`, `sizeBytes`, `mimeType`, `sha256` | Client validates MIME/extension + PDF signature (`fileValidation`) before continue. |
+| Routing | `routing.mode`, `steps[]` (action, assignees, completion rule, minimum count, due, delegation) | Every step needs ≥1 assignee before send. |
+| Field placement | `fields[]` (assignee draft id, type, page, normalized x/y/w/h, required) | One required field per assignee draft before send. |
+| Review / send | Summary only | Calls RPC; mock fallback returns synthetic ids when Supabase is not configured. |
+
+Related tables (via RPC): `edoc_documents`, `edoc_document_versions`, `edoc_document_files`, `edoc_document_routes`, `edoc_route_steps`, `edoc_route_step_assignees`, `edoc_signature_fields`, `edoc_audit_events`.
 
 ## Core Relationships
 

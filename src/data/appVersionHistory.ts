@@ -6,10 +6,30 @@ export type AppVersionEntry = {
 
 export const APP_DEVELOPER = 'Carlo M. Lidres'
 
-export const APP_CURRENT_VERSION = 'v34'
+export const APP_CURRENT_VERSION = 'v36'
 
 /** Curated release notes — newest first. */
 export const APP_VERSION_HISTORY: AppVersionEntry[] = [
+  {
+    version: 'v36',
+    releaseDate: '2026-07-21',
+    changes: [
+      'eDoc Create Document wizard — modernized PDF upload, routing, field placement, and review steps',
+      'Wizard actions right-aligned; metadata UI limited to document number, title, priority, due date, description',
+      'APQR Database — clear default filters (cycle year all, empty date months); Product Code column order',
+      'Topbar brand mark shows only when the sidebar is collapsed or on mobile',
+    ],
+  },
+  {
+    version: 'v35',
+    releaseDate: '2026-07-13',
+    changes: [
+      'VRMS routing searchable registry selects with permission-aware create/remove',
+      'Messages right drawer; modern toast UI with Lucide icons and validation field lists',
+      'Registry values case-insensitive uniqueness and RLS hardening migration',
+      'Login logo lockup and readable typography scale',
+    ],
+  },
   {
     version: 'v34',
     releaseDate: '2026-07-10',

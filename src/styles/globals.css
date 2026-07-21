@@ -1990,6 +1990,61 @@ tbody tr:hover { background: var(--table-row-hover); }
   max-width: min(560px, 100%);
 }
 
+.apqr-page-header--database {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  gap: 12px;
+  border-radius: 10px;
+}
+
+.apqr-page-header--database .apqr-page-header-title-block {
+  border-left-width: 2px;
+  padding-left: 10px;
+}
+
+.apqr-page-header--database .eyebrow {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  line-height: 1.1;
+}
+
+.apqr-page-header--database .apqr-page-header-title {
+  margin: 2px 0 2px;
+  gap: 8px;
+}
+
+.apqr-page-header--database .apqr-page-header-title .ant-typography,
+.apqr-page-header--database .apqr-page-header-title h1,
+.apqr-page-header--database .apqr-page-header-title h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.apqr-page-header--database .apqr-page-header-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 7px;
+}
+
+.apqr-page-header--database .apqr-page-header-icon svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.apqr-page-header--database .ant-typography,
+.apqr-page-header--database p {
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.apqr-page-header--database .page-actions .button,
+.apqr-page-header--database .apqr-page-header-action {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 0.8rem;
+}
+
 .apqr-page-header--audit p {
   max-width: min(560px, 100%);
 }
@@ -5479,6 +5534,18 @@ body.is-col-resizing .apqr-scheduler-table .apqr-col-resize-handle::after {
   max-width: 300px;
 }
 
+.apqr-database-heading .apqr-search-field:focus-within {
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.apqr-database-heading .apqr-search-field .ant-input:focus,
+.apqr-database-heading .apqr-search-field .ant-input-focused {
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
 .apqr-database-heading .apqr-table-toolbar .button:not(.apqr-icon-btn) {
   display: inline-flex;
   align-items: center;
@@ -5508,6 +5575,43 @@ body.is-col-resizing .apqr-scheduler-table .apqr-col-resize-handle::after {
   display: flex;
   flex-direction: column;
   gap: 0;
+}
+
+/* Fill remaining viewport so the table panel uses full available height. */
+.apqr-page:has(> .apqr-database-panel) {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: calc(100dvh - 56px);
+  max-height: calc(100dvh - 56px);
+  overflow: hidden;
+}
+
+.app-main.sidebar-collapsed .apqr-page:has(> .apqr-database-panel) {
+  height: calc(100dvh - 40px);
+  max-height: calc(100dvh - 40px);
+}
+
+.apqr-page:has(> .apqr-database-panel) > .page-header {
+  flex: 0 0 auto;
+}
+
+.apqr-page:has(> .apqr-database-panel) > .apqr-database-panel {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.apqr-database-panel > .panel-heading,
+.apqr-database-panel > .apqr-database-filters {
+  flex: 0 0 auto;
+}
+
+.apqr-database-panel > .apqr-database-table-scroll,
+.apqr-database-panel > .apqr-database-grid {
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
 }
 
 .apqr-database-filters {
@@ -5765,8 +5869,7 @@ body.is-col-resizing .apqr-scheduler-table .apqr-col-resize-handle::after {
 
 .apqr-database-table-scroll {
   overflow: auto;
-  /* Freeze-pane viewport: sticky header + 10 rows (measured up to ~81px with status pills) */
-  max-height: min(85vh, calc(2rem + 10 * 5.1rem));
+  max-height: none;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
@@ -6007,6 +6110,19 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
 }
 
 @media (max-width: 640px) {
+  .apqr-page:has(> .apqr-database-panel) {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .apqr-database-panel > .apqr-database-table-scroll,
+  .apqr-database-panel > .apqr-database-grid {
+    flex: 0 1 auto;
+    height: auto;
+    max-height: min(62vh, 640px);
+  }
+
   .apqr-database-heading {
     flex-wrap: wrap;
     align-items: flex-start;
@@ -6026,8 +6142,11 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
 
 .apqr-database-grid {
   display: grid;
+  align-content: start;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
   gap: 16px;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .apqr-database-grid .apqr-database-empty {
@@ -7525,15 +7644,8 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   margin-bottom: 18px;
 }
 
-.edoc-route-step {
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-muted);
-}
-
 .edoc-route-step select[multiple] {
-  min-height: 92px;
+  min-height: 112px;
 }
 
 .edoc-inline-check {
@@ -7553,12 +7665,10 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
   gap: var(--content-gap);
+  align-items: start;
 }
 
 .edoc-pdf-surface {
-  padding: 18px;
-  border-radius: 8px;
-  background: var(--surface-subtle);
   overflow: auto;
 }
 
@@ -7570,6 +7680,7 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   padding: 46px;
   background: var(--surface-elevated);
   border: 1px solid var(--border);
+  border-radius: 10px;
   box-shadow: var(--shadow);
 }
 
@@ -7585,21 +7696,31 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   color: var(--info-text);
   font-size: 0.68rem;
   font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+
+.edoc-field-box:hover,
+.edoc-field-box:focus-visible {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  color: var(--danger-text);
+  outline: none;
+}
+
+.edoc-field-box:focus-visible {
+  box-shadow: 0 0 0 2px var(--glow-ring);
 }
 
 .edoc-field-panel {
   align-self: start;
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .edoc-field-row {
   display: grid;
-  gap: 7px;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
+  gap: 8px;
 }
 
 .edoc-workspace {

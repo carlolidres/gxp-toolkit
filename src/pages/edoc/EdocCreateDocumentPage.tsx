@@ -1,6 +1,27 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Steps } from 'antd'
+import {
+  AlignLeft,
+  ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  FileDigit,
+  FileText,
+  Flag,
+  GitBranch,
+  Hash,
+  Layers,
+  ListOrdered,
+  Plus,
+  Send,
+  ShieldCheck,
+  Trash2,
+  Type,
+  Upload,
+  Users,
+} from 'lucide-react'
 
 import { EdocError, EdocPage } from '../../components/edoc/EdocComponents'
 import { DateInput } from '../../components/forms/FormControls'
@@ -17,6 +38,61 @@ import type {
   EdocRouteStepDraft,
   EdocRoutingMode,
 } from '../../features/edoc/types'
+import { iconSize, iconStroke } from '../../theme/iconSizes'
+import {
+  VMP_FIELD_CLASS,
+  VMP_FIELD_WIDE_CLASS,
+  VMP_FORM_GRID_CLASS,
+  VMP_INPUT_CLASS,
+  VMP_SECTION_CARD_CLASS,
+} from '../vmp/vmp-form-shared'
+
+function WizardField({
+  label,
+  htmlFor,
+  icon,
+  wide,
+  hint,
+  children,
+}: {
+  label: string
+  htmlFor?: string
+  icon: ReactNode
+  wide?: boolean
+  hint?: string
+  children: ReactNode
+}) {
+  const Tag = htmlFor ? 'label' : 'div'
+  return (
+    <Tag className={wide ? VMP_FIELD_WIDE_CLASS : VMP_FIELD_CLASS} {...(htmlFor ? { htmlFor } : {})}>
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+        {icon}
+        {label}
+      </span>
+      {children}
+      {hint ? <span className="text-xs text-[var(--muted)]">{hint}</span> : null}
+    </Tag>
+  )
+}
+
+function WizardActions({
+  left,
+  children,
+}: {
+  left?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <div
+      className={`flex flex-wrap items-center gap-3 border-t border-[var(--border)] pt-4 ${
+        left ? 'justify-between' : 'justify-end'
+      }`}
+    >
+      {left ? <div className="flex flex-wrap items-center gap-3">{left}</div> : null}
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-3">{children}</div>
+    </div>
+  )
+}
 
 const wizardSteps = ['Metadata', 'PDF upload', 'Routing setup', 'Field placement', 'Review and send']
 const assignableActions: EdocAssignableAction[] = ['review', 'approve', 'sign', 'acknowledge']
@@ -55,7 +131,6 @@ export function EdocCreateDocumentPage() {
     tags: [],
     retentionClass: '',
   })
-  const [tagDraft, setTagDraft] = useState('')
   const [file, setFile] = useState<EdocCreateDraftInput['file']>(null)
   const [selectedFileName, setSelectedFileName] = useState('')
   const [routingMode, setRoutingMode] = useState<EdocRoutingMode>('sequential')
@@ -88,7 +163,6 @@ export function EdocCreateDocumentPage() {
     setError(null)
     if (!metadata.documentNumber.trim()) return setError('Document number is required.')
     if (!metadata.title.trim()) return setError('Title is required.')
-    if (!metadata.department.trim()) return setError('Department is required.')
     setActiveStep(1)
   }
 
@@ -125,13 +199,6 @@ export function EdocCreateDocumentPage() {
   function removeRouteStep(stepId: string) {
     setSteps((current) => current.filter((step) => step.id !== stepId).map((step, index) => ({ ...step, sequence: index + 1 })))
     setFields((current) => current.filter((field) => !field.assigneeDraftId.startsWith(`${stepId}:`)))
-  }
-
-  function addTag() {
-    const tag = tagDraft.trim()
-    if (!tag) return
-    setMetadata((current) => ({ ...current, tags: [...new Set([...current.tags, tag])] }))
-    setTagDraft('')
   }
 
   function addField(assigneeDraftId: string, fieldType: EdocFieldType) {
@@ -172,162 +239,516 @@ export function EdocCreateDocumentPage() {
     }
   }
 
+  const tealIcon = (Icon: typeof FileDigit) => (
+    <Icon size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />
+  )
+
   return (
     <EdocPage title="Create Document" description="Prepare metadata, upload a private PDF, configure routing, place fields, and send.">
-      <section className="panel">
+      <section className={`${VMP_SECTION_CARD_CLASS} p-5 sm:p-6`}>
         <Steps
           className="edoc-stepper"
           current={activeStep}
           items={wizardSteps.map((label) => ({ title: label }))}
           style={{ marginBottom: 20 }}
         />
-        {error ? <EdocError message={error} /> : null}
+        {error ? <div className="mb-4"><EdocError message={error} /></div> : null}
 
         {created ? (
-          <div className="edoc-success">
-            <h2>Route sent</h2>
-            <p>The eDoc route was created and the first eligible assignment group was activated.</p>
-            <div className="button-row">
-              <Link to="/edoc/inbox"><Button>Open Inbox</Button></Link>
-              <Link to="/edoc/documents"><Button type="primary">View Documents</Button></Link>
+          <div className="edoc-success space-y-4 rounded-xl border border-[color-mix(in_srgb,var(--teal)_35%,var(--border))] bg-[color-mix(in_srgb,var(--teal)_8%,var(--surface))] p-5 sm:p-6">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 size={iconSize.lg} strokeWidth={iconStroke} className="mt-0.5 shrink-0 text-[var(--teal)]" aria-hidden />
+              <div>
+                <h2 className="m-0 text-lg font-semibold text-[var(--navy)]">Route sent</h2>
+                <p className="mt-1 mb-0 text-sm text-[var(--muted)]">
+                  The eDoc route was created and the first eligible assignment group was activated.
+                </p>
+              </div>
             </div>
+            <WizardActions>
+              <Link to="/edoc/inbox"><Button icon={<ListOrdered size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}>Open Inbox</Button></Link>
+              <Link to="/edoc/documents">
+                <Button type="primary" icon={<FileText size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}>
+                  View Documents
+                </Button>
+              </Link>
+            </WizardActions>
           </div>
         ) : null}
 
         {!created && activeStep === 0 ? (
-          <form className="form-grid" onSubmit={continueFromMetadata}>
-            <label>Document number<input value={metadata.documentNumber} onChange={(event) => updateMetadata('documentNumber', event.target.value)} required /></label>
-            <label>Title<input value={metadata.title} onChange={(event) => updateMetadata('title', event.target.value)} required /></label>
-            <label>Document type<input value={metadata.documentType} onChange={(event) => updateMetadata('documentType', event.target.value)} /></label>
-            <label>Category<input value={metadata.category} onChange={(event) => updateMetadata('category', event.target.value)} /></label>
-            <label>Department<input value={metadata.department} onChange={(event) => updateMetadata('department', event.target.value)} required /></label>
-            <label>Business unit<input value={metadata.businessUnit} onChange={(event) => updateMetadata('businessUnit', event.target.value)} /></label>
-            <label>Access classification<input value={metadata.confidentiality} onChange={(event) => updateMetadata('confidentiality', event.target.value)} /></label>
-            <label>Priority<select value={metadata.priority} onChange={(event) => updateMetadata('priority', event.target.value as EdocPriority)}>
-              <option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option>
-            </select></label>
-            <label>Due date<DateInput value={metadata.dueAt} onChange={(event) => updateMetadata('dueAt', event.target.value)} /></label>
-            <label>Retention class<input value={metadata.retentionClass} onChange={(event) => updateMetadata('retentionClass', event.target.value)} /></label>
-            <label className="span-2">Description<textarea value={metadata.description} onChange={(event) => updateMetadata('description', event.target.value)} /></label>
-            <div className="span-2 edoc-tag-row">
-              <input value={tagDraft} onChange={(event) => setTagDraft(event.target.value)} placeholder="Add tag" />
-              <button className="button" type="button" onClick={addTag}>Add tag</button>
-              <span>{metadata.tags.join(', ')}</span>
+          <form className="space-y-5" onSubmit={continueFromMetadata} noValidate>
+            <div className={`${VMP_FORM_GRID_CLASS} !px-0 !py-0`}>
+              <WizardField
+                label="Document number"
+                htmlFor="edoc-document-number"
+                icon={tealIcon(FileDigit)}
+              >
+                <input
+                  id="edoc-document-number"
+                  className={VMP_INPUT_CLASS}
+                  value={metadata.documentNumber}
+                  onChange={(event) => updateMetadata('documentNumber', event.target.value)}
+                  required
+                  autoComplete="off"
+                  placeholder="e.g. EDOC-2026-001"
+                />
+              </WizardField>
+
+              <WizardField
+                label="Title"
+                htmlFor="edoc-title"
+                icon={tealIcon(Type)}
+              >
+                <input
+                  id="edoc-title"
+                  className={VMP_INPUT_CLASS}
+                  value={metadata.title}
+                  onChange={(event) => updateMetadata('title', event.target.value)}
+                  required
+                  autoComplete="off"
+                  placeholder="Document title"
+                />
+              </WizardField>
+
+              <WizardField
+                label="Priority"
+                htmlFor="edoc-priority"
+                icon={tealIcon(Flag)}
+              >
+                <select
+                  id="edoc-priority"
+                  className={VMP_INPUT_CLASS}
+                  value={metadata.priority}
+                  onChange={(event) => updateMetadata('priority', event.target.value as EdocPriority)}
+                >
+                  <option value="low">Low</option>
+                  <option value="normal">Normal</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </WizardField>
+
+              <WizardField
+                label="Due date"
+                htmlFor="edoc-due-at"
+                icon={tealIcon(CalendarDays)}
+              >
+                <DateInput
+                  id="edoc-due-at"
+                  value={metadata.dueAt}
+                  onChange={(event) => updateMetadata('dueAt', event.target.value)}
+                />
+              </WizardField>
+
+              <WizardField
+                label="Description"
+                htmlFor="edoc-description"
+                wide
+                icon={tealIcon(AlignLeft)}
+              >
+                <textarea
+                  id="edoc-description"
+                  className={`${VMP_INPUT_CLASS} min-h-[112px] resize-y leading-relaxed`}
+                  value={metadata.description}
+                  onChange={(event) => updateMetadata('description', event.target.value)}
+                  rows={4}
+                  placeholder="Brief summary of the document purpose or scope"
+                />
+              </WizardField>
             </div>
-            <div className="button-row span-2"><button className="button primary" type="submit">Continue</button></div>
+
+            <WizardActions>
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<ArrowRight size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                iconPlacement="end"
+              >
+                Continue
+              </Button>
+            </WizardActions>
           </form>
         ) : null}
 
         {!created && activeStep === 1 ? (
-          <div className="form-grid">
-            <label className="span-2">PDF file<input type="file" accept="application/pdf,.pdf" onChange={(event) => void handlePdfSelected(event.target.files?.[0] ?? null)} /></label>
-            {file ? <p className="span-2">Validated: {selectedFileName} · SHA-256 {file.sha256.slice(0, 16)}...</p> : null}
-            <div className="button-row span-2">
-              <button className="button" type="button" onClick={() => setActiveStep(0)}>Back</button>
-              <button className="button primary" type="button" disabled={!file} onClick={() => setActiveStep(2)}>Continue</button>
+          <div className="space-y-5">
+            <div className={`${VMP_FORM_GRID_CLASS} !px-0 !py-0`}>
+              <WizardField
+                label="PDF file"
+                wide
+                icon={tealIcon(Upload)}
+                hint="Private PDF only. The file is validated for type and PDF signature before routing."
+              >
+                <label
+                  htmlFor="edoc-pdf-file"
+                  className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-muted)] px-4 py-8 text-center transition-[border-color,background-color] hover:border-[color-mix(in_srgb,var(--teal)_45%,var(--border))] hover:bg-[color-mix(in_srgb,var(--teal)_6%,var(--surface))] focus-within:border-[var(--teal)] focus-within:ring-2 focus-within:ring-[var(--glow-ring)]"
+                >
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--teal)_14%,var(--surface))] text-[var(--teal)]">
+                    <Upload size={iconSize.md} strokeWidth={iconStroke} aria-hidden />
+                  </span>
+                  <span className="text-sm font-semibold text-[var(--navy)]">
+                    {selectedFileName || 'Choose a PDF to upload'}
+                  </span>
+                  <span className="text-xs text-[var(--muted)]">Click to browse · PDF only</span>
+                  <input
+                    id="edoc-pdf-file"
+                    className="sr-only"
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    onChange={(event) => void handlePdfSelected(event.target.files?.[0] ?? null)}
+                  />
+                </label>
+              </WizardField>
+
+              {file ? (
+                <div className="md:col-span-2 flex flex-wrap items-start gap-3 rounded-xl border border-[color-mix(in_srgb,var(--teal)_35%,var(--border))] bg-[color-mix(in_srgb,var(--teal)_8%,var(--surface))] px-4 py-3">
+                  <ShieldCheck size={iconSize.md} strokeWidth={iconStroke} className="mt-0.5 shrink-0 text-[var(--teal)]" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <p className="m-0 text-sm font-semibold text-[var(--navy)]">Validated PDF</p>
+                    <p className="mt-1 mb-0 break-all text-xs text-[var(--muted)]">
+                      {selectedFileName}
+                      <span className="mx-1.5 text-[var(--border)]" aria-hidden>·</span>
+                      SHA-256 {file.sha256.slice(0, 16)}…
+                    </p>
+                  </div>
+                </div>
+              ) : null}
             </div>
+
+            <WizardActions>
+              <Button
+                icon={<ArrowLeft size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                onClick={() => setActiveStep(0)}
+              >
+                Back
+              </Button>
+              <Button
+                type="primary"
+                disabled={!file}
+                icon={<ArrowRight size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                iconPlacement="end"
+                onClick={() => setActiveStep(2)}
+              >
+                Continue
+              </Button>
+            </WizardActions>
           </div>
         ) : null}
 
         {!created && activeStep === 2 ? (
-          <div className="form-grid">
-            <label>Routing mode<select value={routingMode} onChange={(event) => setRoutingMode(event.target.value as EdocRoutingMode)}>
-              <option value="sequential">Sequential</option><option value="parallel">Parallel</option><option value="mixed">Mixed</option>
-            </select></label>
-            {profiles.error ? <EdocError message={profiles.error} /> : null}
-            {steps.map((step) => (
-              <div className="span-2 form-grid edoc-route-step" key={step.id}>
-                <label>Action<select value={step.action} onChange={(event) => updateRouteStep(step.id, { action: event.target.value as EdocAssignableAction })}>
-                  {assignableActions.map((action) => <option value={action} key={action}>{action}</option>)}
-                </select></label>
-                <label>Assignees<select multiple value={step.assigneeIds} onChange={(event) => updateRouteStep(step.id, { assigneeIds: [...event.currentTarget.selectedOptions].map((option) => option.value) })}>
-                  {(profiles.data ?? []).map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName} ({profile.email})</option>)}
-                </select></label>
-                <label>Completion rule<select value={step.completionRule} onChange={(event) => updateRouteStep(step.id, { completionRule: event.target.value as EdocRouteStepDraft['completionRule'] })}>
-                  <option value="all">All</option><option value="any">Any</option><option value="majority">Majority</option><option value="minimum_count">Minimum count</option>
-                </select></label>
-                <label>Minimum count<input type="number" min="1" value={step.minimumCount ?? ''} onChange={(event) => updateRouteStep(step.id, { minimumCount: event.target.value ? Number(event.target.value) : null })} /></label>
-                <label>Due date<DateInput value={step.dueAt} onChange={(event) => updateRouteStep(step.id, { dueAt: event.target.value })} /></label>
-                <label className="edoc-inline-check"><input type="checkbox" checked={step.allowDelegation} onChange={(event) => updateRouteStep(step.id, { allowDelegation: event.target.checked })} /> Allow delegation</label>
-                {steps.length > 1 ? <button className="button" type="button" onClick={() => removeRouteStep(step.id)}>Remove step</button> : null}
-              </div>
-            ))}
-            <div className="button-row span-2">
-              <button className="button" type="button" onClick={addRouteStep}>Add step</button>
-              <button className="button" type="button" onClick={() => setActiveStep(1)}>Back</button>
-              <button className="button primary" type="button" onClick={() => setActiveStep(3)}>Continue</button>
+          <div className="space-y-5">
+            <div className={`${VMP_FORM_GRID_CLASS} !px-0 !py-0`}>
+              <WizardField
+                label="Routing mode"
+                htmlFor="edoc-routing-mode"
+                icon={tealIcon(GitBranch)}
+              >
+                <select
+                  id="edoc-routing-mode"
+                  className={VMP_INPUT_CLASS}
+                  value={routingMode}
+                  onChange={(event) => setRoutingMode(event.target.value as EdocRoutingMode)}
+                >
+                  <option value="sequential">Sequential</option>
+                  <option value="parallel">Parallel</option>
+                  <option value="mixed">Mixed</option>
+                </select>
+              </WizardField>
             </div>
+
+            {profiles.error ? <EdocError message={profiles.error} /> : null}
+
+            <div className="space-y-4">
+              {steps.map((step) => (
+                <div
+                  className="edoc-route-step rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 sm:p-5"
+                  key={step.id}
+                >
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                    <p className="m-0 inline-flex items-center gap-2 text-sm font-semibold text-[var(--navy)]">
+                      <ListOrdered size={iconSize.sm} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />
+                      Step {step.sequence}
+                    </p>
+                    {steps.length > 1 ? (
+                      <Button
+                        danger
+                        size="small"
+                        icon={<Trash2 size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}
+                        onClick={() => removeRouteStep(step.id)}
+                      >
+                        Remove step
+                      </Button>
+                    ) : null}
+                  </div>
+
+                  <div className={`${VMP_FORM_GRID_CLASS} !px-0 !py-0`}>
+                    <WizardField
+                      label="Action"
+                      htmlFor={`edoc-step-action-${step.id}`}
+                      icon={tealIcon(Flag)}
+                    >
+                      <select
+                        id={`edoc-step-action-${step.id}`}
+                        className={VMP_INPUT_CLASS}
+                        value={step.action}
+                        onChange={(event) => updateRouteStep(step.id, { action: event.target.value as EdocAssignableAction })}
+                      >
+                        {assignableActions.map((action) => (
+                          <option value={action} key={action}>{action}</option>
+                        ))}
+                      </select>
+                    </WizardField>
+
+                    <WizardField
+                      label="Assignees"
+                      htmlFor={`edoc-step-assignees-${step.id}`}
+                      icon={tealIcon(Users)}
+                      hint="Hold Ctrl or Cmd to select multiple assignees."
+                    >
+                      <select
+                        id={`edoc-step-assignees-${step.id}`}
+                        className={`${VMP_INPUT_CLASS} min-h-[112px]`}
+                        multiple
+                        value={step.assigneeIds}
+                        onChange={(event) => updateRouteStep(step.id, { assigneeIds: [...event.currentTarget.selectedOptions].map((option) => option.value) })}
+                      >
+                        {(profiles.data ?? []).map((profile) => (
+                          <option key={profile.id} value={profile.id}>
+                            {profile.displayName} ({profile.email})
+                          </option>
+                        ))}
+                      </select>
+                    </WizardField>
+
+                    <WizardField
+                      label="Completion rule"
+                      htmlFor={`edoc-step-completion-${step.id}`}
+                      icon={tealIcon(Layers)}
+                    >
+                      <select
+                        id={`edoc-step-completion-${step.id}`}
+                        className={VMP_INPUT_CLASS}
+                        value={step.completionRule}
+                        onChange={(event) => updateRouteStep(step.id, { completionRule: event.target.value as EdocRouteStepDraft['completionRule'] })}
+                      >
+                        <option value="all">All</option>
+                        <option value="any">Any</option>
+                        <option value="majority">Majority</option>
+                        <option value="minimum_count">Minimum count</option>
+                      </select>
+                    </WizardField>
+
+                    <WizardField
+                      label="Minimum count"
+                      htmlFor={`edoc-step-minimum-${step.id}`}
+                      icon={tealIcon(Hash)}
+                    >
+                      <input
+                        id={`edoc-step-minimum-${step.id}`}
+                        className={VMP_INPUT_CLASS}
+                        type="number"
+                        min={1}
+                        value={step.minimumCount ?? ''}
+                        onChange={(event) => updateRouteStep(step.id, { minimumCount: event.target.value ? Number(event.target.value) : null })}
+                      />
+                    </WizardField>
+
+                    <WizardField
+                      label="Due date"
+                      htmlFor={`edoc-step-due-${step.id}`}
+                      icon={tealIcon(CalendarDays)}
+                    >
+                      <DateInput
+                        id={`edoc-step-due-${step.id}`}
+                        value={step.dueAt}
+                        onChange={(event) => updateRouteStep(step.id, { dueAt: event.target.value })}
+                      />
+                    </WizardField>
+
+                    <label className={`${VMP_FIELD_CLASS} justify-center`} htmlFor={`edoc-step-delegation-${step.id}`}>
+                      <span className="inline-flex items-center gap-2 text-sm font-medium text-[var(--app-text)]">
+                        <input
+                          id={`edoc-step-delegation-${step.id}`}
+                          className="h-4 w-4 accent-[var(--teal)]"
+                          type="checkbox"
+                          checked={step.allowDelegation}
+                          onChange={(event) => updateRouteStep(step.id, { allowDelegation: event.target.checked })}
+                        />
+                        Allow delegation
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <WizardActions
+              left={
+                <Button
+                  icon={<Plus size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                  onClick={addRouteStep}
+                >
+                  Add step
+                </Button>
+              }
+            >
+              <Button
+                icon={<ArrowLeft size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                onClick={() => setActiveStep(1)}
+              >
+                Back
+              </Button>
+              <Button
+                type="primary"
+                icon={<ArrowRight size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                iconPlacement="end"
+                onClick={() => setActiveStep(3)}
+              >
+                Continue
+              </Button>
+            </WizardActions>
           </div>
         ) : null}
 
         {!created && activeStep === 3 ? (
-          <div className="edoc-placement-grid">
-            <div className="edoc-pdf-surface" aria-label="PDF field placement preview">
-              <div className="edoc-pdf-page">
-                <span className="document-mark">PDF PAGE 1</span>
-                <h2>{metadata.title || 'Untitled document'}</h2>
-                <p>{metadata.documentNumber}</p>
-                {fields.map((field) => (
-                  <button
-                    type="button"
-                    key={field.id}
-                    className="edoc-field-box"
-                    style={{
-                      left: `${field.x * 100}%`,
-                      top: `${field.y * 100}%`,
-                      width: `${field.width * 100}%`,
-                      height: `${field.height * 100}%`,
-                    }}
-                    onClick={() => setFields((current) => current.filter((candidate) => candidate.id !== field.id))}
-                  >
-                    {edocFieldTypeLabels[field.fieldType]}
-                  </button>
-                ))}
+          <div className="space-y-5">
+            <div className="edoc-placement-grid">
+              <div
+                className="edoc-pdf-surface rounded-xl border border-[var(--border)] bg-[var(--surface-subtle)] p-4 sm:p-5"
+                aria-label="PDF field placement preview"
+              >
+                <div className="edoc-pdf-page">
+                  <span className="document-mark">PDF PAGE 1</span>
+                  <h2>{metadata.title || 'Untitled document'}</h2>
+                  <p>{metadata.documentNumber}</p>
+                  {fields.map((field) => (
+                    <button
+                      type="button"
+                      key={field.id}
+                      className="edoc-field-box"
+                      title="Click to remove field"
+                      aria-label={`Remove ${edocFieldTypeLabels[field.fieldType]} field`}
+                      style={{
+                        left: `${field.x * 100}%`,
+                        top: `${field.y * 100}%`,
+                        width: `${field.width * 100}%`,
+                        height: `${field.height * 100}%`,
+                      }}
+                      onClick={() => setFields((current) => current.filter((candidate) => candidate.id !== field.id))}
+                    >
+                      {edocFieldTypeLabels[field.fieldType]}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="panel edoc-field-panel">
-              <h2>Required fields</h2>
-              {allAssigneeDrafts.map((assignee) => {
-                const allowedFields = fieldTypesForAction(assignee.step.action)
-                return (
-                  <div key={assignee.id} className="edoc-field-row">
-                    <strong>{assignee.label}</strong>
-                    <select onChange={(event) => addField(assignee.id, event.target.value as EdocFieldType)} defaultValue="">
-                      <option value="" disabled>Add field</option>
-                      {allowedFields.map((fieldType) => <option key={fieldType} value={fieldType}>{edocFieldTypeLabels[fieldType]}</option>)}
-                    </select>
+
+              <aside className="edoc-field-panel rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5 shadow-[var(--shadow)]">
+                <h2 className="m-0 flex items-center gap-2 text-base font-semibold text-[var(--navy)]">
+                  <Layers size={iconSize.sm} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />
+                  Required fields
+                </h2>
+                {allAssigneeDrafts.length === 0 ? (
+                  <p className="m-0 text-sm text-[var(--muted)]">
+                    Add assignees in the routing step before placing fields.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {allAssigneeDrafts.map((assignee) => {
+                      const allowedFields = fieldTypesForAction(assignee.step.action)
+                      return (
+                        <div key={assignee.id} className="edoc-field-row rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-3">
+                          <strong className="text-sm text-[var(--navy)]">{assignee.label}</strong>
+                          <select
+                            className={VMP_INPUT_CLASS}
+                            aria-label={`Add field for ${assignee.label}`}
+                            onChange={(event) => {
+                              addField(assignee.id, event.target.value as EdocFieldType)
+                              event.currentTarget.value = ''
+                            }}
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Add field</option>
+                            {allowedFields.map((fieldType) => (
+                              <option key={fieldType} value={fieldType}>{edocFieldTypeLabels[fieldType]}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )
+                    })}
                   </div>
-                )
-              })}
-              <small>Click a placed field to remove it. Coordinates are stored as normalized page values.</small>
+                )}
+                <p className="m-0 text-xs leading-relaxed text-[var(--muted)]">
+                  Click a placed field to remove it. Coordinates are stored as normalized page values.
+                </p>
+              </aside>
             </div>
-            <div className="button-row span-2">
-              <button className="button" type="button" onClick={() => setActiveStep(2)}>Back</button>
-              <button className="button primary" type="button" onClick={() => setActiveStep(4)}>Continue</button>
-            </div>
+
+            <WizardActions>
+              <Button
+                icon={<ArrowLeft size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                onClick={() => setActiveStep(2)}
+              >
+                Back
+              </Button>
+              <Button
+                type="primary"
+                icon={<ArrowRight size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                iconPlacement="end"
+                onClick={() => setActiveStep(4)}
+              >
+                Continue
+              </Button>
+            </WizardActions>
           </div>
         ) : null}
 
         {!created && activeStep === 4 ? (
-          <div className="form-grid">
-            <section className="span-2 review-summary">
-              <div><span>Document</span><strong>{metadata.documentNumber}</strong></div>
-              <div><span>Title</span><strong>{metadata.title}</strong></div>
-              <div><span>Version</span><strong>v1</strong></div>
-              <div><span>Route steps</span><strong>{steps.length}</strong></div>
-              <div><span>Assignees</span><strong>{allAssigneeDrafts.length}</strong></div>
-              <div><span>Fields</span><strong>{fields.length}</strong></div>
+          <div className="space-y-5">
+            <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="Document review summary">
+              {[
+                { label: 'Document', value: metadata.documentNumber || '—', icon: FileDigit },
+                { label: 'Title', value: metadata.title || '—', icon: Type },
+                { label: 'Version', value: 'v1', icon: Hash },
+                { label: 'Route steps', value: String(steps.length), icon: ListOrdered },
+                { label: 'Assignees', value: String(allAssigneeDrafts.length), icon: Users },
+                { label: 'Fields', value: String(fields.length), icon: Layers },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-xl border border-[var(--stat-cell-border)] bg-[var(--stat-cell-bg)] px-4 py-3"
+                >
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                    <item.icon size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />
+                    {item.label}
+                  </span>
+                  <strong className="mt-1.5 block break-words text-sm font-semibold text-[var(--navy)]">{item.value}</strong>
+                </div>
+              ))}
             </section>
-            <div className="button-row span-2">
-              <button className="button" type="button" onClick={() => setActiveStep(3)} disabled={submitting}>Back</button>
-              <button className="button primary" type="button" disabled={submitting} onClick={() => void sendDocument()}>
-                {submitting ? 'Sending...' : 'Send document'}
-              </button>
-            </div>
+
+            <WizardActions>
+              <Button
+                icon={<ArrowLeft size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                disabled={submitting}
+                onClick={() => setActiveStep(3)}
+              >
+                Back
+              </Button>
+              <Button
+                type="primary"
+                loading={submitting}
+                disabled={submitting}
+                icon={<Send size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                iconPlacement="end"
+                onClick={() => void sendDocument()}
+              >
+                {submitting ? 'Sending…' : 'Send document'}
+              </Button>
+            </WizardActions>
           </div>
         ) : null}
       </section>
     </EdocPage>
   )
 }
-
