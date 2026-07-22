@@ -3,8 +3,8 @@
 Last Updated: `2026-07-22`
 Version: `v37`
 Branch: `main` → deploy via `master`
-Commit: (pending)
-Deployment: `PENDING`
+Commit: `a8f37ab`
+Deployment: `DEPLOYED` — GitHub Pages run [29910046901](https://github.com/carlolidres/gxp-toolkit/actions/runs/29910046901)
 
 ## Current Status
 
@@ -24,13 +24,13 @@ Deployment: `PENDING`
 | `npm run type-check` | `PASSED` | 2026-07-22 |
 | `npx vitest run src/hooks/useSidebarCollapsed.test.ts` | `PASSED` | 2 tests |
 | `npm run lint` | `PASSED` | 0 errors; pre-existing warnings |
-| `npm run build` | `PASSED` | 2026-07-22 |
-| Owner browser check | `PASSED` | hover/dismiss iteration |
+| `npm run build` | `PASSED` | 2026-07-22 + CI |
+| GitHub Pages deploy | `PASSED` | run 29910046901 |
 
 ## Next Action
 
-1. Confirm GitHub Pages deploy after push to `master`.
+1. Owner smoke on live Pages: collapse, hover submenu, dismiss, expand.
 
 ## Prior stable release
 
-- Last deployed: `v36` commit `a81b80f` — GitHub Pages run [29832776324](https://github.com/carlolidres/gxp-toolkit/actions/runs/29832776324) (2026-07-21).
+- Last deployed before this: `v36` commit `a81b80f` — GitHub Pages run [29832776324](https://github.com/carlolidres/gxp-toolkit/actions/runs/29832776324) (2026-07-21).
