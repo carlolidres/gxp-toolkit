@@ -6,10 +6,19 @@ export type AppVersionEntry = {
 
 export const APP_DEVELOPER = 'Carlo M. Lidres'
 
-export const APP_CURRENT_VERSION = 'v36'
+export const APP_CURRENT_VERSION = 'v37'
 
 /** Curated release notes — newest first. */
 export const APP_VERSION_HISTORY: AppVersionEntry[] = [
+  {
+    version: 'v37',
+    releaseDate: '2026-07-22',
+    changes: [
+      'Desktop collapsed sidebar — 28×28 Expand FAB with hover/focus group-icon rail',
+      'Glass-bubble text submenus under each module; dismisses when pointer leaves',
+      'Collapse state persists across routes via sessionStorage; mobile drawer unchanged (≤960px)',
+    ],
+  },
   {
     version: 'v36',
     releaseDate: '2026-07-21',

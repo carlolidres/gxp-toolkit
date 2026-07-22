@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Avatar, Badge, Button, Tooltip } from 'antd'
 import {
@@ -24,7 +24,9 @@ import {
 } from '../../config/appNavigation'
 import { findSubmenuLabel } from '../../config/sidebarMenus'
 import { useAuth } from '../../hooks/useAuth'
+import { useDesktopNav } from '../../hooks/useDesktopNav'
 import { usePermissions } from '../../hooks/usePermissions'
+import { useSidebarCollapsed } from '../../hooks/useSidebarCollapsed'
 import { useTheme } from '../../hooks/useTheme'
 import { MessagesModal } from '../feedback/MessagesModal'
 import { ApqrNotificationsModal } from '../feedback/ApqrNotificationsModal'
@@ -32,8 +34,11 @@ import { VersionHistoryDrawer } from '../feedback/VersionHistoryDrawer'
 import { GxpLogo } from '../brand/GxpLogo'
 import { useFeedbackMessages } from '../../hooks/useFeedbackMessages'
 import { useApqrNotifications } from '../../hooks/useApqrNotifications'
+import { SidebarHoverChrome } from './SidebarHoverChrome'
 import { SidebarNavList } from './SidebarNavList'
 import { iconSize, iconStroke } from '../../theme/iconSizes'
+
+const EXPAND_EXIT_MS = 180
 
 const groupIcons = {
   vrms: (props: { className?: string }) => (
@@ -54,7 +59,10 @@ const groupIcons = {
 } as const
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const { isCollapsed, setIsCollapsed } = useSidebarCollapsed()
+  const isDesktop = useDesktopNav()
+  const [expandExiting, setExpandExiting] = useState(false)
+  const expandTimerRef = useRef<number | null>(null)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [messagesOpen, setMessagesOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -71,21 +79,50 @@ export function AppShell({ children }: { children: ReactNode }) {
   const submenuLabel = findSubmenuLabel(location.pathname, location.hash)
   const current = submenuLabel ?? resolveWorkspaceTitle(location.pathname)
 
+  const layoutCollapsed = isCollapsed && isDesktop
+  const showHoverChrome = layoutCollapsed || expandExiting
+
+  useEffect(() => {
+    return () => {
+      if (expandTimerRef.current !== null) window.clearTimeout(expandTimerRef.current)
+    }
+  }, [])
+
   function closeMobileNav() {
     setIsMobileOpen(false)
   }
 
+  function collapseSidebar() {
+    if (expandTimerRef.current !== null) {
+      window.clearTimeout(expandTimerRef.current)
+      expandTimerRef.current = null
+    }
+    setExpandExiting(false)
+    if (isDesktop) setIsCollapsed(true)
+    else closeMobileNav()
+  }
+
+  function expandSidebar() {
+    if (!layoutCollapsed || expandExiting) return
+    setExpandExiting(true)
+    expandTimerRef.current = window.setTimeout(() => {
+      setIsCollapsed(false)
+      setExpandExiting(false)
+      expandTimerRef.current = null
+    }, EXPAND_EXIT_MS)
+  }
+
   const sidebarClass = [
     'sidebar',
-    isCollapsed ? 'collapsed' : '',
+    layoutCollapsed ? 'collapsed' : '',
     isMobileOpen ? 'open' : '',
   ].filter(Boolean).join(' ')
 
-  const mainClass = isCollapsed ? 'app-main sidebar-collapsed' : 'app-main'
+  const mainClass = layoutCollapsed ? 'app-main sidebar-collapsed' : 'app-main'
 
   return (
     <div className="app-shell gxp-antd-shell">
-      <aside className={sidebarClass}>
+      <aside className={sidebarClass} aria-hidden={layoutCollapsed || undefined}>
         <div className="sidebar-header">
           <GxpLogo variant="lockup" showTagline className="sidebar-brand-lockup" />
           <div className="sidebar-brand visually-hidden">
@@ -95,8 +132,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Button
             type="text"
             className="sidebar-toggle"
-            onClick={() => setIsCollapsed(true)}
-            aria-label="Close sidebar"
+            onClick={collapseSidebar}
+            aria-label="Collapse sidebar"
             icon={<PanelLeft size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />}
           />
         </div>
@@ -137,19 +174,28 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <Button
-        type="text"
-        className={[
-          'sidebar-expand-btn',
-          'sidebar-expand-btn-glow',
-          isCollapsed ? 'is-visible' : 'is-hidden',
-        ].join(' ')}
-        onClick={() => setIsCollapsed(false)}
-        aria-label="Open sidebar"
-        aria-hidden={!isCollapsed}
-        tabIndex={isCollapsed ? 0 : -1}
-        icon={<PanelLeft size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
-      />
+      {showHoverChrome ? (
+        permissionsReady ? (
+          <SidebarHoverChrome
+            groups={accessibleNavigationGroups}
+            groupIcons={groupIcons}
+            exiting={expandExiting}
+            onExpand={expandSidebar}
+            pathname={location.pathname}
+            hash={location.hash}
+          />
+        ) : (
+          <div className={['sidebar-hover-chrome', expandExiting ? 'is-exiting' : ''].filter(Boolean).join(' ')}>
+            <Button
+              type="text"
+              className="sidebar-expand-fab"
+              onClick={expandSidebar}
+              aria-label="Expand sidebar"
+              icon={<PanelLeft size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+            />
+          </div>
+        )
+      ) : null}
 
       <div className={mainClass}>
         <header className="topbar">

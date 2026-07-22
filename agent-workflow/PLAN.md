@@ -1,6 +1,6 @@
 # Active Plan
 
-Last Updated: `2026-07-13`
+Last Updated: `2026-07-22`
 
 Plan Owner: `Cursor`
 
@@ -8,24 +8,19 @@ Status: `IMPLEMENTED`
 
 ## Objective
 
-Improve login logo integration, Messages drawer UX, notification sharpness, global typography, VRMS routing form alignment, and searchable/editable registry suggestions while preserving existing data, workflows, and permissions.
+Desktop-only (≥961px) fully collapsed sidebar with a 28×28 Expand FAB and hover/focus-revealed icon-only navigation rail; persist collapse across remounts/routes; keep mobile drawer behavior.
 
 ## Acceptance
 
-1. [x] Login lockup blends with login-story background in light/dark
-2. [x] Messages open as a right-side drawer (~40% desktop, responsive)
-3. [x] Clear/Send live in compose section; copy action on inbox entries
-4. [x] Ant notifications render sharply with elevated z-index
-5. [x] Routing form grid alignment improved
-6. [x] Registry-backed fields are searchable; Status/Sent/Routing are search-only
-7. [x] Inline create (non-workflow registries) persists after successful save
-8. [x] Authorized remove with confirmation; historical records untouched
-9. [x] Typography baseline raised via Ant tokens + CSS
-10. [x] Focused tests + type-check + build passed
-11. [ ] Owner browser visual check
-12. [ ] Remote migration `20260713170000_registry_values_ci_unique_and_rls.sql` applied when history drift is repaired
+1. [x] Collapsed desktop: only FAB at top 12 / left 12 / z-index 1100
+2. [x] Hover or focus-within reveals group icon rail; group hover shows glass-bubble text submenus
+3. [x] Role-filtered hierarchy, active route highlight on group + submenu labels
+4. [x] FAB click → exit animation → full sidebar/topbar; chrome unmounted when expanded
+5. [x] Collapsed: hide sidebar/topbar; ~44px main left padding; sessionStorage persistence
+6. [x] Mobile ≤960px keeps drawer/hamburger; hover chrome hidden
+7. [x] Focus labels, keyboard rail reveal, scroll for long menus
+8. [x] Focused persistence test + type-check + lint (0 errors)
 
 ## Remaining
 
-- Owner visual check across breakpoints and themes
-- Apply registry CI unique + RLS migration after Supabase history repair
+- Owner browser visual check (light/dark, long permission set, tooltip hover path)

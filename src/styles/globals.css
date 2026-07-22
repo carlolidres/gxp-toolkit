@@ -353,7 +353,10 @@ code { background: var(--code-bg); padding: 2px 6px; border-radius: 5px; }
   border-top: 1px solid var(--sidebar-border);
 }
 
-.sidebar.collapsed { transform: translateX(-100%); }
+.sidebar.collapsed {
+  transform: translateX(-100%);
+  pointer-events: none;
+}
 
 .sidebar-header {
   display: flex;
@@ -394,7 +397,6 @@ code { background: var(--code-bg); padding: 2px 6px; border-radius: 5px; }
 .sidebar-brand-sub { display: block; margin-top: 2px; color: var(--sidebar-muted); font-size: 0.68rem; }
 
 .sidebar-toggle,
-.sidebar-expand-btn,
 .sidebar-profile-action {
   width: 36px;
   height: 36px;
@@ -411,60 +413,13 @@ code { background: var(--code-bg); padding: 2px 6px; border-radius: 5px; }
 .sidebar-toggle:hover,
 .sidebar-profile-action:hover { background: var(--sidebar-hover); }
 
-.sidebar-toggle .ant-btn-icon,
-.sidebar-expand-btn .ant-btn-icon {
+.sidebar-toggle .ant-btn-icon {
   display: inline-flex;
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sidebar-toggle:active .ant-btn-icon {
   transform: scale(0.9) rotate(-8deg);
-}
-
-.sidebar-expand-btn.sidebar-expand-btn-glow {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  padding: 0;
-  border: 0;
-  border-radius: 8px;
-  background: var(--glow-btn-bg);
-  color: var(--glow-icon);
-  box-shadow: 0 0 10px var(--glow-color-soft);
-}
-
-.sidebar-expand-btn.sidebar-expand-btn-glow.is-visible {
-  animation: sidebar-glow-pulse 2.8s ease-in-out 0.28s infinite;
-}
-
-.sidebar-expand-btn.sidebar-expand-btn-glow:hover {
-  background: var(--glow-btn-bg);
-  animation: none;
-  box-shadow: 0 0 14px var(--glow-color);
-}
-
-.sidebar-expand-btn.sidebar-expand-btn-glow svg {
-  width: 16px;
-  height: 16px;
-  filter: drop-shadow(0 0 2px var(--glow-color));
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.sidebar-expand-btn.is-visible .ant-btn-icon {
-  transform: rotate(0deg) scale(1);
-}
-
-.sidebar-expand-btn.is-hidden .ant-btn-icon {
-  transform: rotate(-90deg) scale(0.85);
-}
-
-@keyframes sidebar-glow-pulse {
-  0%, 100% {
-    box-shadow: 0 0 6px var(--glow-color-soft);
-  }
-  50% {
-    box-shadow: 0 0 12px var(--glow-color);
-  }
 }
 
 .sidebar-new-chat {
@@ -725,7 +680,7 @@ code { background: var(--code-bg); padding: 2px 6px; border-radius: 5px; }
   padding-top: 0;
 }
 
-@media (min-width: 801px) {
+@media (min-width: 961px) {
   .app-main .topbar {
     max-height: 56px;
     opacity: 1;
@@ -753,33 +708,260 @@ code { background: var(--code-bg); padding: 2px 6px; border-radius: 5px; }
   }
 
   .app-main.sidebar-collapsed > main {
-    padding-top: 40px;
+    padding-left: 44px;
   }
 }
 
-.sidebar-expand-btn {
+/* Desktop-only collapsed hover chrome: FAB + group icons + glass submenus */
+.sidebar-hover-chrome {
   position: fixed;
-  top: 8px;
-  left: 8px;
-  z-index: 30;
-  display: grid;
-  place-items: center;
+  top: 12px;
+  left: 12px;
+  z-index: 1100;
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 32px;
+  max-height: calc(100dvh - 24px);
+  overflow: visible;
+  pointer-events: auto;
+  box-sizing: content-box;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-.sidebar-expand-btn.is-hidden {
+.sidebar-hover-chrome::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.sidebar-expand-fab {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  padding: 0 !important;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: var(--teal) !important;
+  color: #fff !important;
+  flex-shrink: 0;
+  box-shadow: none !important;
+  transition: opacity 0.18s ease, transform 0.18s ease, background 0.15s ease;
+}
+
+.sidebar-expand-fab:hover,
+.sidebar-expand-fab:focus-visible {
+  background: color-mix(in srgb, var(--teal) 88%, #000) !important;
+  color: #fff !important;
+}
+
+.sidebar-expand-fab:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+.sidebar-expand-fab .ant-btn-icon {
+  display: inline-flex;
+}
+
+.sidebar-expand-fab svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sidebar-hover-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 32px;
+  max-height: calc(100dvh - 56px);
+  overflow: visible;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  pointer-events: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0.2s ease;
+}
+
+.sidebar-hover-rail::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.sidebar-hover-chrome:hover .sidebar-hover-rail,
+.sidebar-hover-chrome:focus-within .sidebar-hover-rail {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.sidebar-hover-group {
+  position: relative;
+  width: 32px;
+  flex-shrink: 0;
+  box-sizing: content-box;
+}
+
+.sidebar-hover-rail-item {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  color: var(--sidebar-muted);
+  text-decoration: none;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-hover-rail-item:hover,
+.sidebar-hover-group:hover > .sidebar-hover-rail-item,
+.sidebar-hover-group:focus-within > .sidebar-hover-rail-item {
+  background: color-mix(in srgb, var(--surface) 42%, transparent);
+  color: var(--sidebar-text-strong);
+}
+
+.sidebar-hover-rail-item:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+  color: var(--sidebar-text-strong);
+}
+
+.sidebar-hover-rail-item.is-active,
+.sidebar-hover-group.is-active > .sidebar-hover-rail-item {
+  background: color-mix(in srgb, var(--teal-soft) 55%, transparent);
+  color: var(--teal);
+}
+
+.sidebar-hover-submenu {
+  position: absolute;
+  top: 0;
+  /* Fixed to icon column — not 100%, so group padding-right does not shove labels away */
+  left: 32px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  max-height: min(70vh, 440px);
+  padding: 0 0 0 10px;
+  margin: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: scale(0.72) translateY(-6px);
-  transition-delay: 0s;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0.18s ease;
 }
 
-.sidebar-expand-btn.is-visible {
+.sidebar-hover-submenu::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.sidebar-hover-submenu::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  left: 0;
+  width: 10px;
+}
+
+.sidebar-hover-group:hover > .sidebar-hover-submenu,
+.sidebar-hover-group:focus-within > .sidebar-hover-submenu {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transform: scale(1) translateY(0);
-  transition-delay: 0.12s;
+  transform: translateX(0);
+}
+
+.sidebar-hover-subitem {
+  display: block;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 52%, transparent);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  color: var(--app-text);
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.sidebar-hover-subitem:hover {
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  color: var(--navy);
+  transform: translateX(2px);
+}
+
+.sidebar-hover-subitem:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  color: var(--navy);
+}
+
+.sidebar-hover-subitem.is-active,
+.sidebar-hover-subitem.active {
+  background: color-mix(in srgb, var(--teal-soft) 72%, transparent);
+  color: var(--teal);
+  font-weight: 600;
+}
+
+.sidebar-hover-chrome.is-exiting {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.96);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.sidebar-hover-chrome.is-exiting .sidebar-hover-rail,
+.sidebar-hover-chrome.is-exiting .sidebar-hover-submenu {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media (min-width: 961px) {
+  .sidebar-hover-chrome {
+    display: flex;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -788,10 +970,12 @@ code { background: var(--code-bg); padding: 2px 6px; border-radius: 5px; }
   .app-main > main,
   .app-main .topbar,
   .sidebar-toggle,
-  .sidebar-expand-btn,
   .sidebar-toggle .ant-btn-icon,
-  .sidebar-expand-btn .ant-btn-icon,
-  .sidebar-expand-btn.sidebar-expand-btn-glow svg {
+  .sidebar-hover-chrome,
+  .sidebar-hover-rail,
+  .sidebar-hover-submenu,
+  .sidebar-hover-subitem,
+  .sidebar-expand-fab {
     transition-duration: 0.01ms !important;
     animation: none !important;
     transition-delay: 0s !important;
@@ -1085,10 +1269,13 @@ textarea.is-na,
 }
 .menu-button { display: none; }
 
-@media (min-width: 801px) {
+@media (min-width: 961px) {
   .menu-button { display: none !important; }
   .sidebar { transform: translateX(0); }
-  .sidebar.collapsed { transform: translateX(-100%); }
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+    pointer-events: none;
+  }
 }
 
 .page {
@@ -7932,7 +8119,7 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 960px) {
   .sidebar {
     transform: translateX(-100%);
     width: min(260px, 88vw);
@@ -7945,7 +8132,7 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
     margin-left: 0;
     width: 100%;
   }
-  .sidebar-expand-btn { display: none; }
+  .sidebar-hover-chrome { display: none !important; }
   .menu-button { display: grid; place-items: center; width: 36px; height: 36px; }
   .menu-button:hover { background: var(--sidebar-hover); }
   .topbar-profile-text,

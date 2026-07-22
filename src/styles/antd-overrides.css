@@ -162,7 +162,7 @@
   display: inline-flex;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 960px) {
   .gxp-antd-shell .topbar-brand-logo.gxp-brand-mark {
     display: inline-flex;
   }
