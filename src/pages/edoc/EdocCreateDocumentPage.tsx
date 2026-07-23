@@ -1,43 +1,51 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Steps } from 'antd'
+import { Button, Steps, Tooltip } from 'antd'
 import {
   AlignLeft,
   ArrowLeft,
   ArrowRight,
   CalendarDays,
   CheckCircle2,
+  Copy,
   FileDigit,
   FileText,
   Flag,
-  GitBranch,
   Hash,
   Layers,
   ListOrdered,
-  Plus,
   Send,
   ShieldCheck,
-  Trash2,
   Type,
   Upload,
   Users,
 } from 'lucide-react'
 
 import { EdocError, EdocPage } from '../../components/edoc/EdocComponents'
+import { EdocFieldPlacementEditor } from '../../components/edoc/EdocFieldPlacementEditor'
+import { EdocSignatoryRoutingBuilder } from '../../components/edoc/EdocSignatoryRoutingBuilder'
+import { useToast } from '../../components/feedback/ToastProvider'
 import { DateInput } from '../../components/forms/FormControls'
-import { edocFieldTypeLabels, fieldTypesForAction } from '../../features/edoc/fieldRules'
 import { edocService } from '../../features/edoc/edocService'
 import { hasPdfSignature, sha256Hex, validateEdocPdfFile } from '../../features/edoc/fileValidation'
+import {
+  SIGNATORY_LEVEL_ACTIONS,
+  SIGNATORY_LEVEL_LABELS,
+  ROUTING_MODE_INBOX_SUMMARY,
+  compileSignatoryLevelsToRouteSteps,
+  defaultSignatoryLevels,
+  resolveCurrentUserProfileId,
+  validateSignatoryRouting,
+  type EdocSignatoryLevelDraft,
+} from '../../features/edoc/signatoryLevels'
 import { useEdocProfiles } from '../../features/edoc/useEdocData'
 import type {
-  EdocAssignableAction,
   EdocCreateDraftInput,
   EdocFieldDraft,
-  EdocFieldType,
   EdocPriority,
-  EdocRouteStepDraft,
   EdocRoutingMode,
 } from '../../features/edoc/types'
+import { useAuth } from '../../hooks/useAuth'
 import { iconSize, iconStroke } from '../../theme/iconSizes'
 import {
   VMP_FIELD_CLASS,
@@ -95,24 +103,11 @@ function WizardActions({
 }
 
 const wizardSteps = ['Metadata', 'PDF upload', 'Routing setup', 'Field placement', 'Review and send']
-const assignableActions: EdocAssignableAction[] = ['review', 'approve', 'sign', 'acknowledge']
-
-function newStep(sequence: number): EdocRouteStepDraft {
-  return {
-    id: crypto.randomUUID(),
-    groupId: `group-${sequence}`,
-    sequence,
-    action: 'review',
-    assigneeIds: [],
-    completionRule: 'all',
-    minimumCount: null,
-    dueAt: '',
-    allowDelegation: false,
-  }
-}
 
 export function EdocCreateDocumentPage() {
   const profiles = useEdocProfiles()
+  const { user } = useAuth()
+  const { notify } = useToast()
   const [activeStep, setActiveStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [created, setCreated] = useState<{ documentId: string; routeId: string } | null>(null)
@@ -132,27 +127,70 @@ export function EdocCreateDocumentPage() {
     retentionClass: '',
   })
   const [file, setFile] = useState<EdocCreateDraftInput['file']>(null)
+  const [pdfBytes, setPdfBytes] = useState<ArrayBuffer | null>(null)
   const [selectedFileName, setSelectedFileName] = useState('')
   const [routingMode, setRoutingMode] = useState<EdocRoutingMode>('sequential')
-  const [steps, setSteps] = useState<EdocRouteStepDraft[]>([newStep(1)])
+  const [noSignatories, setNoSignatories] = useState(false)
+  const [levels, setLevels] = useState<EdocSignatoryLevelDraft[]>([])
+  const [levelErrors, setLevelErrors] = useState<Partial<Record<EdocSignatoryLevelDraft['kind'], string>>>({})
   const [fields, setFields] = useState<EdocFieldDraft[]>([])
+  const [seededCurrentUser, setSeededCurrentUser] = useState(false)
+
+  const currentUserProfileId = useMemo(
+    () => resolveCurrentUserProfileId(profiles.data ?? [], user),
+    [profiles.data, user],
+  )
+
+  useEffect(() => {
+    if (seededCurrentUser || noSignatories) return
+    if (!profiles.data) return
+    setLevels(defaultSignatoryLevels(currentUserProfileId))
+    setSeededCurrentUser(true)
+  }, [currentUserProfileId, noSignatories, profiles.data, seededCurrentUser])
+
+  useEffect(() => {
+    if (!currentUserProfileId || noSignatories) return
+    setLevels((current) => {
+      if (current.length === 0) return current
+      return current.map((level) => {
+        if (level.kind !== 'prepared_by') return level
+        if (level.assigneeIds.includes(currentUserProfileId)) return level
+        return { ...level, assigneeIds: [currentUserProfileId, ...level.assigneeIds] }
+      })
+    })
+  }, [currentUserProfileId, noSignatories])
 
   const allAssigneeDrafts = useMemo(
     () =>
-      steps.flatMap((step) =>
-        step.assigneeIds.map((assigneeId) => ({
-          id: `${step.id}:${assigneeId}`,
-          step,
-          assigneeId,
-          label: `${step.sequence}. ${step.action} - ${profiles.data?.find((profile) => profile.id === assigneeId)?.displayName ?? assigneeId}`,
-        })),
-      ),
-    [profiles.data, steps],
+      noSignatories
+        ? []
+        : levels.flatMap((level) =>
+            level.assigneeIds.map((assigneeId) => ({
+              id: `${level.id}:${assigneeId}`,
+              level,
+              assigneeId,
+              action: SIGNATORY_LEVEL_ACTIONS[level.kind],
+              label: `${SIGNATORY_LEVEL_LABELS[level.kind]} — ${
+                profiles.data?.find((profile) => profile.id === assigneeId)?.displayName ?? assigneeId
+              }`,
+            })),
+          ),
+    [levels, noSignatories, profiles.data],
   )
 
   const missingFieldLabels = allAssigneeDrafts
     .filter((assignee) => !fields.some((field) => field.assigneeDraftId === assignee.id))
     .map((assignee) => assignee.label)
+
+  const compiledRoute = useMemo(
+    () =>
+      compileSignatoryLevelsToRouteSteps({
+        mode: routingMode,
+        levels,
+        noSignatories,
+      }),
+    [levels, noSignatories, routingMode],
+  )
 
   function updateMetadata(key: keyof EdocCreateDraftInput['metadata'], value: string) {
     setMetadata((current) => ({ ...current, [key]: value }))
@@ -169,7 +207,9 @@ export function EdocCreateDocumentPage() {
   async function handlePdfSelected(fileInput: File | null) {
     setError(null)
     setFile(null)
+    setPdfBytes(null)
     setSelectedFileName('')
+    setFields([])
     if (!fileInput) return
 
     const validation = validateEdocPdfFile(fileInput)
@@ -180,6 +220,7 @@ export function EdocCreateDocumentPage() {
     }
 
     setSelectedFileName(fileInput.name)
+    setPdfBytes(await fileInput.arrayBuffer())
     setFile({
       name: fileInput.name,
       sizeBytes: fileInput.size,
@@ -188,49 +229,62 @@ export function EdocCreateDocumentPage() {
     })
   }
 
-  function updateRouteStep(stepId: string, patch: Partial<EdocRouteStepDraft>) {
-    setSteps((current) => current.map((step) => (step.id === stepId ? { ...step, ...patch } : step)))
+  function continueFromRouting() {
+    setError(null)
+    const validation = validateSignatoryRouting({ noSignatories, levels })
+    setLevelErrors(validation.levelErrors)
+    if (!validation.ok) {
+      setError(validation.message)
+      return
+    }
+    const validAssigneeIds = new Set(allAssigneeDrafts.map((assignee) => assignee.id))
+    setFields((current) => current.filter((field) => validAssigneeIds.has(field.assigneeDraftId)))
+    setActiveStep(3)
   }
 
-  function addRouteStep() {
-    setSteps((current) => [...current, newStep(current.length + 1)])
+  function handleLevelsChange(nextLevels: EdocSignatoryLevelDraft[]) {
+    setLevels(nextLevels)
+    setLevelErrors({})
   }
 
-  function removeRouteStep(stepId: string) {
-    setSteps((current) => current.filter((step) => step.id !== stepId).map((step, index) => ({ ...step, sequence: index + 1 })))
-    setFields((current) => current.filter((field) => !field.assigneeDraftId.startsWith(`${stepId}:`)))
-  }
-
-  function addField(assigneeDraftId: string, fieldType: EdocFieldType) {
-    setFields((current) => [
-      ...current,
-      {
-        id: crypto.randomUUID(),
-        assigneeDraftId,
-        fieldType,
-        pageNumber: 1,
-        x: 0.12 + (current.length % 3) * 0.22,
-        y: 0.64 + (current.length % 2) * 0.12,
-        width: 0.2,
-        height: 0.08,
-        required: true,
-      },
-    ])
+  function handleNoSignatoriesChange(value: boolean) {
+    setNoSignatories(value)
+    setLevelErrors({})
+    setError(null)
+    if (value) {
+      setFields([])
+      return
+    }
+    if (levels.length === 0) {
+      setLevels(defaultSignatoryLevels(currentUserProfileId))
+    }
   }
 
   async function sendDocument() {
     setError(null)
     if (!file) return setError('Upload and validate a PDF before sending.')
-    if (steps.some((step) => step.assigneeIds.length === 0)) return setError('Every routing step requires at least one assignee.')
-    if (missingFieldLabels.length > 0) return setError(`Place required fields for: ${missingFieldLabels.join(', ')}.`)
+
+    const validation = validateSignatoryRouting({ noSignatories, levels })
+    setLevelErrors(validation.levelErrors)
+    if (!validation.ok) return setError(validation.message)
+
+    if (!noSignatories && missingFieldLabels.length > 0) {
+      return setError(`Place required fields for: ${missingFieldLabels.join(', ')}.`)
+    }
+
+    const routing = compileSignatoryLevelsToRouteSteps({
+      mode: routingMode,
+      levels,
+      noSignatories,
+    })
 
     setSubmitting(true)
     try {
       setCreated(await edocService.createAndSendDraft({
         metadata,
         file,
-        routing: { mode: routingMode, steps },
-        fields,
+        routing,
+        fields: noSignatories ? [] : fields,
       }))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send the eDoc route.')
@@ -261,7 +315,9 @@ export function EdocCreateDocumentPage() {
               <div>
                 <h2 className="m-0 text-lg font-semibold text-[var(--navy)]">Route sent</h2>
                 <p className="mt-1 mb-0 text-sm text-[var(--muted)]">
-                  The eDoc route was created and the first eligible assignment group was activated.
+                  {noSignatories
+                    ? 'The document was created without a signatory route.'
+                    : 'The route was started. Signatories will see it in My Inbox only when their turn is active for the selected routing mode.'}
                 </p>
               </div>
             </div>
@@ -402,15 +458,67 @@ export function EdocCreateDocumentPage() {
               </WizardField>
 
               {file ? (
-                <div className="md:col-span-2 flex flex-wrap items-start gap-3 rounded-xl border border-[color-mix(in_srgb,var(--teal)_35%,var(--border))] bg-[color-mix(in_srgb,var(--teal)_8%,var(--surface))] px-4 py-3">
-                  <ShieldCheck size={iconSize.md} strokeWidth={iconStroke} className="mt-0.5 shrink-0 text-[var(--teal)]" aria-hidden />
-                  <div className="min-w-0 flex-1">
-                    <p className="m-0 text-sm font-semibold text-[var(--navy)]">Validated PDF</p>
-                    <p className="mt-1 mb-0 break-all text-xs text-[var(--muted)]">
-                      {selectedFileName}
-                      <span className="mx-1.5 text-[var(--border)]" aria-hidden>·</span>
-                      SHA-256 {file.sha256.slice(0, 16)}…
-                    </p>
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="md:col-span-2 rounded-xl border border-[color-mix(in_srgb,var(--teal)_32%,var(--border))] bg-[color-mix(in_srgb,var(--teal)_8%,var(--surface))] px-4 py-4 sm:px-5"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--teal)_16%,var(--surface))] text-[var(--teal)]">
+                      <ShieldCheck size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />
+                    </span>
+                    <div className="min-w-0 flex-1 space-y-3">
+                      <div>
+                        <p className="m-0 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[var(--teal)]">
+                          Validated PDF
+                        </p>
+                        <p className="mt-1 mb-0 text-sm text-[var(--muted)]">
+                          File passed type and signature checks and is ready for routing.
+                        </p>
+                      </div>
+
+                      <dl className="m-0 grid gap-2.5 sm:grid-cols-2">
+                        <div className="min-w-0 rounded-lg bg-[color-mix(in_srgb,var(--surface)_72%,transparent)] px-3 py-2.5">
+                          <dt className="m-0 flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.06em] text-[var(--muted)]">
+                            <FileText size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />
+                            Filename
+                          </dt>
+                          <dd className="mt-1 mb-0 truncate text-sm font-medium text-[var(--navy)]" title={selectedFileName}>
+                            {selectedFileName}
+                          </dd>
+                        </div>
+
+                        <div className="min-w-0 rounded-lg bg-[color-mix(in_srgb,var(--surface)_72%,transparent)] px-3 py-2.5">
+                          <dt className="m-0 flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.06em] text-[var(--muted)]">
+                            <Hash size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />
+                            SHA-256
+                          </dt>
+                          <dd className="mt-1 mb-0 flex items-center gap-1.5">
+                            <code
+                              className="min-w-0 flex-1 truncate font-mono text-[0.8rem] font-medium text-[var(--navy)]"
+                              title={file.sha256}
+                            >
+                              {file.sha256.slice(0, 16)}…
+                            </code>
+                            <Tooltip title="Copy full SHA-256 hash">
+                              <Button
+                                type="text"
+                                size="small"
+                                className="shrink-0"
+                                aria-label="Copy full SHA-256 hash"
+                                icon={<Copy size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}
+                                onClick={() => {
+                                  void navigator.clipboard.writeText(file.sha256).then(
+                                    () => notify('SHA-256 hash copied to clipboard.', 'success'),
+                                    () => notify('Could not copy hash to clipboard.', 'error'),
+                                  )
+                                }}
+                              />
+                            </Tooltip>
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
                   </div>
                 </div>
               ) : null}
@@ -438,161 +546,21 @@ export function EdocCreateDocumentPage() {
 
         {!created && activeStep === 2 ? (
           <div className="space-y-5">
-            <div className={`${VMP_FORM_GRID_CLASS} !px-0 !py-0`}>
-              <WizardField
-                label="Routing mode"
-                htmlFor="edoc-routing-mode"
-                icon={tealIcon(GitBranch)}
-              >
-                <select
-                  id="edoc-routing-mode"
-                  className={VMP_INPUT_CLASS}
-                  value={routingMode}
-                  onChange={(event) => setRoutingMode(event.target.value as EdocRoutingMode)}
-                >
-                  <option value="sequential">Sequential</option>
-                  <option value="parallel">Parallel</option>
-                  <option value="mixed">Mixed</option>
-                </select>
-              </WizardField>
-            </div>
+            <EdocSignatoryRoutingBuilder
+              mode={routingMode}
+              levels={levels}
+              noSignatories={noSignatories}
+              profiles={profiles.data ?? []}
+              profilesLoading={profiles.loading}
+              profilesError={profiles.error}
+              currentUserProfileId={currentUserProfileId}
+              levelErrors={levelErrors}
+              onModeChange={setRoutingMode}
+              onLevelsChange={handleLevelsChange}
+              onNoSignatoriesChange={handleNoSignatoriesChange}
+            />
 
-            {profiles.error ? <EdocError message={profiles.error} /> : null}
-
-            <div className="space-y-4">
-              {steps.map((step) => (
-                <div
-                  className="edoc-route-step rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 sm:p-5"
-                  key={step.id}
-                >
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                    <p className="m-0 inline-flex items-center gap-2 text-sm font-semibold text-[var(--navy)]">
-                      <ListOrdered size={iconSize.sm} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />
-                      Step {step.sequence}
-                    </p>
-                    {steps.length > 1 ? (
-                      <Button
-                        danger
-                        size="small"
-                        icon={<Trash2 size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}
-                        onClick={() => removeRouteStep(step.id)}
-                      >
-                        Remove step
-                      </Button>
-                    ) : null}
-                  </div>
-
-                  <div className={`${VMP_FORM_GRID_CLASS} !px-0 !py-0`}>
-                    <WizardField
-                      label="Action"
-                      htmlFor={`edoc-step-action-${step.id}`}
-                      icon={tealIcon(Flag)}
-                    >
-                      <select
-                        id={`edoc-step-action-${step.id}`}
-                        className={VMP_INPUT_CLASS}
-                        value={step.action}
-                        onChange={(event) => updateRouteStep(step.id, { action: event.target.value as EdocAssignableAction })}
-                      >
-                        {assignableActions.map((action) => (
-                          <option value={action} key={action}>{action}</option>
-                        ))}
-                      </select>
-                    </WizardField>
-
-                    <WizardField
-                      label="Assignees"
-                      htmlFor={`edoc-step-assignees-${step.id}`}
-                      icon={tealIcon(Users)}
-                      hint="Hold Ctrl or Cmd to select multiple assignees."
-                    >
-                      <select
-                        id={`edoc-step-assignees-${step.id}`}
-                        className={`${VMP_INPUT_CLASS} min-h-[112px]`}
-                        multiple
-                        value={step.assigneeIds}
-                        onChange={(event) => updateRouteStep(step.id, { assigneeIds: [...event.currentTarget.selectedOptions].map((option) => option.value) })}
-                      >
-                        {(profiles.data ?? []).map((profile) => (
-                          <option key={profile.id} value={profile.id}>
-                            {profile.displayName} ({profile.email})
-                          </option>
-                        ))}
-                      </select>
-                    </WizardField>
-
-                    <WizardField
-                      label="Completion rule"
-                      htmlFor={`edoc-step-completion-${step.id}`}
-                      icon={tealIcon(Layers)}
-                    >
-                      <select
-                        id={`edoc-step-completion-${step.id}`}
-                        className={VMP_INPUT_CLASS}
-                        value={step.completionRule}
-                        onChange={(event) => updateRouteStep(step.id, { completionRule: event.target.value as EdocRouteStepDraft['completionRule'] })}
-                      >
-                        <option value="all">All</option>
-                        <option value="any">Any</option>
-                        <option value="majority">Majority</option>
-                        <option value="minimum_count">Minimum count</option>
-                      </select>
-                    </WizardField>
-
-                    <WizardField
-                      label="Minimum count"
-                      htmlFor={`edoc-step-minimum-${step.id}`}
-                      icon={tealIcon(Hash)}
-                    >
-                      <input
-                        id={`edoc-step-minimum-${step.id}`}
-                        className={VMP_INPUT_CLASS}
-                        type="number"
-                        min={1}
-                        value={step.minimumCount ?? ''}
-                        onChange={(event) => updateRouteStep(step.id, { minimumCount: event.target.value ? Number(event.target.value) : null })}
-                      />
-                    </WizardField>
-
-                    <WizardField
-                      label="Due date"
-                      htmlFor={`edoc-step-due-${step.id}`}
-                      icon={tealIcon(CalendarDays)}
-                    >
-                      <DateInput
-                        id={`edoc-step-due-${step.id}`}
-                        value={step.dueAt}
-                        onChange={(event) => updateRouteStep(step.id, { dueAt: event.target.value })}
-                      />
-                    </WizardField>
-
-                    <label className={`${VMP_FIELD_CLASS} justify-center`} htmlFor={`edoc-step-delegation-${step.id}`}>
-                      <span className="inline-flex items-center gap-2 text-sm font-medium text-[var(--app-text)]">
-                        <input
-                          id={`edoc-step-delegation-${step.id}`}
-                          className="h-4 w-4 accent-[var(--teal)]"
-                          type="checkbox"
-                          checked={step.allowDelegation}
-                          onChange={(event) => updateRouteStep(step.id, { allowDelegation: event.target.checked })}
-                        />
-                        Allow delegation
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <WizardActions
-              left={
-                <Button
-                  icon={<Plus size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
-                  onClick={addRouteStep}
-                >
-                  Add step
-                </Button>
-              }
-            >
+            <WizardActions>
               <Button
                 icon={<ArrowLeft size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
                 onClick={() => setActiveStep(1)}
@@ -603,7 +571,7 @@ export function EdocCreateDocumentPage() {
                 type="primary"
                 icon={<ArrowRight size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
                 iconPlacement="end"
-                onClick={() => setActiveStep(3)}
+                onClick={continueFromRouting}
               >
                 Continue
               </Button>
@@ -613,76 +581,24 @@ export function EdocCreateDocumentPage() {
 
         {!created && activeStep === 3 ? (
           <div className="space-y-5">
-            <div className="edoc-placement-grid">
-              <div
-                className="edoc-pdf-surface rounded-xl border border-[var(--border)] bg-[var(--surface-subtle)] p-4 sm:p-5"
-                aria-label="PDF field placement preview"
-              >
-                <div className="edoc-pdf-page">
-                  <span className="document-mark">PDF PAGE 1</span>
-                  <h2>{metadata.title || 'Untitled document'}</h2>
-                  <p>{metadata.documentNumber}</p>
-                  {fields.map((field) => (
-                    <button
-                      type="button"
-                      key={field.id}
-                      className="edoc-field-box"
-                      title="Click to remove field"
-                      aria-label={`Remove ${edocFieldTypeLabels[field.fieldType]} field`}
-                      style={{
-                        left: `${field.x * 100}%`,
-                        top: `${field.y * 100}%`,
-                        width: `${field.width * 100}%`,
-                        height: `${field.height * 100}%`,
-                      }}
-                      onClick={() => setFields((current) => current.filter((candidate) => candidate.id !== field.id))}
-                    >
-                      {edocFieldTypeLabels[field.fieldType]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <aside className="edoc-field-panel rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5 shadow-[var(--shadow)]">
-                <h2 className="m-0 flex items-center gap-2 text-base font-semibold text-[var(--navy)]">
-                  <Layers size={iconSize.sm} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />
-                  Required fields
-                </h2>
-                {allAssigneeDrafts.length === 0 ? (
-                  <p className="m-0 text-sm text-[var(--muted)]">
-                    Add assignees in the routing step before placing fields.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {allAssigneeDrafts.map((assignee) => {
-                      const allowedFields = fieldTypesForAction(assignee.step.action)
-                      return (
-                        <div key={assignee.id} className="edoc-field-row rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-3">
-                          <strong className="text-sm text-[var(--navy)]">{assignee.label}</strong>
-                          <select
-                            className={VMP_INPUT_CLASS}
-                            aria-label={`Add field for ${assignee.label}`}
-                            onChange={(event) => {
-                              addField(assignee.id, event.target.value as EdocFieldType)
-                              event.currentTarget.value = ''
-                            }}
-                            defaultValue=""
-                          >
-                            <option value="" disabled>Add field</option>
-                            {allowedFields.map((fieldType) => (
-                              <option key={fieldType} value={fieldType}>{edocFieldTypeLabels[fieldType]}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-                <p className="m-0 text-xs leading-relaxed text-[var(--muted)]">
-                  Click a placed field to remove it. Coordinates are stored as normalized page values.
-                </p>
-              </aside>
-            </div>
+            <EdocFieldPlacementEditor
+              pdfBytes={pdfBytes}
+              fields={fields}
+              signatories={allAssigneeDrafts.map((assignee) => ({
+                id: assignee.id,
+                label: assignee.label,
+                action: assignee.action,
+                displayName:
+                  profiles.data?.find((profile) => profile.id === assignee.assigneeId)?.displayName
+                  ?? assignee.label,
+              }))}
+              emptyMessage={
+                noSignatories
+                  ? 'No signatories required — field placement is skipped for this document.'
+                  : undefined
+              }
+              onChange={setFields}
+            />
 
             <WizardActions>
               <Button
@@ -710,8 +626,14 @@ export function EdocCreateDocumentPage() {
                 { label: 'Document', value: metadata.documentNumber || '—', icon: FileDigit },
                 { label: 'Title', value: metadata.title || '—', icon: Type },
                 { label: 'Version', value: 'v1', icon: Hash },
-                { label: 'Route steps', value: String(steps.length), icon: ListOrdered },
-                { label: 'Assignees', value: String(allAssigneeDrafts.length), icon: Users },
+                {
+                  label: 'Route',
+                  value: noSignatories
+                    ? 'No signatories'
+                    : `${compiledRoute.steps.length} step${compiledRoute.steps.length === 1 ? '' : 's'} · ${routingMode}`,
+                  icon: ListOrdered,
+                },
+                { label: 'Assignees', value: noSignatories ? 'None' : String(allAssigneeDrafts.length), icon: Users },
                 { label: 'Fields', value: String(fields.length), icon: Layers },
               ].map((item) => (
                 <div
@@ -725,6 +647,36 @@ export function EdocCreateDocumentPage() {
                   <strong className="mt-1.5 block break-words text-sm font-semibold text-[var(--navy)]">{item.value}</strong>
                 </div>
               ))}
+            </section>
+
+            <section
+              className="rounded-xl border border-[color-mix(in_srgb,var(--teal)_30%,var(--border))] bg-[color-mix(in_srgb,var(--teal)_6%,var(--surface))] p-4 sm:p-5"
+              aria-label="Inbox routing behavior"
+            >
+              <h2 className="m-0 text-sm font-semibold text-[var(--navy)]">Inbox routing after send</h2>
+              {noSignatories ? (
+                <p className="mt-2 mb-0 text-sm leading-relaxed text-[var(--muted)]">
+                  No signatories are required. The document completes without appearing in signatory inboxes.
+                </p>
+              ) : (
+                <div className="mt-2 space-y-2 text-sm leading-relaxed text-[var(--muted)]">
+                  <p className="m-0 font-medium text-[var(--navy)]">{ROUTING_MODE_INBOX_SUMMARY[routingMode]}</p>
+                  <ul className="m-0 list-disc space-y-1 pl-5">
+                    <li>
+                      <strong className="font-semibold text-[var(--navy)]">Sequential:</strong> one signatory at a time in sequence; forwarded only after the current signatory completes.
+                    </li>
+                    <li>
+                      <strong className="font-semibold text-[var(--navy)]">Parallel:</strong> same-level signatories may sign together; next level waits until the current level finishes.
+                    </li>
+                    <li>
+                      <strong className="font-semibold text-[var(--navy)]">Mixed:</strong> all designated signatories may sign at any time, regardless of level.
+                    </li>
+                  </ul>
+                  <p className="m-0">
+                    The document appears in a user’s inbox only when it is available for that user to act.
+                  </p>
+                </div>
+              )}
             </section>
 
             <WizardActions>

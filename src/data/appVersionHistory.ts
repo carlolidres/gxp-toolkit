@@ -6,10 +6,21 @@ export type AppVersionEntry = {
 
 export const APP_DEVELOPER = 'Carlo M. Lidres'
 
-export const APP_CURRENT_VERSION = 'v37'
+export const APP_CURRENT_VERSION = 'v38'
 
 /** Curated release notes — newest first. */
 export const APP_VERSION_HISTORY: AppVersionEntry[] = [
+  {
+    version: 'v38',
+    releaseDate: '2026-07-23',
+    changes: [
+      'eDoc Create — signatory levels (Prepared / Reviewed / Approved) with Sequential, Parallel, and Mixed routing',
+      'Interactive PDF field placement — multi-page viewer, drag/move/resize/rotate, undo/redo, per-signatory colors',
+      'My Inbox shows a document only when that user’s assignment is active for the selected routing mode',
+      'PDF.js legacy build so uploaded PDFs render in Cursor preview and older Chromium',
+      'Supabase migrations: empty signatory route, field rotation/assignee map, inbox active-only',
+    ],
+  },
   {
     version: 'v37',
     releaseDate: '2026-07-22',

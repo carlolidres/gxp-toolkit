@@ -123,6 +123,8 @@ export interface EdocFieldDraft {
   y: number
   width: number
   height: number
+  /** Degrees clockwise; 0 when unset for legacy drafts. */
+  rotation: number
   required: boolean
 }
 

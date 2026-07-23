@@ -322,28 +322,14 @@ code { background: var(--code-bg); padding: 2px 6px; border-radius: 5px; }
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  padding-right: 2px;
-  margin-right: -2px;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: var(--sidebar-border) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .sidebar-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-scroll::-webkit-scrollbar-thumb {
-  background: var(--sidebar-border);
-  border-radius: 99px;
-}
-
-.sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: var(--sidebar-muted);
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .sidebar-footer {
@@ -7871,7 +7857,45 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   box-shadow: var(--shadow);
 }
 
-.edoc-field-box {
+.edoc-pdf-page-live {
+  touch-action: none;
+}
+
+.edoc-placement-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--navy);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.edoc-placement-tool:hover:not(:disabled),
+.edoc-placement-tool:focus-visible {
+  border-color: var(--teal);
+  color: var(--teal);
+  outline: none;
+}
+
+.edoc-placement-tool:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.edoc-placement-tool-danger:hover:not(:disabled),
+.edoc-placement-tool-danger:focus-visible {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.edoc-field-box,
+.edoc-field-box-live {
   position: absolute;
   display: grid;
   place-items: center;
@@ -7884,7 +7908,61 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   font-size: 0.68rem;
   font-weight: 700;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+  transform-origin: center center;
+  transition: box-shadow 0.15s ease, outline-color 0.15s ease;
+}
+
+.edoc-field-box-live {
+  gap: 2px;
+  padding: 4px;
+  cursor: move;
+  user-select: none;
+}
+
+.edoc-field-box-live-label,
+.edoc-field-box-live-type {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+.edoc-field-box-live-type {
+  font-size: 0.62rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.edoc-field-box-live.is-selected {
+  z-index: 3;
+  box-shadow: 0 0 0 2px var(--glow-ring), var(--shadow);
+}
+
+.edoc-field-handle {
+  position: absolute;
+  z-index: 4;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+  background: var(--teal);
+  box-shadow: var(--shadow);
+}
+
+.edoc-field-handle-resize {
+  right: -6px;
+  bottom: -6px;
+  cursor: nwse-resize;
+}
+
+.edoc-field-handle-rotate {
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: grab;
+  background: var(--navy);
 }
 
 .edoc-field-box:hover,
@@ -7895,8 +7973,10 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
   outline: none;
 }
 
-.edoc-field-box:focus-visible {
+.edoc-field-box:focus-visible,
+.edoc-field-box-live:focus-visible {
   box-shadow: 0 0 0 2px var(--glow-ring);
+  outline: none;
 }
 
 .edoc-field-panel {

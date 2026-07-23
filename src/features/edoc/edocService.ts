@@ -196,7 +196,9 @@ export const edocService = {
       .limit(100)
 
     if (error) throw new Error(error.message)
-    return (data ?? []).map((row) => ({
+    return (data ?? [])
+      .filter((row) => row.assignment_status === 'active')
+      .map((row) => ({
       id: row.assignment_id,
       documentId: row.document_id,
       routeId: row.route_id,
