@@ -1,23 +1,26 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Button, Card, Input } from 'antd'
+import { Alert, Button, Card, Input } from 'antd'
 import { Check, CornerUpLeft, X } from 'lucide-react'
 
 import { EdocEmpty, EdocError, EdocLoading, EdocPage, formatEdocDate } from '../../components/edoc/EdocComponents'
 import { edocService } from '../../features/edoc/edocService'
 import { useEdocAudit, useEdocInbox } from '../../features/edoc/useEdocData'
+import { useAuth } from '../../hooks/useAuth'
+import { getSignatoryProfileCompleteness } from '../../lib/signatoryProfileCompleteness'
 
 export function EdocWorkspacePage() {
   const { assignmentId } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const inbox = useEdocInbox()
   const task = useMemo(() => inbox.data?.find((candidate) => candidate.id === assignmentId) ?? null, [assignmentId, inbox.data])
   const audit = useEdocAudit(task?.documentId)
+  const signatoryProfile = useMemo(() => getSignatoryProfileCompleteness(user), [user])
   const [error, setError] = useState<string | null>(null)
   const [reason, setReason] = useState('')
   const [comment, setComment] = useState('')
   const [password, setPassword] = useState('')
-  const [typedSignature, setTypedSignature] = useState('')
   const [signatureMeaning, setSignatureMeaning] = useState('Reviewed and approved')
   const [consent, setConsent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -55,8 +58,10 @@ export function EdocWorkspacePage() {
     event.preventDefault()
     if (!task) return
     setError(null)
+    if (!signatoryProfile.complete) {
+      return setError(signatoryProfile.reminderMessage)
+    }
     if (!consent) return setError('Explicit consent is required before signing.')
-    if (!typedSignature.trim()) return setError('Typed signature is required.')
     if (!password) return setError('Re-authentication password is required.')
     if (!task.versionSha256) return setError('The current document version hash is unavailable.')
 
@@ -68,7 +73,7 @@ export function EdocWorkspacePage() {
         password,
         consent,
         signatureMeaning,
-        typedSignature,
+        typedSignature: signatoryProfile.fullName,
         versionSha256: task.versionSha256,
       })
       navigate('/edoc/inbox')
@@ -93,11 +98,59 @@ export function EdocWorkspacePage() {
           <label>Return/reject reason<Input.TextArea value={reason} onChange={(event) => setReason(event.target.value)} /></label>
           {task.action === 'sign' ? (
             <form className="edoc-sign-form" onSubmit={submitSignature}>
-              <label>Signature meaning<Input value={signatureMeaning} onChange={(event) => setSignatureMeaning(event.target.value)} /></label>
-              <label>Typed signature<Input value={typedSignature} onChange={(event) => setTypedSignature(event.target.value)} /></label>
-              <label>Password<Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-              <label className="edoc-inline-check"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /> I consent to apply my electronic signature to this exact version.</label>
-              <Button htmlType="submit" type="primary" icon={<Check size={15} />} loading={submitting}>{submitting ? 'Signing...' : 'Sign document'}</Button>
+              {!signatoryProfile.complete ? (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message="Complete your user profile first"
+                  description={
+                    <span>
+                      Name, Position/Title, and Signature fields use your Account Settings profile.
+                      Missing: {signatoryProfile.missingLabels.join(', ')}.{' '}
+                      <Link to="/account">Open Account Settings</Link>
+                    </span>
+                  }
+                />
+              ) : (
+                <div className="space-y-2 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-3">
+                  <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                    Applied from your profile
+                  </p>
+                  <p className="m-0 text-sm text-[var(--navy)]">
+                    <strong>Name:</strong> {signatoryProfile.fullName}
+                  </p>
+                  <p className="m-0 text-sm text-[var(--navy)]">
+                    <strong>Position/Title:</strong> {signatoryProfile.jobTitle}
+                  </p>
+                  {signatoryProfile.signatureDataUrl ? (
+                    <img
+                      src={signatoryProfile.signatureDataUrl}
+                      alt="Saved signature from your profile"
+                      className="max-h-16 max-w-full object-contain"
+                    />
+                  ) : null}
+                </div>
+              )}
+              <label>Signature meaning<Input value={signatureMeaning} onChange={(event) => setSignatureMeaning(event.target.value)} disabled={!signatoryProfile.complete} /></label>
+              <label>Password<Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} disabled={!signatoryProfile.complete} /></label>
+              <label className="edoc-inline-check">
+                <input
+                  type="checkbox"
+                  checked={consent}
+                  disabled={!signatoryProfile.complete}
+                  onChange={(event) => setConsent(event.target.checked)}
+                />{' '}
+                I consent to apply my electronic signature to this exact version.
+              </label>
+              <Button
+                htmlType="submit"
+                type="primary"
+                icon={<Check size={15} />}
+                loading={submitting}
+                disabled={!signatoryProfile.complete}
+              >
+                {submitting ? 'Signing...' : 'Sign document'}
+              </Button>
             </form>
           ) : (
             <div className="decision-panel">

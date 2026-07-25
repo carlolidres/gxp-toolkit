@@ -18,10 +18,12 @@ import {
 import { getAuthRedirectUrl } from '../lib/authRedirect'
 import { resolveProfileRole } from '../config/authPolicy'
 import { joinDisplayName } from '../lib/profileNames'
+import { normalizeOrganizationValue } from '../lib/profileOrganization'
 import { mapSessionToAuthUser } from '../lib/authMapping'
 import { getAuthErrorMessage } from '../lib/authMessages'
 import { SESSION_USER_KEY } from '../config/sessionPolicy'
 import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabase'
+import { organizationOptionsService } from './organizationOptionsService'
 import type { AuthUser, LoginCredentials, SignUpCredentials } from '../types/auth'
 
 // ponytail: legacy localStorage sessions are not migrated — force a fresh sign-in
@@ -30,6 +32,12 @@ localStorage.removeItem(SESSION_USER_KEY)
 export interface UpdateProfileInput {
   firstName: string
   lastName: string
+  /** undefined = leave unchanged; null/empty = clear */
+  organization?: string | null
+  /** undefined = leave unchanged; null/empty = clear */
+  jobTitle?: string | null
+  /** undefined = leave unchanged; null = clear; string = set PNG data URL */
+  signatureDataUrl?: string | null
 }
 
 export interface PasswordResetResult {
@@ -46,6 +54,9 @@ interface ProfileRow {
   auth_user_id: string | null
   active: boolean
   must_change_password?: boolean
+  signature_data_url?: string | null
+  organization?: string | null
+  job_title?: string | null
 }
 
 const profileFetchInflight = new Map<string, Promise<ProfileRow | null>>()
@@ -98,7 +109,7 @@ async function fetchProfileForAuthUser(userId: string, _email: string): Promise<
 
     const { data, error } = await client
       .from('profiles')
-      .select('id, email, display_name, role, auth_user_id, active, must_change_password')
+      .select('id, email, display_name, role, auth_user_id, active, must_change_password, signature_data_url, organization, job_title')
       .eq('auth_user_id', userId)
       .maybeSingle()
 
@@ -114,8 +125,46 @@ async function fetchProfileForAuthUser(userId: string, _email: string): Promise<
   }
 }
 
+async function fetchProfileExtras(profileId: string): Promise<{
+  signatureDataUrl: string | null
+  organization: string | null
+  jobTitle: string | null
+}> {
+  const client = getSupabaseClient()
+  if (!client) return { signatureDataUrl: null, organization: null, jobTitle: null }
+  const { data, error } = await client
+    .from('profiles')
+    .select('signature_data_url, organization, job_title')
+    .eq('id', profileId)
+    .maybeSingle()
+  if (error || !data) return { signatureDataUrl: null, organization: null, jobTitle: null }
+  const row = data as {
+    signature_data_url?: string | null
+    organization?: string | null
+    job_title?: string | null
+  }
+  return {
+    signatureDataUrl: row.signature_data_url ?? null,
+    organization: row.organization?.trim() || null,
+    jobTitle: row.job_title?.trim() || null,
+  }
+}
+
 async function mapSupabaseSessionUser(userId: string, email: string): Promise<AuthUser> {
   const profile = await fetchProfileForAuthUser(userId, email)
+  const needsExtras =
+    Boolean(profile?.id) &&
+    (profile?.signature_data_url === undefined ||
+      profile?.organization === undefined ||
+      profile?.job_title === undefined)
+  const extras = needsExtras && profile?.id
+    ? await fetchProfileExtras(profile.id)
+    : {
+        signatureDataUrl: profile?.signature_data_url ?? null,
+        organization: profile?.organization?.trim() || null,
+        jobTitle: profile?.job_title?.trim() || null,
+      }
+
   return mapSessionToAuthUser({
     id: userId,
     profileId: profile?.id,
@@ -124,6 +173,9 @@ async function mapSupabaseSessionUser(userId: string, email: string): Promise<Au
     role: resolveProfileRole(email, profile?.role),
     active: profile?.active ?? true,
     mustChangePassword: profile?.must_change_password ?? false,
+    signatureDataUrl: profile?.signature_data_url ?? extras.signatureDataUrl,
+    organization: profile?.organization?.trim() || extras.organization,
+    jobTitle: profile?.job_title?.trim() || extras.jobTitle,
   })
 }
 
@@ -389,12 +441,38 @@ export const authService = {
   },
 
   async updateProfile(input: UpdateProfileInput): Promise<AuthUser> {
+    const organizationNormalized =
+      input.organization === undefined
+        ? undefined
+        : normalizeOrganizationValue(input.organization ?? '') || null
+    const jobTitleNormalized =
+      input.jobTitle === undefined
+        ? undefined
+        : normalizeOrganizationValue(input.jobTitle ?? '') || null
+
     if (!isSupabaseConfigured()) {
       const cached = this.getCachedUser()
       if (!cached) throw new Error('No signed-in user.')
       const name = joinDisplayName(input.firstName, input.lastName)
-      const sessionUser = { ...cached, name, initials: `${input.firstName[0] ?? ''}${input.lastName[0] ?? ''}`.toUpperCase() || cached.initials }
+      const sessionUser: AuthUser = {
+        ...cached,
+        name,
+        initials: `${input.firstName[0] ?? ''}${input.lastName[0] ?? ''}`.toUpperCase() || cached.initials,
+        organization:
+          organizationNormalized === undefined
+            ? cached.organization ?? null
+            : organizationNormalized,
+        jobTitle:
+          jobTitleNormalized === undefined ? cached.jobTitle ?? null : jobTitleNormalized,
+        signatureDataUrl:
+          input.signatureDataUrl === undefined
+            ? cached.signatureDataUrl ?? null
+            : input.signatureDataUrl,
+      }
       writeSessionUserJson(JSON.stringify(sessionUser))
+      if (organizationNormalized) {
+        await organizationOptionsService.remember(organizationNormalized)
+      }
       return sessionUser
     }
 
@@ -415,15 +493,37 @@ export const authService = {
     if (!authData.user?.email) throw new Error('Profile update succeeded but no user email was returned.')
 
     const normalizedEmail = authData.user.email.trim().toLowerCase()
+    const profilePatch: Record<string, unknown> = {
+      display_name: displayName,
+      updated_at: new Date().toISOString(),
+    }
+    if (input.signatureDataUrl !== undefined) {
+      profilePatch.signature_data_url = input.signatureDataUrl
+    }
+    if (organizationNormalized !== undefined) {
+      profilePatch.organization = organizationNormalized
+    }
+    if (jobTitleNormalized !== undefined) {
+      profilePatch.job_title = jobTitleNormalized
+    }
+
     const { data: updatedProfiles, error: profileError } = await client
       .from('profiles')
-      .update({ display_name: displayName, updated_at: new Date().toISOString() })
+      .update(profilePatch)
       .or(`auth_user_id.eq.${authData.user.id},email.ilike.${normalizedEmail}`)
       .select('id')
 
     if (profileError) throw new Error(getAuthErrorMessage(profileError, 'Profile update failed.'))
     if (!updatedProfiles?.length) {
       throw new Error('Profile update failed because no matching profile row was found.')
+    }
+
+    if (organizationNormalized) {
+      try {
+        await organizationOptionsService.remember(organizationNormalized)
+      } catch (err) {
+        console.warn('[auth] Could not remember organization option:', err)
+      }
     }
 
     const sessionUser = await mapSupabaseSessionUser(authData.user.id, authData.user.email)

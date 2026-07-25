@@ -14,8 +14,25 @@ CREATE TABLE IF NOT EXISTS profiles (
   must_change_password          INTEGER NOT NULL DEFAULT 0,
   password_reset_at             TEXT,
   password_reset_by             TEXT REFERENCES profiles(id) ON DELETE SET NULL,
-  password_reset_requested_at   TEXT
+  password_reset_requested_at   TEXT,
+  -- PNG signature data URL for Account Settings (transparent backgrounds allowed)
+  signature_data_url            TEXT,
+  -- Employer / organization label from Account Settings
+  organization                  TEXT,
+  -- Job position / title from Account Settings
+  job_title                     TEXT
 );
+
+-- Shared Organization autocomplete options (case/whitespace-insensitive uniqueness)
+CREATE TABLE IF NOT EXISTS profile_organization_options (
+  id          TEXT PRIMARY KEY,
+  value       TEXT NOT NULL,
+  created_by  TEXT REFERENCES profiles(id) ON DELETE SET NULL,
+  created_at  TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profile_organization_options_value_ci
+  ON profile_organization_options (lower(trim(value)));
 
 CREATE INDEX IF NOT EXISTS idx_profiles_password_reset_requested_at
   ON profiles(password_reset_requested_at)

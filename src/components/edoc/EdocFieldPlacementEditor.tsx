@@ -560,7 +560,7 @@ export function EdocFieldPlacementEditor({
           </div>
         )}
         <p className="m-0 text-xs leading-relaxed text-[var(--muted)]">
-          Coordinates are stored as normalized page values (0–1) with rotation in degrees so placement stays accurate across zoom and screen sizes.
+          Name, Position/Title, and Signature overlays are filled from each assignee&apos;s Account Settings profile at signing time. Coordinates are stored as normalized page values (0–1) with rotation in degrees.
         </p>
       </aside>
     </div>

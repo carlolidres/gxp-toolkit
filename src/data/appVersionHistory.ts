@@ -6,10 +6,21 @@ export type AppVersionEntry = {
 
 export const APP_DEVELOPER = 'Carlo M. Lidres'
 
-export const APP_CURRENT_VERSION = 'v38'
+export const APP_CURRENT_VERSION = 'v39'
 
 /** Curated release notes — newest first. */
 export const APP_VERSION_HISTORY: AppVersionEntry[] = [
+  {
+    version: 'v39',
+    releaseDate: '2026-07-25',
+    changes: [
+      'Account Settings — Organization autocomplete, Position/Title, and PNG signature with shared option catalog',
+      'eDoc signatory Name / Position-Title / Signature fields pull from user profile; incomplete profiles block signing',
+      'PDF placement preview — pdf.js worker served under Vite base path (`/gxp-toolkit/`)',
+      'Fix edoc_create_and_start_route ambiguous profile_id (Postgres 42702)',
+      'Supabase: profile signature, organization options, job_title, and create-route PL/pgSQL rename',
+    ],
+  },
   {
     version: 'v38',
     releaseDate: '2026-07-23',

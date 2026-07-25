@@ -30,7 +30,7 @@ function readSchemaSql() {
  */
 function stripComments(sql) {
   return sql
-    .split('\n')
+    .split(/\r?\n/)
     .map((line) => line.replace(/--.*$/, ''))
     .join('\n')
     .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -182,13 +182,34 @@ function extractCheckColumns(expression) {
  */
 function parseTables(sql) {
   const tables = []
-  const tableRegex =
-    /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)\s*\(([\s\S]*?)\)\s*;/gi
+  const tableStartRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)\s*\(/gi
 
-  let match
-  while ((match = tableRegex.exec(sql)) !== null) {
-    const tableName = match[1]
-    const body = match[2]
+  let startMatch
+  while ((startMatch = tableStartRegex.exec(sql)) !== null) {
+    const tableName = startMatch[1]
+    const bodyStart = startMatch.index + startMatch[0].length
+    let depth = 1
+    let inSingleQuote = false
+    let bodyEnd = -1
+
+    for (let i = bodyStart; i < sql.length; i += 1) {
+      const ch = sql[i]
+      const prev = sql[i - 1]
+      if (ch === "'" && prev !== '\\') inSingleQuote = !inSingleQuote
+      if (inSingleQuote) continue
+      if (ch === '(') depth += 1
+      else if (ch === ')') {
+        depth -= 1
+        if (depth === 0) {
+          bodyEnd = i
+          break
+        }
+      }
+    }
+    if (bodyEnd < 0) continue
+
+    const body = sql.slice(bodyStart, bodyEnd)
+    tableStartRegex.lastIndex = bodyEnd + 1
     /** @type {Column[]} */
     const columns = []
     /** @type {ForeignKey[]} */

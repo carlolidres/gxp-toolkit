@@ -11,6 +11,12 @@ export interface AuthUser {
   active?: boolean
   /** Set when an admin reset the account to the default temporary password */
   mustChangePassword?: boolean
+  /** PNG signature as a data URL (transparent backgrounds allowed) */
+  signatureDataUrl?: string | null
+  /** Employer / organization label from Account Settings */
+  organization?: string | null
+  /** Job position / title from Account Settings */
+  jobTitle?: string | null
 }
 
 export interface LoginCredentials {

@@ -1,0 +1,41 @@
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+@source "./AccountSettingsPage.tsx";
+@source "../components/forms/EditableCombobox.tsx";
+
+.account-settings-page .ant-card-head {
+  border-bottom-color: color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.account-settings-page .ant-card-body {
+  padding: 1.25rem 1.35rem 1.35rem;
+}
+
+.account-settings-page .profile-signature-preview {
+  display: grid;
+  place-items: center;
+  min-height: 6.5rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(45deg, #e8eef4 25%, transparent 25%),
+    linear-gradient(-45deg, #e8eef4 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e8eef4 75%),
+    linear-gradient(-45deg, transparent 75%, #e8eef4 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+.account-settings-page .profile-signature-preview.is-empty {
+  background-image: none;
+  background-color: color-mix(in srgb, var(--surface-muted, #f4f7fa) 70%, var(--surface));
+}
+
+.account-settings-page .profile-signature-preview img {
+  max-width: min(100%, 360px);
+  max-height: 7.5rem;
+  object-fit: contain;
+}

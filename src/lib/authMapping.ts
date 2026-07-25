@@ -48,6 +48,9 @@ export function mapSessionToAuthUser(input: {
   profileId?: string
   active?: boolean
   mustChangePassword?: boolean
+  signatureDataUrl?: string | null
+  organization?: string | null
+  jobTitle?: string | null
 }): AuthUser {
   const name = input.displayName?.trim() || input.email.split('@')[0]
   return {
@@ -59,5 +62,8 @@ export function mapSessionToAuthUser(input: {
     initials: initialsFromName(name, input.email),
     active: input.active ?? true,
     mustChangePassword: input.mustChangePassword ?? false,
+    signatureDataUrl: input.signatureDataUrl ?? null,
+    organization: input.organization?.trim() || null,
+    jobTitle: input.jobTitle?.trim() || null,
   }
 }

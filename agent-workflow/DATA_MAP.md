@@ -1,6 +1,6 @@
 # Data Map
 
-Last Updated: `2026-07-21`
+Last Updated: `2026-07-25`
 
 ## Purpose
 
@@ -12,7 +12,7 @@ This is a concise human map. It does not replace executable SQL.
 
 | Path | Role | Editing rule |
 |---|---|---|
-| `database/sqlite/schema.sql` | Core SQLite schema (profiles, VMP, feedback) | Edit when core app models change |
+| `database/sqlite/schema.sql` | Core SQLite schema (profiles incl. `signature_data_url`, `organization`, `job_title`, `profile_organization_options`, VMP, feedback) | Edit when core app models change |
 | `database/sqlite/edoc_schema.sql` | eDoc SQLite reference (19 `edoc_*` tables) | Edit before Supabase eDoc migration changes |
 | `database/sqlite/edoc_seed.sql` | eDoc pilot fixtures (non-production) | Pilot data only |
 | `database/sqlite/seed.sql` | Placeholder SQLite seed template | Do not put regulated/production data here |
@@ -30,6 +30,10 @@ Workflow app status: `workflow-app/` uses its own local SQLite store for approva
 |---|---|---|
 | `supabase/migrations/20260616000000_initial_gxp_toolkit_schema.sql` through `20260627100000_app_feedback_messages.sql` | VRMS schema, auth profiles, grants, menu permissions, RLS fixes, feedback | Review before applying |
 | `supabase/migrations/20260704100000_edoc_supabase_module.sql` | eDoc module: `edoc_*` tables, RLS, RPCs, storage buckets, inbox view | Applied staging 2026-07-04 |
+| `supabase/migrations/20260724120000_profile_signature_png.sql` | `profiles.signature_data_url` for Account Settings PNG signature | Applied remote 2026-07-25 |
+| `supabase/migrations/20260725120000_profile_organization.sql` | `profiles.organization` + `profile_organization_options` catalog | Applied remote 2026-07-25 |
+| `supabase/migrations/20260725130000_profile_job_title.sql` | `profiles.job_title` for Account Settings Position/Title | Applied remote 2026-07-25 |
+| `supabase/migrations/20260725140000_fix_edoc_profile_id_ambiguity.sql` | Rename PL/pgSQL `profile_id` → `v_profile_id` in `edoc_create_and_start_route` (Postgres 42702) | Applied remote 2026-07-25 |
 | `supabase/migrations/20260713170000_registry_values_ci_unique_and_rls.sql` | Registry CI unique index + `has_registry_menu_action` RLS | Applied remote 2026-07-13 |
 | `supabase/scripts/verify_edoc_rls.sql` | Static eDoc RLS/schema validation | Run after eDoc migration |
 | `supabase/seed.vrms.generated.sql` | Local generated seed from `src/data/vrmsProductionData.json` | Generated and gitignored; review before applying |
@@ -68,7 +72,8 @@ Audit import note: the source audit CSV has misleading headers for document-rela
 
 | Entity | Table or bundle key | Purpose | Primary Key | Source |
 |---|---|---|---|---|
-| Profile | `profiles` | Application profile and authorization metadata linked to optional Supabase Auth identity; includes `must_change_password` and `password_reset_requested_at` for admin-approved reset | `id` text | `supabase/migrations/20260617000000_vrms_schema.sql`, `20260623200000_admin_default_password_reset.sql`, `20260709102630_admin_approved_password_reset.sql` |
+| Profile | `profiles` | Application profile and authorization metadata linked to optional Supabase Auth identity; includes `must_change_password`, `password_reset_requested_at`, `signature_data_url`, `organization`, and `job_title` for Account Settings | `id` text | `supabase/migrations/20260617000000_vrms_schema.sql`, `20260623200000_admin_default_password_reset.sql`, `20260709102630_admin_approved_password_reset.sql`, `20260724120000_profile_signature_png.sql`, `20260725120000_profile_organization.sql`, `20260725130000_profile_job_title.sql` |
+| Profile organization option | `profile_organization_options` | Shared Organization autocomplete catalog (CI unique on trimmed value); authenticated insert, admin delete | `id` text | `database/sqlite/schema.sql`; `supabase/migrations/20260725120000_profile_organization.sql` |
 | User menu permission | `user_menu_permissions` | Menu/action grants by profile | `(user_id, menu_id)` | `supabase/migrations/20260618100000_user_menu_permissions.sql` |
 | Routing document | `routing_documents` / `routingDocuments` | VRMS document routing record and signatory tracker | `routing_tracker` | `reference/VRMSdatabase/VRMS - Documents.csv` |
 | Registry value | `registry_values` / `registryValues` | Controlled values for status, routing recipients, report/protocol, client, category, department, prepared by, checked by | `id`; unique `(registry_type, value)` | Registry CSV exports |
@@ -88,12 +93,14 @@ Payload type: `EdocCreateDraftInput` in `src/features/edoc/types.ts`.
 | Wizard step | Collected fields | Persistence notes |
 |---|---|---|
 | Metadata | `documentNumber`, `title`, `priority`, `dueAt`, `description` | Required: number + title. Other metadata keys (`documentType`, `category`, `department`, `businessUnit`, `confidentiality`, `tags`, `retentionClass`) keep client defaults and are still sent in `p_payload`. |
-| PDF upload | `file.name`, `sizeBytes`, `mimeType`, `sha256` | Client validates MIME/extension + PDF signature (`fileValidation`) before continue. |
-| Routing | `routing.mode`, `steps[]` (action, assignees, completion rule, minimum count, due, delegation) | Every step needs ≥1 assignee before send. |
-| Field placement | `fields[]` (assignee draft id, type, page, normalized x/y/w/h, required) | One required field per assignee draft before send. |
-| Review / send | Summary only | Calls RPC; mock fallback returns synthetic ids when Supabase is not configured. |
+| PDF upload | `file.name`, `sizeBytes`, `mimeType`, `sha256` | Client validates MIME/extension + PDF signature (`fileValidation`) before continue. In-memory `pdfBytes` drive placement preview via pdf.js (`usePdfDocument`); worker served from `public/pdf.worker.min.mjs` under Vite `base`. |
+| Routing | `routing.mode`, `steps[]` (action, assignees, completion rule, minimum count, due, delegation) | Every step needs ≥1 assignee before send (unless no-signatories). |
+| Field placement | `fields[]` (assignee draft id, type, page, normalized x/y/w/h, rotation, required) | One required field per assignee draft before send. Name / Position-Title / Signature overlays are filled from each assignee’s Account Settings profile at signing time. |
+| Review / send | Summary only | Calls RPC `edoc_create_and_start_route` (variable `v_profile_id` to avoid column ambiguity); mock fallback returns synthetic ids when Supabase is not configured. |
 
 Related tables (via RPC): `edoc_documents`, `edoc_document_versions`, `edoc_document_files`, `edoc_document_routes`, `edoc_route_steps`, `edoc_route_step_assignees`, `edoc_signature_fields`, `edoc_audit_events`.
+
+Signatory profile completeness (client): first name, last name, `job_title`, and `signature_data_url` must be set in Account Settings before eDoc signing (`src/lib/signatoryProfileCompleteness.ts`).
 
 ## Core Relationships
 

@@ -1,36 +1,35 @@
 # Current Handoff
 
-Last Updated: `2026-07-23`
-Version: `v38`
-Branch: `main` / `master`
-Commit: `011ff00`
-Deployment: `DEPLOYED` — GitHub Pages run [30007528364](https://github.com/carlolidres/gxp-toolkit/actions/runs/30007528364)
+Last Updated: `2026-07-25`
+Version: `v39`
+Branch: `main`
+Commit: pending push
+Deployment: pending GitHub Pages
 
 ## Current Status
 
-**v38** — eDoc Create Document: signatory-level routing (Sequential / Parallel / Mixed), interactive PDF field placement, inbox active-only visibility, and pdf.js legacy build for reliable PDF rendering. App version history drawer updated. Supabase migrations applied on linked project `ydndeoacgfnxjqwwnswh`.
+v39 release packaged: Account Settings organization/job title/signature, eDoc profile-backed signatory fields, PDF worker base-path fix, and `edoc_create_and_start_route` `v_profile_id` ambiguity fix.
 
 ## Key implementation notes
 
-- Signatory builder: `EdocSignatoryRoutingBuilder`, `signatoryLevels.ts` → compiles to `routing.mode` + `routing.steps`.
-- Keep uploaded PDF bytes in Create wizard state for rendering (`pdfBytes`).
-- Placement UI: `EdocFieldPlacementEditor`, `EdocPdfPageCanvas`, `usePdfDocument` (legacy pdf.js), `fieldPlacementGeometry`.
-- Inbox: `edoc_assignment_inbox` / `listInboxTasks` — `assignment_status = 'active'` only.
-- Migrations: `20260722100000_edoc_empty_signatory_route.sql`, `20260723120000_edoc_field_rotation_and_assignee_map.sql`, `20260723130000_edoc_inbox_active_only.sql`.
+- Profile: `organization`, `job_title`, `signature_data_url` + organization options service/UI.
+- Signatory completeness: `src/lib/signatoryProfileCompleteness.ts`; Account Settings banner; EdocWorkspace gate.
+- PDF preview: Vite copies worker to `public/pdf.worker.min.mjs`; `usePdfDocument` uses `BASE_URL`.
+- RPC fix: migration `20260725140000_fix_edoc_profile_id_ambiguity.sql` applied.
 
 ## Verification
 
 | Check | Status | Result |
 |---|---|---|
-| `npm run type-check` | `PASSED` | 2026-07-23 |
-| Geometry / fieldRules / signatoryLevels tests | `PASSED` | prior session |
-| Supabase `db push --linked` | `PASSED` | three eDoc migrations applied 2026-07-23 |
-| GitHub Pages deploy | `PASSED` | run 30007528364 on `master` @ `011ff00` |
+| `npm run type-check` | `PASSED` | earlier this session |
+| Supabase migrations (signature/org/job_title/profile_id) | `PASSED` | applied to linked project |
+| Deploy | `PENDING` | after push |
 
 ## Next Action
 
-Smoke `/edoc/create` → upload PDF → place fields → Send → My Inbox per routing mode on the live Pages site.
+1. Confirm GitHub Pages deploy succeeds after push.
+2. Smoke-check Account Settings + Create Document send.
 
 ## Prior stable release
 
-- Previous: `v37` commit `a8f37ab` — GitHub Pages run [29910046901](https://github.com/carlolidres/gxp-toolkit/actions/runs/29910046901).
+- Previous: `v38` — eDoc create/routing/placement — GitHub Pages run [30007528364](https://github.com/carlolidres/gxp-toolkit/actions/runs/30007528364).

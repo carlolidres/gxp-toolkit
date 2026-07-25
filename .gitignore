@@ -1,5 +1,6 @@
 node_modules/
 dist/
+public/pdf.worker.min.mjs
 test-results/
 playwright-report/
 .env

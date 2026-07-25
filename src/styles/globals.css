@@ -8070,6 +8070,62 @@ body.is-col-resizing .apqr-database-table .apqr-col-resize-handle::after {
 
 .setting-row { justify-content: space-between; margin: 0; padding: 15px 0; border-bottom: 1px solid var(--border); }
 .setting-row p { margin: 4px 0 0; color: var(--muted); font-size: .72rem; }
+
+.profile-signature-field {
+  margin-bottom: 0;
+}
+
+.profile-signature-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-signature-preview {
+  display: grid;
+  place-items: center;
+  min-height: 96px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  /* Checkerboard so transparent PNG signatures remain visible */
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(45deg, var(--surface-muted) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--surface-muted) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--surface-muted) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--surface-muted) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+.profile-signature-preview.is-empty {
+  background-image: none;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.profile-signature-preview img {
+  max-width: min(100%, 360px);
+  max-height: 120px;
+  object-fit: contain;
+}
+
+.profile-form-footer {
+  display: grid;
+  gap: 0;
+  margin-top: 4px;
+}
+
+.profile-form-divider {
+  margin: 8px 0 16px !important;
+}
+
+.profile-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
 .adapter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 10px; }
 .adapter-grid article { display: flex; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 8px; }
 .adapter-grid article > span { color: var(--teal); }

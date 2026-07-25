@@ -3,11 +3,22 @@ import { useEffect, useState } from 'react'
 // in Chromium builds that do not yet ship that API (e.g. Cursor preview).
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import pdfWorker from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'
 
-pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker
+const baseUrl = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`
+
+pdfjs.GlobalWorkerOptions.workerSrc = `${baseUrl}pdf.worker.min.mjs`
 
 export type PdfJsDocument = PDFDocumentProxy
+
+function formatPdfLoadError(err: unknown): string {
+  const message = err instanceof Error ? err.message : 'Could not render the uploaded PDF.'
+  if (/fake worker|dynamically imported module|pdf\.worker/i.test(message)) {
+    return 'Could not start the PDF preview engine. Try refreshing the page, or restart the dev server if this persists.'
+  }
+  return message
+}
 
 export function usePdfDocument(source: ArrayBuffer | Uint8Array | null) {
   const [document, setDocument] = useState<PdfJsDocument | null>(null)
@@ -41,7 +52,7 @@ export function usePdfDocument(source: ArrayBuffer | Uint8Array | null) {
         setPageCount(loaded.numPages)
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Could not render the uploaded PDF.')
+          setError(formatPdfLoadError(err))
         }
       } finally {
         if (!cancelled) setLoading(false)

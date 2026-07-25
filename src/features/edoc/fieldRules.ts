@@ -8,7 +8,7 @@ export const edocFieldTypeLabels: Record<EdocFieldType, string> = {
   initial: 'Initial',
   date_signed: 'Date signed',
   name: 'Name',
-  job_title: 'Job title',
+  job_title: 'Position/Title',
   text: 'Text',
   approval_meaning: 'Approval meaning',
   review_meaning: 'Review meaning',

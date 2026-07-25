@@ -35,18 +35,19 @@
 <body>
   <header>
     <h1>GxP Toolkit — SQLite Schema Map</h1>
-    <p>Generated from database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql · 2026-07-13T09:04:16.440Z</p>
+    <p>Generated from database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql · 2026-07-25T11:24:25.061Z</p>
   </header>
   <main>
     <div class="meta">
       <span>Schema v?</span>
-      <span>31 tables</span>
-      <span>75 foreign keys</span>
+      <span>32 tables</span>
+      <span>76 foreign keys</span>
       <span>27 indexes</span>
     </div>
     <section class="relationships">
       <h2>Foreign Key Relationships</h2>
       <ul><li><code>profiles.password_reset_by</code> → <code>profiles.id</code> <em>(ON DELETE SET NULL)</em></li>
+<li><code>profile_organization_options.created_by</code> → <code>profiles.id</code> <em>(ON DELETE SET NULL)</em></li>
 <li><code>app_feedback_messages.sender_profile_id</code> → <code>profiles.id</code> <em>(ON DELETE CASCADE)</em></li>
 <li><code>app_feedback_messages.status_updated_by_profile_id</code> → <code>profiles.id</code> <em>(ON DELETE SET NULL)</em></li>
 <li><code>vmp_field_options.parent_option_id</code> → <code>vmp_field_options.id</code> <em>(ON DELETE SET NULL)</em></li>
@@ -124,110 +125,113 @@
     </section>
     <div class="diagram-wrap"><svg viewBox="0 0 1120 660" xmlns="http://www.w3.org/2000/svg"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#4da3ff"/></marker></defs><line x1="110" y1="60" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="290" y1="60" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="290" y1="60" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="650" y1="60" x2="650" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="830" y1="60" x2="470" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="290" y1="160" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="290" y1="160" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="470" y1="160" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="470" y1="60" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="470" y1="60" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="830" y1="60" x2="830" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="1010" y1="60" x2="650" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="470" y1="160" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="470" y1="160" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="650" y1="160" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="650" y1="160" x2="470" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="650" y1="160" x2="650" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="650" y1="160" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="650" y1="160" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="830" y1="160" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="830" y1="160" x2="470" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="830" y1="160" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="830" y1="160" x2="650" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="830" y1="160" x2="830" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="830" y1="160" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="1010" y1="160" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="1010" y1="160" x2="470" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="1010" y1="160" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="1010" y1="160" x2="650" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="1010" y1="160" x2="830" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="1010" y1="160" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="1010" y1="160" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="110" y1="260" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="110" y1="260" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="110" y1="260" x2="650" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="110" y1="260" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="290" y1="260" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="290" y1="260" x2="470" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="290" y1="260" x2="650" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="290" y1="260" x2="110" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="470" y1="260" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="110" y1="260" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="290" y1="260" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="290" y1="260" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="470" y1="260" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="470" y1="260" x2="650" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="470" y1="260" x2="830" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="470" y1="260" x2="290" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="650" y1="260" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="650" y1="260" x2="290" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="650" y1="260" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="650" y1="260" x2="470" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="650" y1="260" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="650" y1="260" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="830" y1="260" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="830" y1="260" x2="290" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="830" y1="260" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="830" y1="260" x2="470" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="830" y1="260" x2="650" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="830" y1="260" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="1010" y1="260" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="1010" y1="260" x2="470" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="1010" y1="260" x2="650" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="830" y1="260" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="1010" y1="260" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="1010" y1="260" x2="470" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="1010" y1="260" x2="650" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="110" y1="360" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="110" y1="360" x2="470" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="1010" y1="260" x2="830" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="1010" y1="260" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="110" y1="360" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="110" y1="360" x2="650" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="110" y1="360" x2="290" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="110" y1="360" x2="470" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="110" y1="360" x2="650" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="110" y1="360" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="290" y1="360" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="290" y1="360" x2="470" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="110" y1="360" x2="830" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="110" y1="360" x2="830" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="290" y1="360" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="290" y1="360" x2="650" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="290" y1="360" x2="290" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="470" y1="360" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="470" y1="360" x2="470" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="290" y1="360" x2="830" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="290" y1="360" x2="470" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="290" y1="360" x2="650" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="290" y1="360" x2="830" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="290" y1="360" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="470" y1="360" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="470" y1="360" x2="650" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="470" y1="360" x2="830" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="470" y1="360" x2="470" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="470" y1="360" x2="470" y2="360" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="470" y1="360" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="650" y1="360" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="650" y1="360" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="650" y1="360" x2="650" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="650" y1="360" x2="830" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="650" y1="360" x2="650" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="650" y1="360" x2="650" y2="360" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="650" y1="360" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="650" y1="360" x2="470" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="650" y1="360" x2="470" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="830" y1="360" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="830" y1="360" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="830" y1="360" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="830" y1="360" x2="470" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="830" y1="360" x2="650" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="1010" y1="360" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="1010" y1="360" x2="830" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="830" y1="360" x2="650" y2="260" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="1010" y1="360" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="1010" y1="360" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="110" y1="460" x2="110" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="470" y1="460" x2="290" y2="460" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="1010" y1="360" x2="650" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="1010" y1="360" x2="830" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="110" y1="460" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="110" y1="460" x2="1010" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="110" y1="460" x2="110" y2="60" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="290" y1="460" x2="290" y2="160" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
 <line x1="650" y1="460" x2="470" y2="460" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
-<line x1="830" y1="460" x2="650" y2="460" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/><g><rect x="40" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">profiles</text></g>
-<g><rect x="220" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="290" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">app_feedback_messages</text></g>
-<g><rect x="400" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="470" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">vmp_masterlist_records</text></g>
-<g><rect x="580" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="650" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">vmp_field_options</text></g>
-<g><rect x="760" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="830" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">vmp_qc_instruments</text></g>
-<g><rect x="940" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="1010" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">registry_values</text></g>
-<g><rect x="40" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_organizations</text></g>
-<g><rect x="220" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="290" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_organization_members</text></g>
-<g><rect x="400" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="470" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_documents</text></g>
-<g><rect x="580" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="650" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_document_versions</text></g>
-<g><rect x="760" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="830" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_document_files</text></g>
-<g><rect x="940" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="1010" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_document_access_grants</text></g>
-<g><rect x="40" y="240" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="265" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_routing_templates</text></g>
-<g><rect x="220" y="240" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="290" y="265" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_document_routes</text></g>
-<g><rect x="400" y="240" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="470" y="265" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_route_steps</text></g>
-<g><rect x="580" y="240" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="650" y="265" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_route_step_assignees</text></g>
-<g><rect x="760" y="240" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="830" y="265" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_route_step_actions</text></g>
-<g><rect x="940" y="240" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="1010" y="265" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_signature_fields</text></g>
-<g><rect x="40" y="340" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="365" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_signature_events</text></g>
-<g><rect x="220" y="340" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="290" y="365" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_completion_certificates</text></g>
-<g><rect x="400" y="340" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="470" y="365" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_comments</text></g>
-<g><rect x="580" y="340" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="650" y="365" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_notifications</text></g>
-<g><rect x="760" y="340" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="830" y="365" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_audit_events</text></g>
-<g><rect x="940" y="340" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="1010" y="365" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_file_access_logs</text></g>
-<g><rect x="40" y="440" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="465" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_settings</text></g>
-<g><rect x="220" y="440" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="290" y="465" text-anchor="middle" fill="#e7ecf3" font-size="12">apqr_clients</text></g>
-<g><rect x="400" y="440" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="470" y="465" text-anchor="middle" fill="#e7ecf3" font-size="12">apqr_scheduler_entries</text></g>
-<g><rect x="580" y="440" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="650" y="465" text-anchor="middle" fill="#e7ecf3" font-size="12">apqr_records</text></g>
-<g><rect x="760" y="440" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="830" y="465" text-anchor="middle" fill="#e7ecf3" font-size="12">apqr_follow_ups</text></g>
-<g><rect x="940" y="440" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="1010" y="465" text-anchor="middle" fill="#e7ecf3" font-size="12">apqr_audit_events</text></g>
-<g><rect x="40" y="540" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="565" text-anchor="middle" fill="#e7ecf3" font-size="12">apqr_id_sequences</text></g></svg></div>
-    <div class="grid"><section class="table-card" id="table-profiles"><h2>profiles</h2><table><thead><tr><th>Column</th><th>Type</th><th>Flags</th></tr></thead><tbody><tr><td><code>id</code></td><td>TEXT</td><td><span class="badge pk">PK</span></td></tr><tr><td><code>auth_user_id</code></td><td>TEXT</td><td></td></tr><tr><td><code>email</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>display_name</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>role</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>active</code></td><td>INTEGER</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>must_change_password</code></td><td>INTEGER</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>password_reset_at</code></td><td>TEXT</td><td></td></tr><tr><td><code>password_reset_by</code></td><td>TEXT</td><td><span class="badge fk" title="→ profiles.id">FK</span></td></tr><tr><td><code>password_reset_requested_at</code></td><td>TEXT</td><td></td></tr></tbody></table></section>
+<line x1="830" y1="460" x2="650" y2="460" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/>
+<line x1="1010" y1="460" x2="830" y2="460" stroke="#4da3ff" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.7"/><g><rect x="40" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">profiles</text></g>
+<g><rect x="220" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="290" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">profile_organization_options</text></g>
+<g><rect x="400" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="470" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">app_feedback_messages</text></g>
+<g><rect x="580" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="650" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">vmp_masterlist_records</text></g>
+<g><rect x="760" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="830" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">vmp_field_options</text></g>
+<g><rect x="940" y="40" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="1010" y="65" text-anchor="middle" fill="#e7ecf3" font-size="12">vmp_qc_instruments</text></g>
+<g><rect x="40" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">registry_values</text></g>
+<g><rect x="220" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="290" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_organizations</text></g>
+<g><rect x="400" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="470" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_organization_members</text></g>
+<g><rect x="580" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="650" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_documents</text></g>
+<g><rect x="760" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="830" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_document_versions</text></g>
+<g><rect x="940" y="140" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="1010" y="165" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_document_files</text></g>
+<g><rect x="40" y="240" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="265" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_document_access_grants</text></g>
+<g><rect x="220" y="240" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="290" y="265" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_routing_templates</text></g>
+<g><rect x="400" y="240" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="470" y="265" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_document_routes</text></g>
+<g><rect x="580" y="240" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="650" y="265" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_route_steps</text></g>
+<g><rect x="760" y="240" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="830" y="265" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_route_step_assignees</text></g>
+<g><rect x="940" y="240" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="1010" y="265" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_route_step_actions</text></g>
+<g><rect x="40" y="340" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="365" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_signature_fields</text></g>
+<g><rect x="220" y="340" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="290" y="365" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_signature_events</text></g>
+<g><rect x="400" y="340" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="470" y="365" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_completion_certificates</text></g>
+<g><rect x="580" y="340" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="650" y="365" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_comments</text></g>
+<g><rect x="760" y="340" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="830" y="365" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_notifications</text></g>
+<g><rect x="940" y="340" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="1010" y="365" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_audit_events</text></g>
+<g><rect x="40" y="440" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="465" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_file_access_logs</text></g>
+<g><rect x="220" y="440" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="290" y="465" text-anchor="middle" fill="#e7ecf3" font-size="12">edoc_settings</text></g>
+<g><rect x="400" y="440" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="470" y="465" text-anchor="middle" fill="#e7ecf3" font-size="12">apqr_clients</text></g>
+<g><rect x="580" y="440" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="650" y="465" text-anchor="middle" fill="#e7ecf3" font-size="12">apqr_scheduler_entries</text></g>
+<g><rect x="760" y="440" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="830" y="465" text-anchor="middle" fill="#e7ecf3" font-size="12">apqr_records</text></g>
+<g><rect x="940" y="440" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="1010" y="465" text-anchor="middle" fill="#e7ecf3" font-size="12">apqr_follow_ups</text></g>
+<g><rect x="40" y="540" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="110" y="565" text-anchor="middle" fill="#e7ecf3" font-size="12">apqr_audit_events</text></g>
+<g><rect x="220" y="540" width="140" height="40" rx="8" fill="#1a2332" stroke="#4da3ff"/><text x="290" y="565" text-anchor="middle" fill="#e7ecf3" font-size="12">apqr_id_sequences</text></g></svg></div>
+    <div class="grid"><section class="table-card" id="table-profiles"><h2>profiles</h2><table><thead><tr><th>Column</th><th>Type</th><th>Flags</th></tr></thead><tbody><tr><td><code>id</code></td><td>TEXT</td><td><span class="badge pk">PK</span></td></tr><tr><td><code>auth_user_id</code></td><td>TEXT</td><td></td></tr><tr><td><code>email</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>display_name</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>role</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>active</code></td><td>INTEGER</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>must_change_password</code></td><td>INTEGER</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>password_reset_at</code></td><td>TEXT</td><td></td></tr><tr><td><code>password_reset_by</code></td><td>TEXT</td><td><span class="badge fk" title="→ profiles.id">FK</span></td></tr><tr><td><code>password_reset_requested_at</code></td><td>TEXT</td><td></td></tr><tr><td><code>signature_data_url</code></td><td>TEXT</td><td></td></tr><tr><td><code>organization</code></td><td>TEXT</td><td></td></tr><tr><td><code>job_title</code></td><td>TEXT</td><td></td></tr></tbody></table></section>
+<section class="table-card" id="table-profile_organization_options"><h2>profile_organization_options</h2><table><thead><tr><th>Column</th><th>Type</th><th>Flags</th></tr></thead><tbody><tr><td><code>id</code></td><td>TEXT</td><td><span class="badge pk">PK</span></td></tr><tr><td><code>value</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>created_by</code></td><td>TEXT</td><td><span class="badge fk" title="→ profiles.id">FK</span></td></tr><tr><td><code>created_at</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr></tbody></table></section>
 <section class="table-card" id="table-app_feedback_messages"><h2>app_feedback_messages</h2><table><thead><tr><th>Column</th><th>Type</th><th>Flags</th></tr></thead><tbody><tr><td><code>id</code></td><td>TEXT</td><td><span class="badge pk">PK</span></td></tr><tr><td><code>sender_profile_id</code></td><td>TEXT</td><td><span class="badge fk" title="→ profiles.id">FK</span> <span class="badge nn">NOT NULL</span></td></tr><tr><td><code>sender_name</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>sender_email</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>category</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>content</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>status</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>submitted_at</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>status_updated_by_profile_id</code></td><td>TEXT</td><td><span class="badge fk" title="→ profiles.id">FK</span></td></tr><tr><td><code>status_updated_by_name</code></td><td>TEXT</td><td></td></tr><tr><td><code>status_updated_at</code></td><td>TEXT</td><td></td></tr></tbody></table></section>
 <section class="table-card" id="table-vmp_masterlist_records"><h2>vmp_masterlist_records</h2><table><thead><tr><th>Column</th><th>Type</th><th>Flags</th></tr></thead><tbody><tr><td><code>id</code></td><td>TEXT</td><td><span class="badge pk">PK</span></td></tr><tr><td><code>record_id</code></td><td>TEXT</td><td><span class="badge uk">UK</span> <span class="badge nn">NOT NULL</span></td></tr><tr><td><code>validation_area</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>site_plant</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>department</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>group_name</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>room_line</code></td><td>TEXT</td><td></td></tr><tr><td><code>item_name</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>asset_tag_no</code></td><td>TEXT</td><td></td></tr><tr><td><code>protocol_tracer</code></td><td>TEXT</td><td></td></tr><tr><td><code>report_tracer</code></td><td>TEXT</td><td></td></tr><tr><td><code>report_approval_date</code></td><td>TEXT</td><td></td></tr><tr><td><code>review_frequency</code></td><td>TEXT</td><td></td></tr><tr><td><code>next_due_date</code></td><td>TEXT</td><td></td></tr><tr><td><code>validation_status</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>lifecycle_status</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>criticality</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>responsible_owner</code></td><td>TEXT</td><td></td></tr><tr><td><code>remarks</code></td><td>TEXT</td><td></td></tr><tr><td><code>is_draft</code></td><td>INTEGER</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>is_archived</code></td><td>INTEGER</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>version</code></td><td>INTEGER</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>created_at</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>created_by</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>updated_at</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>updated_by</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr></tbody></table></section>
 <section class="table-card" id="table-vmp_field_options"><h2>vmp_field_options</h2><table><thead><tr><th>Column</th><th>Type</th><th>Flags</th></tr></thead><tbody><tr><td><code>id</code></td><td>TEXT</td><td><span class="badge pk">PK</span></td></tr><tr><td><code>field_type</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>validation_area</code></td><td>TEXT</td><td></td></tr><tr><td><code>site_id</code></td><td>TEXT</td><td></td></tr><tr><td><code>department_id</code></td><td>TEXT</td><td></td></tr><tr><td><code>parent_option_id</code></td><td>TEXT</td><td></td></tr><tr><td><code>display_value</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>normalized_value</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>display_order</code></td><td>INTEGER</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>is_system_default</code></td><td>INTEGER</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>is_user_defined</code></td><td>INTEGER</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>is_active</code></td><td>INTEGER</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>created_at</code></td><td>TEXT</td><td><span class="badge nn">NOT NULL</span></td></tr><tr><td><code>created_by</code></td><td>TEXT</td><td></td></tr><tr><td><code>updated_at</code></td><td>TEXT</td><td></td></tr><tr><td><code>updated_by</code></td><td>TEXT</td><td></td></tr></tbody></table></section>

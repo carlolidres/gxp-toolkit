@@ -17,7 +17,16 @@ interface AuthContextValue {
   requestPasswordReset: (email: string) => Promise<PasswordResetResult>
   checkTemporaryPasswordRequired: (email: string) => Promise<boolean>
   updatePassword: (newPassword: string) => Promise<void>
-  updateProfile: (input: { firstName: string; lastName: string }) => Promise<void>
+  updateProfile: (input: {
+    firstName: string
+    lastName: string
+    /** undefined = leave unchanged; null/empty = clear */
+    organization?: string | null
+    /** undefined = leave unchanged; null/empty = clear */
+    jobTitle?: string | null
+    /** undefined = leave unchanged; null = clear; string = set PNG data URL */
+    signatureDataUrl?: string | null
+  }) => Promise<void>
   refreshUser: () => Promise<void>
   clearPasswordRecovery: () => void
   logout: () => Promise<void>
@@ -34,7 +43,10 @@ function isSameUser(a: AuthUser | null, b: AuthUser | null): boolean {
     a?.name === b?.name &&
     a?.role === b?.role &&
     a?.active === b?.active &&
-    a?.mustChangePassword === b?.mustChangePassword
+    a?.mustChangePassword === b?.mustChangePassword &&
+    a?.signatureDataUrl === b?.signatureDataUrl &&
+    a?.organization === b?.organization &&
+    a?.jobTitle === b?.jobTitle
   )
 }
 
