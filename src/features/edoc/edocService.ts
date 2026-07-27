@@ -237,9 +237,24 @@ export const edocService = {
     }))
   },
 
-  async createAndSendDraft(input: EdocCreateDraftInput): Promise<{ documentId: string; routeId: string }> {
+  async createAndSendDraft(
+    input: EdocCreateDraftInput,
+    pdfBytes?: ArrayBuffer | null,
+  ): Promise<{
+    documentId: string
+    routeId: string
+    versionId: string | null
+    fileId: string | null
+    activeAssignmentId: string | null
+  }> {
     if (!isSupabaseConfigured()) {
-      return { documentId: `mock-doc-${Date.now()}`, routeId: `mock-route-${Date.now()}` }
+      return {
+        documentId: `mock-doc-${Date.now()}`,
+        routeId: `mock-route-${Date.now()}`,
+        versionId: `mock-version-${Date.now()}`,
+        fileId: `mock-file-${Date.now()}`,
+        activeAssignmentId: 'edoc-task-demo-001',
+      }
     }
 
     const client = requireClient()
@@ -247,11 +262,98 @@ export const edocService = {
       p_payload: input,
     })
     if (error) throw new Error(error.message)
-    const result = data as { document_id?: string; route_id?: string } | null
+    const result = data as {
+      document_id?: string
+      route_id?: string
+      version_id?: string | null
+      file_id?: string | null
+      bucket_id?: string | null
+      object_key?: string | null
+      active_assignment_id?: string | null
+    } | null
     if (!result?.document_id || !result.route_id) {
       throw new Error('eDoc route creation did not return identifiers.')
     }
-    return { documentId: result.document_id, routeId: result.route_id }
+
+    if (pdfBytes && result.bucket_id && result.object_key) {
+      const blob = new Blob([pdfBytes], { type: input.file?.mimeType || 'application/pdf' })
+      const { error: uploadError } = await client.storage
+        .from(result.bucket_id)
+        .upload(result.object_key, blob, {
+          contentType: input.file?.mimeType || 'application/pdf',
+          upsert: true,
+        })
+      if (uploadError) {
+        throw new Error(`Document route was created, but PDF upload failed: ${uploadError.message}`)
+      }
+    }
+
+    return {
+      documentId: result.document_id,
+      routeId: result.route_id,
+      versionId: result.version_id ?? null,
+      fileId: result.file_id ?? null,
+      activeAssignmentId: result.active_assignment_id ?? null,
+    }
+  },
+
+  async getDocumentOriginalFile(documentId: string): Promise<{
+    id: string
+    bucketId: string
+    objectKey: string
+    fileName: string
+  } | null> {
+    if (!isSupabaseConfigured()) return null
+
+    const client = requireClient()
+    const { data, error } = await client
+      .from('edoc_document_files')
+      .select('id, bucket_id, object_key, file_name')
+      .eq('document_id', documentId)
+      .eq('file_role', 'original')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error) throw new Error(error.message)
+    if (!data) return null
+    return {
+      id: data.id,
+      bucketId: data.bucket_id,
+      objectKey: data.object_key,
+      fileName: data.file_name,
+    }
+  },
+
+  async requestFileAccess(fileId: string, accessType: 'preview' | 'download' = 'preview'): Promise<{
+    signedUrl: string
+    expiresInSeconds: number
+  }> {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase is not configured for file access.')
+    }
+
+    const client = requireClient()
+    const { data, error } = await client.functions.invoke('edoc-file-access', {
+      body: { fileId, accessType },
+    })
+    if (error) throw new Error(error.message)
+    const payload = data as { signedUrl?: string; expiresInSeconds?: number; error?: string } | null
+    if (payload?.error) throw new Error(payload.error)
+    if (!payload?.signedUrl) throw new Error('Signed file URL was not returned.')
+    return {
+      signedUrl: payload.signedUrl,
+      expiresInSeconds: payload.expiresInSeconds ?? 300,
+    }
+  },
+
+  async loadDocumentPdfBytes(documentId: string): Promise<ArrayBuffer> {
+    const file = await this.getDocumentOriginalFile(documentId)
+    if (!file) throw new Error('No original PDF is registered for this document.')
+    const access = await this.requestFileAccess(file.id, 'preview')
+    const response = await fetch(access.signedUrl)
+    if (!response.ok) throw new Error(`Could not download the PDF (HTTP ${response.status}).`)
+    return response.arrayBuffer()
   },
 
   async completeAssignment(input: {

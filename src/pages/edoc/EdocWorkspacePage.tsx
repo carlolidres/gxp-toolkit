@@ -1,10 +1,12 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Alert, Button, Card, Input } from 'antd'
 import { Check, CornerUpLeft, X } from 'lucide-react'
 
 import { EdocEmpty, EdocError, EdocLoading, EdocPage, formatEdocDate } from '../../components/edoc/EdocComponents'
+import { EdocPdfPageCanvas } from '../../components/edoc/EdocPdfPageCanvas'
 import { edocService } from '../../features/edoc/edocService'
+import { usePdfDocument } from '../../features/edoc/usePdfDocument'
 import { useEdocAudit, useEdocInbox } from '../../features/edoc/useEdocData'
 import { useAuth } from '../../hooks/useAuth'
 import { getSignatoryProfileCompleteness } from '../../lib/signatoryProfileCompleteness'
@@ -24,6 +26,44 @@ export function EdocWorkspacePage() {
   const [signatureMeaning, setSignatureMeaning] = useState('Reviewed and approved')
   const [consent, setConsent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [pdfBytes, setPdfBytes] = useState<ArrayBuffer | null>(null)
+  const [pdfLoadError, setPdfLoadError] = useState<string | null>(null)
+  const [pdfLoading, setPdfLoading] = useState(false)
+  const [pageNumber, setPageNumber] = useState(1)
+  const [renderedSize, setRenderedSize] = useState({ width: 640, height: 820 })
+  const { document, pageCount, loading: pdfDocLoading, error: pdfDocError } = usePdfDocument(pdfBytes)
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadPdf() {
+      if (!task?.documentId) {
+        setPdfBytes(null)
+        setPdfLoadError(null)
+        return
+      }
+      setPdfLoading(true)
+      setPdfLoadError(null)
+      try {
+        const bytes = await edocService.loadDocumentPdfBytes(task.documentId)
+        if (!cancelled) setPdfBytes(bytes)
+      } catch (err) {
+        if (!cancelled) {
+          setPdfBytes(null)
+          setPdfLoadError(err instanceof Error ? err.message : 'Could not load the PDF.')
+        }
+      } finally {
+        if (!cancelled) setPdfLoading(false)
+      }
+    }
+    void loadPdf()
+    return () => {
+      cancelled = true
+    }
+  }, [task?.documentId])
+
+  useEffect(() => {
+    if (pageCount > 0 && pageNumber > pageCount) setPageNumber(pageCount)
+  }, [pageCount, pageNumber])
 
   if (!assignmentId) return <EdocPage title="Workspace"><EdocEmpty title="Assignment not found" description="Open a task from My Inbox." /></EdocPage>
   if (inbox.loading) return <EdocPage title="Workspace"><EdocLoading /></EdocPage>
@@ -84,6 +124,8 @@ export function EdocWorkspacePage() {
       setSubmitting(false)
     }
   }
+
+  const previewError = pdfLoadError || pdfDocError
 
   return (
     <EdocPage title="Signing Workspace" description={`${task.documentNumber} · ${task.documentTitle}`}>
@@ -165,15 +207,46 @@ export function EdocWorkspacePage() {
         </Card>
         <Card className="panel pdf-panel">
           <div className="document-preview edoc-document-preview">
-            <div className="document-page">
-              <div className="document-mark">eDoc</div>
-              <h2>{task.documentTitle}</h2>
-              <p>{task.documentNumber}</p>
-              <hr />
-              <h3>Secure PDF Preview</h3>
-              <p>Live deployments request short-lived private Supabase Storage URLs through `edoc-file-access`.</p>
-              <span className="page-number">1 / 1</span>
-            </div>
+            {pdfLoading || pdfDocLoading ? <EdocLoading label="Loading PDF…" /> : null}
+            {previewError ? <EdocError message={previewError} /> : null}
+            {!pdfLoading && !pdfDocLoading && !previewError && document ? (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="m-0 text-xs font-semibold text-[var(--muted)]">
+                    Page {pageNumber} / {Math.max(pageCount, 1)}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button size="small" disabled={pageNumber <= 1} onClick={() => setPageNumber((n) => Math.max(1, n - 1))}>
+                      Previous
+                    </Button>
+                    <Button size="small" disabled={pageNumber >= pageCount} onClick={() => setPageNumber((n) => Math.min(pageCount, n + 1))}>
+                      Next
+                    </Button>
+                  </div>
+                </div>
+                <div
+                  className="mx-auto overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--surface-elevated)] shadow-[var(--shadow)]"
+                  style={{ width: 640, height: renderedSize.height }}
+                >
+                  <EdocPdfPageCanvas
+                    document={document}
+                    pageNumber={pageNumber}
+                    width={640}
+                    onRenderedSize={setRenderedSize}
+                  />
+                </div>
+              </div>
+            ) : null}
+            {!pdfLoading && !pdfDocLoading && !previewError && !document ? (
+              <div className="document-page">
+                <div className="document-mark">eDoc</div>
+                <h2>{task.documentTitle}</h2>
+                <p>{task.documentNumber}</p>
+                <hr />
+                <h3>Secure PDF Preview</h3>
+                <p>The PDF will appear here after the original file is available through private storage access.</p>
+              </div>
+            ) : null}
           </div>
         </Card>
         <Card className="panel side-panel">

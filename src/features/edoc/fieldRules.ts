@@ -16,11 +16,19 @@ export const edocFieldTypeLabels: Record<EdocFieldType, string> = {
   checkbox: 'Checkbox',
 }
 
-export function fieldTypesForAction(action: EdocAssignableAction): EdocFieldType[] {
-  if (action === 'sign') return ['signature', 'initial', 'date_signed', 'name', 'job_title', 'text']
-  if (action === 'approve') return ['approval_meaning', 'date_signed', 'name', 'text', 'checkbox']
-  if (action === 'review') return ['review_meaning', 'date_signed', 'name', 'text', 'checkbox']
-  return ['acknowledgment', 'date_signed', 'name', 'text', 'checkbox']
+/** Signature-element palette shared by every signatory action (sign / review / approve / acknowledge). */
+const SIGNATORY_FIELD_TYPES: EdocFieldType[] = [
+  'signature',
+  'initial',
+  'date_signed',
+  'name',
+  'job_title',
+  'text',
+]
+
+export function fieldTypesForAction(_action: EdocAssignableAction): EdocFieldType[] {
+  // Route action still identifies the assignee's role; placement fields are the same signature elements.
+  return SIGNATORY_FIELD_TYPES
 }
 
 export function defaultFieldSize(fieldType: EdocFieldType): { width: number; height: number } {

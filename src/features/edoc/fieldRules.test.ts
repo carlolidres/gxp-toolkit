@@ -3,11 +3,12 @@ import { describe, expect, it } from 'vitest'
 import { denormalizePdfRect, fieldTypesForAction, normalizePdfRect } from './fieldRules'
 
 describe('eDoc field rules', () => {
-  it('maps route actions to allowed field types', () => {
-    expect(fieldTypesForAction('sign')).toContain('signature')
-    expect(fieldTypesForAction('approve')).toContain('approval_meaning')
-    expect(fieldTypesForAction('review')).toContain('review_meaning')
-    expect(fieldTypesForAction('acknowledge')).toContain('acknowledgment')
+  it('gives every signatory action the same signature-element palette', () => {
+    const expected = ['signature', 'initial', 'date_signed', 'name', 'job_title', 'text']
+    expect(fieldTypesForAction('sign')).toEqual(expected)
+    expect(fieldTypesForAction('approve')).toEqual(expected)
+    expect(fieldTypesForAction('review')).toEqual(expected)
+    expect(fieldTypesForAction('acknowledge')).toEqual(expected)
   })
 
   it('converts PDF field coordinates to normalized values and back', () => {

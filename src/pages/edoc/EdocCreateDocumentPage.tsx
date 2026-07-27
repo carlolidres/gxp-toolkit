@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button, Steps, Tooltip } from 'antd'
 import {
   AlignLeft,
@@ -105,12 +105,17 @@ function WizardActions({
 const wizardSteps = ['Metadata', 'PDF upload', 'Routing setup', 'Field placement', 'Review and send']
 
 export function EdocCreateDocumentPage() {
+  const navigate = useNavigate()
   const profiles = useEdocProfiles()
   const { user } = useAuth()
   const { notify } = useToast()
   const [activeStep, setActiveStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const [created, setCreated] = useState<{ documentId: string; routeId: string } | null>(null)
+  const [created, setCreated] = useState<{
+    documentId: string
+    routeId: string
+    activeAssignmentId: string | null
+  } | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [metadata, setMetadata] = useState<EdocCreateDraftInput['metadata']>({
     documentNumber: '',
@@ -280,12 +285,31 @@ export function EdocCreateDocumentPage() {
 
     setSubmitting(true)
     try {
-      setCreated(await edocService.createAndSendDraft({
-        metadata,
-        file,
-        routing,
-        fields: noSignatories ? [] : fields,
-      }))
+      const result = await edocService.createAndSendDraft(
+        {
+          metadata,
+          file,
+          routing,
+          fields: noSignatories ? [] : fields,
+        },
+        pdfBytes,
+      )
+      setCreated({
+        documentId: result.documentId,
+        routeId: result.routeId,
+        activeAssignmentId: result.activeAssignmentId,
+      })
+      notify(
+        result.activeAssignmentId
+          ? 'Document sent. Opening your inbox assignment…'
+          : 'Document sent. Signatories will see it in My Inbox when their turn is active.',
+        'success',
+      )
+      if (result.activeAssignmentId) {
+        navigate(`/edoc/workspace/${result.activeAssignmentId}`)
+        return
+      }
+      navigate('/edoc/inbox')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send the eDoc route.')
     } finally {
@@ -322,9 +346,17 @@ export function EdocCreateDocumentPage() {
               </div>
             </div>
             <WizardActions>
-              <Link to="/edoc/inbox"><Button icon={<ListOrdered size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}>Open Inbox</Button></Link>
+              {created.activeAssignmentId ? (
+                <Link to={`/edoc/workspace/${created.activeAssignmentId}`}>
+                  <Button type="primary" icon={<Send size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}>
+                    Open assignment
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/edoc/inbox"><Button icon={<ListOrdered size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}>Open Inbox</Button></Link>
+              )}
               <Link to="/edoc/documents">
-                <Button type="primary" icon={<FileText size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}>
+                <Button icon={<FileText size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}>
                   View Documents
                 </Button>
               </Link>

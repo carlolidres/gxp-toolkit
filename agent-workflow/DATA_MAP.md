@@ -1,6 +1,6 @@
 # Data Map
 
-Last Updated: `2026-07-25`
+Last Updated: `2026-07-27`
 
 ## Purpose
 
@@ -34,6 +34,9 @@ Workflow app status: `workflow-app/` uses its own local SQLite store for approva
 | `supabase/migrations/20260725120000_profile_organization.sql` | `profiles.organization` + `profile_organization_options` catalog | Applied remote 2026-07-25 |
 | `supabase/migrations/20260725130000_profile_job_title.sql` | `profiles.job_title` for Account Settings Position/Title | Applied remote 2026-07-25 |
 | `supabase/migrations/20260725140000_fix_edoc_profile_id_ambiguity.sql` | Rename PL/pgSQL `profile_id` → `v_profile_id` in `edoc_create_and_start_route` (Postgres 42702) | Applied remote 2026-07-25 |
+| `supabase/migrations/20260727100000_edoc_send_inbox_pdf_access.sql` | Send returns file keys + active assignment; assignees become org members; owner storage upload policies | Applied remote 2026-07-27 |
+| `supabase/migrations/20260727110000_fix_edoc_route_id_ambiguity.sql` | Rename PL/pgSQL vars (`v_route_id`, …) in `edoc_create_and_start_route` (Postgres ambiguous `route_id`) | Applied remote 2026-07-27 |
+| `supabase/migrations/20260727120000_fix_edoc_audit_digest.sql` | `edoc_create_audit_event` uses `extensions.digest` + `search_path = public, extensions` | Applied remote 2026-07-27 |
 | `supabase/migrations/20260713170000_registry_values_ci_unique_and_rls.sql` | Registry CI unique index + `has_registry_menu_action` RLS | Applied remote 2026-07-13 |
 | `supabase/scripts/verify_edoc_rls.sql` | Static eDoc RLS/schema validation | Run after eDoc migration |
 | `supabase/seed.vrms.generated.sql` | Local generated seed from `src/data/vrmsProductionData.json` | Generated and gitignored; review before applying |
@@ -96,7 +99,7 @@ Payload type: `EdocCreateDraftInput` in `src/features/edoc/types.ts`.
 | PDF upload | `file.name`, `sizeBytes`, `mimeType`, `sha256` | Client validates MIME/extension + PDF signature (`fileValidation`) before continue. In-memory `pdfBytes` drive placement preview via pdf.js (`usePdfDocument`); worker served from `public/pdf.worker.min.mjs` under Vite `base`. |
 | Routing | `routing.mode`, `steps[]` (action, assignees, completion rule, minimum count, due, delegation) | Every step needs ≥1 assignee before send (unless no-signatories). |
 | Field placement | `fields[]` (assignee draft id, type, page, normalized x/y/w/h, rotation, required) | One required field per assignee draft before send. Name / Position-Title / Signature overlays are filled from each assignee’s Account Settings profile at signing time. |
-| Review / send | Summary only | Calls RPC `edoc_create_and_start_route` (variable `v_profile_id` to avoid column ambiguity); mock fallback returns synthetic ids when Supabase is not configured. |
+| Review / send | Summary only | Calls RPC `edoc_create_and_start_route` (returns `document_id`, `route_id`, `version_id`, `file_id`, `bucket_id`, `object_key`, `active_assignment_id`); client uploads PDF bytes to `edoc-originals`; navigates to creator workspace when they have an active assignment, else My Inbox. Assignees are added as org members so inbox RLS joins succeed. |
 
 Related tables (via RPC): `edoc_documents`, `edoc_document_versions`, `edoc_document_files`, `edoc_document_routes`, `edoc_route_steps`, `edoc_route_step_assignees`, `edoc_signature_fields`, `edoc_audit_events`.
 

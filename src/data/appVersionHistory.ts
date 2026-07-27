@@ -6,10 +6,20 @@ export type AppVersionEntry = {
 
 export const APP_DEVELOPER = 'Carlo M. Lidres'
 
-export const APP_CURRENT_VERSION = 'v39'
+export const APP_CURRENT_VERSION = 'v40'
 
 /** Curated release notes — newest first. */
 export const APP_VERSION_HISTORY: AppVersionEntry[] = [
+  {
+    version: 'v40',
+    releaseDate: '2026-07-27',
+    changes: [
+      'eDoc Send → My Inbox / Signing Workspace with live PDF preview for the active assignee',
+      'Unified signatory field palette (Signature, Initial, Date signed, Name, Position/Title, Text) for all route actions',
+      'Create-and-send uploads PDF to private storage and deep-links the creator’s active assignment',
+      'Supabase: assignee org membership, storage upload policies, route_id ambiguity fix, extensions.digest audit hash',
+    ],
+  },
   {
     version: 'v39',
     releaseDate: '2026-07-25',
