@@ -1157,6 +1157,21 @@ main {
   pointer-events: none;
 }
 
+.apqr-notifications-section + .apqr-notifications-section {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--gxp-border, #d0d7de) 80%, transparent);
+}
+
+.apqr-notifications-section-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--gxp-muted, #64748b);
+}
+
 .apqr-notifications-panel {
   display: grid;
   gap: 16px;

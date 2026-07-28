@@ -19,9 +19,7 @@ import {
 import {
   APP_NAME,
   APP_TAGLINE,
-  resolveWorkspaceTitle,
 } from '../../config/appNavigation'
-import { findSubmenuLabel } from '../../config/sidebarMenus'
 import { useAuth } from '../../hooks/useAuth'
 import { useDesktopNav } from '../../hooks/useDesktopNav'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -30,10 +28,10 @@ import { useTheme } from '../../hooks/useTheme'
 import { MessagesModal } from '../feedback/MessagesModal'
 import { ApqrNotificationsModal } from '../feedback/ApqrNotificationsModal'
 import { VersionHistoryDrawer } from '../feedback/VersionHistoryDrawer'
-import { MissingDocumentControllerBanner } from '../admin/MissingDocumentControllerBanner'
 import { GxpLogo } from '../brand/GxpLogo'
 import { useFeedbackMessages } from '../../hooks/useFeedbackMessages'
 import { useApqrNotifications } from '../../hooks/useApqrNotifications'
+import { useMissingDocumentControllerWarnings } from '../../hooks/useMissingDocumentControllerWarnings'
 import { SidebarHoverChrome } from './SidebarHoverChrome'
 import { SidebarNavList } from './SidebarNavList'
 import { iconSize, iconStroke } from '../../theme/iconSizes'
@@ -73,11 +71,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const showApqrNotifications = canViewMenu('apqr-dashboard') || canViewMenu('apqr-scheduler')
   const { summary: apqrNotifications, loading: apqrNotificationsLoading, pendingCount: apqrPendingCount, refresh: refreshApqrNotifications } =
     useApqrNotifications(showApqrNotifications)
+  const {
+    labels: missingControllerOrgs,
+    loading: missingControllerLoading,
+    pendingCount: missingControllerCount,
+    refresh: refreshMissingControllers,
+  } = useMissingDocumentControllerWarnings(isAdmin)
+  const showNotificationsBell = showApqrNotifications || isAdmin
+  const notificationsPendingCount = apqrPendingCount + missingControllerCount
   const { isDark, toggleTheme } = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
-  const submenuLabel = findSubmenuLabel(location.pathname, location.hash)
-  const current = submenuLabel ?? resolveWorkspaceTitle(location.pathname)
 
   const layoutCollapsed = isCollapsed && isDesktop
   const showHoverChrome = layoutCollapsed || expandExiting
@@ -185,10 +189,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               icon={<PanelLeft size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />}
             />
             <GxpBrandMark inline />
-            <p className="topbar-greeting">
-              <span className="topbar-greeting-sub">{APP_NAME}</span>
-              <span className="topbar-greeting-title">{current}</span>
-            </p>
           </div>
           <div className="topbar-actions" role="toolbar" aria-label="Application actions">
             <div className="topbar-actions-cluster" role="group" aria-label="Quick actions">
@@ -233,28 +233,28 @@ export function AppShell({ children }: { children: ReactNode }) {
                   icon={<Info size={iconSize.md} strokeWidth={iconStroke} aria-hidden />}
                 />
               </Tooltip>
-              {showApqrNotifications ? (
+              {showNotificationsBell ? (
                 <Tooltip
                   title={
-                    apqrPendingCount > 0
-                      ? `APQR notifications (${apqrPendingCount} pending)`
-                      : 'APQR notifications'
+                    notificationsPendingCount > 0
+                      ? `Notifications (${notificationsPendingCount} pending)`
+                      : 'Notifications'
                   }
                 >
-                  <Badge count={apqrPendingCount} overflowCount={9} size="small" offset={[-4, 4]}>
+                  <Badge count={notificationsPendingCount} overflowCount={9} size="small" offset={[-4, 4]}>
                     <Button
                       type="text"
                       className={[
                         'topbar-icon-circle',
                         'topbar-icon-with-badge',
-                        apqrPendingCount > 0 ? 'topbar-icon-unread' : '',
+                        notificationsPendingCount > 0 ? 'topbar-icon-unread' : '',
                       ]
                         .filter(Boolean)
                         .join(' ')}
                       aria-label={
-                        apqrPendingCount > 0
-                          ? `APQR notifications (${apqrPendingCount} pending)`
-                          : 'APQR notifications'
+                        notificationsPendingCount > 0
+                          ? `Notifications (${notificationsPendingCount} pending)`
+                          : 'Notifications'
                       }
                       onClick={() => openNotifications()}
                       icon={<Bell size={iconSize.md} strokeWidth={iconStroke} aria-hidden />}
@@ -294,7 +294,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
-        <MissingDocumentControllerBanner />
         <main>{children}</main>
       </div>
 
@@ -316,6 +315,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         onClose={() => setNotificationsOpen(false)}
         summary={apqrNotifications}
         loading={apqrNotificationsLoading}
+        missingControllerOrgs={missingControllerOrgs}
+        missingControllerLoading={missingControllerLoading}
+        showApqrSection={showApqrNotifications}
       />
       <VersionHistoryDrawer
         isOpen={versionHistoryOpen}
@@ -333,6 +335,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     closeMobileNav()
     setNotificationsOpen(true)
     void refreshApqrNotifications()
+    void refreshMissingControllers()
   }
 
   function openVersionHistory() {

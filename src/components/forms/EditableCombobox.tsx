@@ -350,7 +350,7 @@ export function EditableCombobox({
           aria-label={open ? 'Close suggestions' : 'Show suggestions'}
           aria-expanded={open}
           aria-controls={listId}
-          className={`inline-flex w-10 shrink-0 items-center justify-center border-l border-[var(--border)] transition-[background-color,color,border-color] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--teal)] disabled:cursor-not-allowed ${
+          className={`inline-flex w-10 shrink-0 items-center justify-center rounded-r-[0.75rem] border-l border-[var(--border)] transition-[background-color,color,border-color] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--teal)] disabled:cursor-not-allowed ${
             open
               ? 'border-l-[color-mix(in_srgb,var(--teal)_28%,var(--border))] bg-[color-mix(in_srgb,var(--teal)_10%,var(--surface))] text-[var(--teal)]'
               : 'bg-[color-mix(in_srgb,var(--surface-muted,#f4f7fa)_40%,var(--surface))] text-[var(--muted)] hover:bg-[color-mix(in_srgb,var(--teal)_8%,var(--surface))] hover:text-[var(--teal)]'

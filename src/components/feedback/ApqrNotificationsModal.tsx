@@ -14,79 +14,119 @@ export function ApqrNotificationsModal({
   onClose,
   summary,
   loading,
+  missingControllerOrgs = [],
+  missingControllerLoading = false,
+  showApqrSection = true,
 }: {
   isOpen: boolean
   onClose: () => void
   summary: ApqrSchedulingReminderSummary
   loading: boolean
+  missingControllerOrgs?: string[]
+  missingControllerLoading?: boolean
+  showApqrSection?: boolean
 }) {
   const inSeason = isApqrSchedulingSeason()
+  const hasDcWarnings = missingControllerOrgs.length > 0
 
   return (
     <Modal
       isOpen={isOpen}
-      title="APQR notifications"
+      title="Notifications"
       onClose={onClose}
       footer={
         <Button onClick={onClose}>Close</Button>
       }
     >
       <div className="apqr-notifications-panel">
-        {inSeason ? (
-          <Alert
-            className="apqr-notifications-lead"
-            type="info"
-            showIcon
-            icon={<BellRing size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
-            message={
-              <>
-                Annual scheduling reminder for <strong>{summary.cycleLabel}</strong>. Prepare, send, review, and approve
-                APQR schedules for client products and stability batches. Reminders stay active until every assigned
-                schedule is client approved.
-              </>
-            }
-          />
-        ) : (
-          <p className="apqr-notifications-lead help-text">
-            Annual APQR scheduling reminders appear each <strong>September through October</strong>.
-          </p>
-        )}
-
-        {loading ? <Spin tip="Loading APQR reminders…" /> : null}
-
-        {!loading && inSeason && summary.items.length === 0 ? (
-          <Empty description="No pending APQR scheduling actions for your assigned clients this season." />
+        {hasDcWarnings || missingControllerLoading ? (
+          <section className="apqr-notifications-section" aria-label="Document Controller">
+            <h3 className="apqr-notifications-section-title">Document Controller</h3>
+            {missingControllerLoading ? <Spin tip="Loading Document Controller warnings…" /> : null}
+            {!missingControllerLoading && hasDcWarnings ? (
+              <Alert
+                type="warning"
+                showIcon
+                message="Document Controller assignment required"
+                description={
+                  <span>
+                    Organizations without a Document Controller: {missingControllerOrgs.join(', ')}. External
+                    eDocuSign submission is blocked until at least one controller is assigned in{' '}
+                    <Link to="/admin/users" onClick={onClose}>
+                      User Management
+                    </Link>
+                    .
+                  </span>
+                }
+              />
+            ) : null}
+          </section>
         ) : null}
 
-        {!loading && summary.items.length > 0 ? (
-          <List
-            className="apqr-notifications-list"
-            dataSource={summary.items}
-            renderItem={(item) => (
-              <List.Item className="apqr-notifications-item">
-                <List.Item.Meta
-                  title={item.title}
-                  description={
-                    <>
-                      <span className="apqr-notifications-client">
-                        {item.clientCode} · {item.clientName}
-                      </span>
-                      {item.productName ? (
-                        <p className="apqr-notifications-product">
-                          {item.productName}
-                          {item.productCode ? ` (${item.productCode})` : ''}
-                        </p>
-                      ) : null}
-                      <p className="apqr-notifications-message">{item.message}</p>
-                      <Link className="text-button apqr-notifications-link" to={item.link} onClick={onClose}>
-                        Open Scheduler
-                      </Link>
-                    </>
-                  }
-                />
-              </List.Item>
+        {showApqrSection ? (
+          <section className="apqr-notifications-section" aria-label="APQR">
+            {hasDcWarnings ? <h3 className="apqr-notifications-section-title">APQR</h3> : null}
+            {inSeason ? (
+              <Alert
+                className="apqr-notifications-lead"
+                type="info"
+                showIcon
+                icon={<BellRing size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                message={
+                  <>
+                    Annual scheduling reminder for <strong>{summary.cycleLabel}</strong>. Prepare, send, review, and
+                    approve APQR schedules for client products and stability batches. Reminders stay active until every
+                    assigned schedule is client approved.
+                  </>
+                }
+              />
+            ) : (
+              <p className="apqr-notifications-lead help-text">
+                Annual APQR scheduling reminders appear each <strong>September through October</strong>.
+              </p>
             )}
-          />
+
+            {loading ? <Spin tip="Loading APQR reminders…" /> : null}
+
+            {!loading && inSeason && summary.items.length === 0 ? (
+              <Empty description="No pending APQR scheduling actions for your assigned clients this season." />
+            ) : null}
+
+            {!loading && summary.items.length > 0 ? (
+              <List
+                className="apqr-notifications-list"
+                dataSource={summary.items}
+                renderItem={(item) => (
+                  <List.Item className="apqr-notifications-item">
+                    <List.Item.Meta
+                      title={item.title}
+                      description={
+                        <>
+                          <span className="apqr-notifications-client">
+                            {item.clientCode} · {item.clientName}
+                          </span>
+                          {item.productName ? (
+                            <p className="apqr-notifications-product">
+                              {item.productName}
+                              {item.productCode ? ` (${item.productCode})` : ''}
+                            </p>
+                          ) : null}
+                          <p className="apqr-notifications-message">{item.message}</p>
+                          <Link className="text-button apqr-notifications-link" to={item.link} onClick={onClose}>
+                            Open Scheduler
+                          </Link>
+                        </>
+                      }
+                    />
+                  </List.Item>
+                )}
+              />
+            ) : null}
+          </section>
+        ) : null}
+
+        {!showApqrSection && !hasDcWarnings && !missingControllerLoading ? (
+          <Empty description="No pending notifications." />
         ) : null}
       </div>
     </Modal>
