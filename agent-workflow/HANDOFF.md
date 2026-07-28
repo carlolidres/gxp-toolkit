@@ -3,8 +3,8 @@
 Last Updated: `2026-07-28`
 Version: `v41`
 Branch: `main` (+ `master` for Pages deploy)
-Commit: `(pending after commit)`
-Deployment: pending GitHub Pages
+Commit: `7018acb`
+Deployment: pending GitHub Pages (push to `master`)
 
 ## Current Status
 
