@@ -69,6 +69,7 @@ export function ApqrSchedulerFormPanel({
   onChange,
   onSubmit,
   onClear,
+  onCancel,
   actorName,
 }: {
   form: ScheduleRowDraft
@@ -82,6 +83,7 @@ export function ApqrSchedulerFormPanel({
   onChange: (patch: Partial<ScheduleRowDraft>) => void
   onSubmit: () => void
   onClear: () => void
+  onCancel?: () => void
   actorName: string
 }) {
   const productListId = useId()
@@ -296,7 +298,11 @@ export function ApqrSchedulerFormPanel({
   }
 
   return (
-    <section className="panel apqr-scheduler-form-panel" aria-labelledby="apqr-scheduler-form-title">
+    <section
+      id="apqr-scheduler-form-panel"
+      className="panel apqr-scheduler-form-panel"
+      aria-labelledby="apqr-scheduler-form-title"
+    >
       <header className="apqr-scheduler-form-header">
         <div className="apqr-scheduler-form-header-text">
           <h2 id="apqr-scheduler-form-title">
@@ -622,6 +628,11 @@ export function ApqrSchedulerFormPanel({
             <ApqrIcon name="clear" />
             Clear
           </button>
+          {onCancel ? (
+            <button type="button" className="button secondary" disabled={busy} onClick={onCancel}>
+              Cancel
+            </button>
+          ) : null}
         </div>
       ) : null}
     </section>

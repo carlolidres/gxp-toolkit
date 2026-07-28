@@ -18,7 +18,7 @@ test.describe('eDoc Phase 4 — staging smoke (disposable test accounts)', () =>
     test.skip(!reviewerReady, 'Set E2E_EDOC_TEST_PASSWORD after provisioning test accounts')
     await signIn(page, STAGING_EDOC.reviewer.email, STAGING_EDOC.reviewer.password)
 
-    await page.getByRole('button', { name: 'eDoc' }).click()
+    await page.getByRole('button', { name: 'eDocuSign' }).click()
     await page.getByRole('link', { name: 'My Inbox' }).click()
     await expect(page.getByRole('heading', { name: 'My Inbox' })).toBeVisible()
     await expect(page.getByText('EDOC-STAGING-001')).toBeVisible({ timeout: 15_000 })
@@ -38,7 +38,7 @@ test.describe('eDoc Phase 4 — staging smoke (disposable test accounts)', () =>
     test.skip(!creatorReady, 'Set E2E_EDOC_TEST_PASSWORD after provisioning test accounts')
     await signIn(page, STAGING_EDOC.creator.email, STAGING_EDOC.creator.password)
 
-    await page.getByRole('button', { name: 'eDoc' }).click()
+    await page.getByRole('button', { name: 'eDocuSign' }).click()
     await page.getByRole('link', { name: 'Create Document' }).click()
     await expect(page.getByRole('heading', { name: 'Create Document' })).toBeVisible()
     await expect(page.getByText('Metadata', { exact: true })).toBeVisible()

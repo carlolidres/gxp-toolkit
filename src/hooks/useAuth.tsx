@@ -26,6 +26,8 @@ interface AuthContextValue {
     jobTitle?: string | null
     /** undefined = leave unchanged; null = clear; string = set PNG data URL */
     signatureDataUrl?: string | null
+    /** undefined = leave unchanged; null = clear; string = set avatar data URL */
+    avatarDataUrl?: string | null
   }) => Promise<void>
   refreshUser: () => Promise<void>
   clearPasswordRecovery: () => void
@@ -45,6 +47,7 @@ function isSameUser(a: AuthUser | null, b: AuthUser | null): boolean {
     a?.active === b?.active &&
     a?.mustChangePassword === b?.mustChangePassword &&
     a?.signatureDataUrl === b?.signatureDataUrl &&
+    a?.avatarDataUrl === b?.avatarDataUrl &&
     a?.organization === b?.organization &&
     a?.jobTitle === b?.jobTitle
   )

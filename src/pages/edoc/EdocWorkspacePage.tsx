@@ -5,10 +5,12 @@ import { Check, CornerUpLeft, X } from 'lucide-react'
 
 import { EdocEmpty, EdocError, EdocLoading, EdocPage, formatEdocDate } from '../../components/edoc/EdocComponents'
 import { EdocPdfPageCanvas } from '../../components/edoc/EdocPdfPageCanvas'
+import { EdocProfileCompletionGate } from '../../components/edoc/EdocProfileCompletionGate'
 import { edocService } from '../../features/edoc/edocService'
 import { usePdfDocument } from '../../features/edoc/usePdfDocument'
 import { useEdocAudit, useEdocInbox } from '../../features/edoc/useEdocData'
 import { useAuth } from '../../hooks/useAuth'
+import { getEdocAccessProfileCompleteness } from '../../lib/edocAccessProfileCompleteness'
 import { getSignatoryProfileCompleteness } from '../../lib/signatoryProfileCompleteness'
 
 export function EdocWorkspacePage() {
@@ -72,6 +74,11 @@ export function EdocWorkspacePage() {
 
   async function submitAction(action: 'review' | 'approve' | 'acknowledge' | 'return' | 'reject') {
     if (!task) return
+    const accessProfile = getEdocAccessProfileCompleteness(user)
+    if (!accessProfile.complete) {
+      setError(accessProfile.reminderMessage)
+      return
+    }
     setError(null)
     if ((action === 'return' || action === 'reject') && !reason.trim()) {
       setError('A reason is required for return or rejection.')
@@ -98,6 +105,10 @@ export function EdocWorkspacePage() {
     event.preventDefault()
     if (!task) return
     setError(null)
+    const accessProfile = getEdocAccessProfileCompleteness(user)
+    if (!accessProfile.complete) {
+      return setError(accessProfile.reminderMessage)
+    }
     if (!signatoryProfile.complete) {
       return setError(signatoryProfile.reminderMessage)
     }
@@ -128,12 +139,25 @@ export function EdocWorkspacePage() {
   const previewError = pdfLoadError || pdfDocError
 
   return (
-    <EdocPage title="Signing Workspace" description={`${task.documentNumber} · ${task.documentTitle}`}>
+    <EdocProfileCompletionGate title="Complete your profile to sign or approve">
+    <EdocPage
+      title={task.stepKind === 'external_auth' ? 'External authorization' : 'Signing Workspace'}
+      description={`${task.documentNumber} · ${task.documentTitle}`}
+    >
       {error ? <EdocError message={error} /> : null}
+      {task.stepKind === 'external_auth' ? (
+        <Alert
+          className="mb-4"
+          type="warning"
+          showIcon
+          message="External document authorization"
+          description="A recipient organization differs from the creator’s. Approve to allow external transmission, or reject with a mandatory reason. The first valid decision closes this request for all Document Controllers."
+        />
+      ) : null}
       <div className="edoc-workspace">
         <Card className="panel side-panel">
           <span className="eyebrow">Assignment</span>
-          <h2>{task.action}</h2>
+          <h2>{task.stepKind === 'external_auth' ? 'Authorize external send' : task.action}</h2>
           <p><strong>Due:</strong> {formatEdocDate(task.dueAt)}</p>
           <p><strong>Owner:</strong> {task.ownerName}</p>
           <label>Comment<Input.TextArea value={comment} onChange={(event) => setComment(event.target.value)} /></label>
@@ -266,5 +290,6 @@ export function EdocWorkspacePage() {
         </Card>
       </div>
     </EdocPage>
+    </EdocProfileCompletionGate>
   )
 }

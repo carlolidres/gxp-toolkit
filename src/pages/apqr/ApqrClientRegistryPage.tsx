@@ -57,6 +57,7 @@ export function ApqrClientRegistryPage() {
   const [accountManagerFilter, setAccountManagerFilter] = useState('all')
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
@@ -136,12 +137,23 @@ export function ApqrClientRegistryPage() {
       apqr_package: client.apqr_package,
       auto_compute_dates: client.auto_compute_dates !== false,
     })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setFormOpen(true)
+  }
+
+  function openNewClientForm() {
+    setEditingId(null)
+    setForm(emptyForm)
+    setFormOpen(true)
   }
 
   function clearForm() {
     setEditingId(null)
     setForm(emptyForm)
+  }
+
+  function closeForm() {
+    clearForm()
+    setFormOpen(false)
   }
 
   async function handleSave() {
@@ -166,7 +178,7 @@ export function ApqrClientRegistryPage() {
         setSavedAccountManagers(await listAccountManagerSuggestions())
       }
       notify('Successfully Saved')
-      clearForm()
+      closeForm()
       await reload()
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to Save'
@@ -181,7 +193,7 @@ export function ApqrClientRegistryPage() {
       <ApqrPage
         icon="users"
         headerClassName="apqr-page-header--registry"
-        title="Client Registry"
+        title="Clients"
         description="Enroll and maintain client information."
       >
         <ApqrLoading />
@@ -193,13 +205,17 @@ export function ApqrClientRegistryPage() {
     <ApqrPage
       icon="users"
       headerClassName="apqr-page-header--registry"
-      title="Client Registry"
+      title="Clients"
       description="Enroll and maintain client information."
     >
       {error ? <ApqrError message={error} /> : null}
 
-      {(canCreate || canEdit) && (
-        <section className="panel apqr-registry-form-panel" aria-labelledby="apqr-registry-form-title">
+      {(canCreate || canEdit) && formOpen ? (
+        <section
+          id="apqr-registry-form-panel"
+          className="panel apqr-registry-form-panel"
+          aria-labelledby="apqr-registry-form-title"
+        >
           <header className="apqr-registry-form-header">
             <div className="apqr-registry-form-header-text">
               <h2 id="apqr-registry-form-title">
@@ -307,9 +323,12 @@ export function ApqrClientRegistryPage() {
               <ApqrIcon name="clear" />
               Clear
             </Button>
+            <Button className="button secondary" disabled={busy} onClick={closeForm}>
+              Cancel
+            </Button>
           </div>
         </section>
-      )}
+      ) : null}
 
       <section className="panel apqr-registry-panel" aria-labelledby="apqr-registry-list-title">
         <div className="panel-heading apqr-registry-heading">
@@ -333,6 +352,18 @@ export function ApqrClientRegistryPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </label>
+            {canCreate ? (
+              <Button
+                type="primary"
+                className="button primary apqr-registry-new-client"
+                aria-expanded={formOpen}
+                aria-controls="apqr-registry-form-panel"
+                onClick={openNewClientForm}
+              >
+                <ApqrIcon name="plus" />
+                New client
+              </Button>
+            ) : null}
             <Button
               className={`button secondary${filtersOpen || activeFilterCount > 0 ? ' is-active' : ''}`}
               aria-expanded={filtersOpen}

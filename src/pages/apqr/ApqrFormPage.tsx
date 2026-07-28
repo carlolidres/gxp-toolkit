@@ -364,7 +364,7 @@ export function ApqrFormPage() {
               title="Client Information"
               action={
                 <Link className="apqr-form-link" to={`/apqr/registry?code=${encodeURIComponent(data.client.code)}`}>
-                  Open Client Registry
+                  Open Clients
                   <ApqrIcon name="external" />
                 </Link>
               }
@@ -395,7 +395,7 @@ export function ApqrFormPage() {
               title="Product & Schedule"
               action={
                 <Link className="apqr-form-link" to={`/apqr/scheduler?client=${encodeURIComponent(data.client.id)}`}>
-                  Open APQR Scheduler
+                  Open Scheduler
                   <ApqrIcon name="external" />
                 </Link>
               }
@@ -925,7 +925,7 @@ function CoverageValue({
         </p>
       ) : (
         <p className="apqr-form-coverage-reason is-missing">
-          Non-standard coverage — add a reason in APQR Scheduler.
+          Non-standard coverage — add a reason in Scheduler.
         </p>
       )}
     </div>

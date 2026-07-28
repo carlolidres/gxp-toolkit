@@ -29,6 +29,8 @@ export const PERMISSION_ACTION_LABELS: Record<PermissionAction, string> = {
 
 export interface NavMenuDefinition extends SidebarSubmenuItem {
   actions: PermissionAction[]
+  /** When false, menu stays in User Management / routes but is omitted from the sidebar. */
+  sidebarVisible?: boolean
 }
 
 export interface NavGroupDefinition {
@@ -51,14 +53,14 @@ const MENU_ACTIONS: Record<string, PermissionAction[]> = {
   'vmp-audit': ['view', 'export'],
   'edoc-dashboard': ['view', 'export'],
   'edoc-inbox': ['view', 'approve'],
+  'edoc-create': ['view', 'create'],
   'edoc-my-documents': ['view', 'create', 'edit', 'export'],
   'edoc-all-documents': ['view', 'export'],
-  'edoc-create': ['view', 'create'],
+  'edoc-audit': ['view', 'export'],
   'edoc-returned': ['view', 'edit', 'export'],
   'edoc-completed': ['view', 'export'],
   'edoc-routing-templates': ['view', 'create', 'edit', 'delete'],
   'edoc-reports': ['view', 'export'],
-  'edoc-audit': ['view', 'export'],
   'edoc-admin': ['view', 'create', 'edit', 'delete', 'export'],
   'apqr-dashboard': ['view', 'export'],
   'apqr-registry': ['view', 'create', 'edit', 'delete', 'export'],
@@ -73,14 +75,15 @@ function menu(
   id: string,
   label: string,
   path: string,
-  hash = '',
+  options?: { hash?: string; sidebarVisible?: boolean },
 ): NavMenuDefinition {
   return {
     id,
     label,
     path,
-    hash,
+    hash: options?.hash ?? '',
     actions: MENU_ACTIONS[id] ?? ['view'],
+    sidebarVisible: options?.sidebarVisible,
   }
 }
 
@@ -112,20 +115,21 @@ export const navigationRegistry: NavGroupDefinition[] = [
   },
   {
     id: 'edoc',
-    label: 'eDoc',
+    label: 'eDocuSign',
     tooltip: EDOC_MENU_TOOLTIP,
     items: [
       menu('edoc-dashboard', 'Dashboard', '/edoc'),
       menu('edoc-inbox', 'My Inbox', '/edoc/inbox'),
+      menu('edoc-create', 'Create Document', '/edoc/create'),
       menu('edoc-my-documents', 'My Documents', '/edoc/my-documents'),
       menu('edoc-all-documents', 'All Documents', '/edoc/documents'),
-      menu('edoc-create', 'Create Document', '/edoc/create'),
-      menu('edoc-returned', 'Returned Documents', '/edoc/returned'),
-      menu('edoc-completed', 'Completed Documents', '/edoc/completed'),
-      menu('edoc-routing-templates', 'Routing Templates', '/edoc/templates'),
-      menu('edoc-reports', 'Reports', '/edoc/reports'),
       menu('edoc-audit', 'Audit Trail', '/edoc/audit'),
-      menu('edoc-admin', 'Administration', '/edoc/admin'),
+      // Retained for permissions + direct routes; omitted from pilot sidebar.
+      menu('edoc-returned', 'Returned Documents', '/edoc/returned', { sidebarVisible: false }),
+      menu('edoc-completed', 'Completed Documents', '/edoc/completed', { sidebarVisible: false }),
+      menu('edoc-routing-templates', 'Routing Templates', '/edoc/templates', { sidebarVisible: false }),
+      menu('edoc-reports', 'Reports', '/edoc/reports', { sidebarVisible: false }),
+      menu('edoc-admin', 'Administration', '/edoc/admin', { sidebarVisible: false }),
     ],
   },
   {
@@ -134,11 +138,12 @@ export const navigationRegistry: NavGroupDefinition[] = [
     tooltip: APQR_MENU_TOOLTIP,
     items: [
       menu('apqr-dashboard', 'Dashboard', '/apqr'),
-      menu('apqr-registry', 'Client Registry', '/apqr/registry'),
-      menu('apqr-scheduler', 'APQR Scheduler', '/apqr/scheduler'),
-      menu('apqr-database', 'APQR Database', '/apqr/database'),
-      menu('apqr-form', 'APQR Form', '/apqr/form'),
+      menu('apqr-database', 'Records', '/apqr/database'),
+      menu('apqr-scheduler', 'Scheduler', '/apqr/scheduler'),
+      menu('apqr-registry', 'Clients', '/apqr/registry'),
       menu('apqr-audit', 'Audit Trail', '/apqr/audit'),
+      // Retained for permissions + deep links from Records; omitted from pilot sidebar.
+      menu('apqr-form', 'APQR Form', '/apqr/form', { sidebarVisible: false }),
     ],
   },
   {
@@ -195,9 +200,9 @@ export const vrmsRouteLabels: Record<string, string> = {
   '/edoc/audit': 'Audit Trail',
   '/edoc/admin': 'Administration',
   '/apqr': 'Dashboard',
-  '/apqr/registry': 'Client Registry',
-  '/apqr/scheduler': 'APQR Scheduler',
-  '/apqr/database': 'APQR Database',
+  '/apqr/registry': 'Clients',
+  '/apqr/scheduler': 'Scheduler',
+  '/apqr/database': 'Records',
   '/apqr/form': 'APQR Form',
   '/apqr/audit': 'Audit Trail',
   '/admin/users': 'User Management',

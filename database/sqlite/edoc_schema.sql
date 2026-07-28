@@ -134,6 +134,8 @@ CREATE TABLE IF NOT EXISTS edoc_route_steps (
   minimum_count   INTEGER,
   due_at          TEXT,
   allow_delegation INTEGER NOT NULL DEFAULT 0,
+  step_kind       TEXT NOT NULL DEFAULT 'signatory'
+                    CHECK (step_kind IN ('signatory', 'external_auth')),
   status          TEXT NOT NULL DEFAULT 'pending'
                     CHECK (status IN ('pending', 'active', 'completed', 'rejected', 'returned', 'skipped', 'invalidated')),
   created_at      TEXT NOT NULL

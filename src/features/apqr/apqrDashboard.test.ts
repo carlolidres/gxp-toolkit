@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest'
 import {
   apqrCycleYearFromCommitment,
   apqrCycleYearOptions,
+  buildNeedsAttentionQueue,
   buildTriageDistribution,
-  buildUpcomingActions,
+  countDueSoon,
   defaultApqrCycleYear,
   defaultApqrReviewCycle,
   filterRowsByReviewCycle,
@@ -12,9 +13,11 @@ import {
   formatMetricTrend,
   formatReviewCycleLabel,
   isStandardApqrCycleCoverage,
+  matchesDashboardWorkFilter,
   resolveApqrIdYear,
   reviewCycleFromYear,
   schedulerCycleYearOptions,
+  sortRowsByUrgency,
 } from './apqrDashboard'
 import type { ApqrDatabaseRow } from './types'
 
@@ -144,12 +147,32 @@ describe('apqrDashboard', () => {
     expect(slices.find((slice) => slice.name === 'Completed')?.value).toBe(1)
   })
 
-  it('prioritises upcoming actions by urgency', () => {
-    const actions = buildUpcomingActions([
+  it('builds a ranked needs-attention queue from urgent rows', () => {
+    const actions = buildNeedsAttentionQueue([
       row({ priority: 'Moderate Priority', days_remaining_or_overdue: 40 }),
       row({ apqr_id: '2', priority: 'Overdue Commitment', days_remaining_or_overdue: -5 }),
+      row({
+        apqr_id: '3',
+        priority: 'High-Priority Commitment',
+        days_remaining_or_overdue: 10,
+        missing_critical_count: 0,
+      }),
     ])
-    expect(actions[0]?.title).toBe('Overdue Commitments')
+    expect(actions[0]?.id).toBe('2')
+    expect(actions[0]?.title).toMatch(/overdue/i)
+    expect(actions[0]?.clientName).toBe('Client')
+  })
+
+  it('counts due-soon without double-counting overdue', () => {
+    const rows = [
+      row({ priority: 'Overdue Commitment', days_remaining_or_overdue: -2 }),
+      row({ apqr_id: '2', priority: 'Critical Commitment', days_remaining_or_overdue: 5 }),
+      row({ apqr_id: '3', priority: 'Low Priority', days_remaining_or_overdue: 90, commitment_schedule: '2026-07-15' }),
+    ]
+    expect(countDueSoon(rows, '2026-07-04')).toBe(2)
+    expect(matchesDashboardWorkFilter(rows[0]!, 'overdue')).toBe(true)
+    expect(matchesDashboardWorkFilter(rows[1]!, 'dueSoon')).toBe(true)
+    expect(sortRowsByUrgency(rows)[0]?.apqr_id).toBe('aB01')
   })
 
   it('formats metric trend direction', () => {

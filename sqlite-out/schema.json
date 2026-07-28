@@ -2,7 +2,7 @@
   "meta": {
     "project": "gxp-toolkit",
     "source": "database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql",
-    "generatedAt": "2026-07-25T11:24:25.061Z",
+    "generatedAt": "2026-07-28T13:25:06.179Z",
     "schemaVersion": null,
     "tableCount": 32,
     "edgeCount": 76,
@@ -12,7 +12,7 @@
     {
       "id": "profiles",
       "type": "table",
-      "columnCount": 13,
+      "columnCount": 14,
       "primaryKeys": [
         "id"
       ],
@@ -125,6 +125,16 @@
         },
         {
           "name": "signature_data_url",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "avatar_data_url",
           "type": "TEXT",
           "notNull": false,
           "primaryKey": false,
@@ -2242,7 +2252,7 @@
     {
       "id": "edoc_route_steps",
       "type": "table",
-      "columnCount": 12,
+      "columnCount": 13,
       "primaryKeys": [
         "id"
       ],
@@ -2359,6 +2369,16 @@
           "references": null
         },
         {
+          "name": "step_kind",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'signatory'",
+          "check": "step_kind IN ('signatory', 'external_auth')",
+          "references": null
+        },
+        {
           "name": "status",
           "type": "TEXT",
           "notNull": true,
@@ -2397,6 +2417,13 @@
           "expression": "completion_rule IN ('all', 'any', 'majority', 'minimum_count')",
           "columns": [
             "completion_rule"
+          ]
+        },
+        {
+          "table": "edoc_route_steps",
+          "expression": "step_kind IN ('signatory', 'external_auth')",
+          "columns": [
+            "step_kind"
           ]
         },
         {

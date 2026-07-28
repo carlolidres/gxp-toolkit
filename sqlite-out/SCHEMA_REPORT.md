@@ -1,10 +1,10 @@
-# SQLite Schema Report — GxP Toolkit (2026-07-25)
+# SQLite Schema Report — GxP Toolkit (2026-07-28)
 
 ## Summary
 - Source: `database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql`
 - Schema version: **unknown**
 - Tables: **32** · Foreign keys: **76** · Indexes: **27**
-- Generated: 2026-07-25T11:24:25.061Z
+- Generated: 2026-07-28T13:25:06.179Z
 
 ## Agent Usage
 
@@ -28,6 +28,7 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `password_reset_by` | TEXT | YES |  |  |  |  | `profiles.id` ON DELETE SET NULL |
 | `password_reset_requested_at` | TEXT | YES |  |  |  |  |  |
 | `signature_data_url` | TEXT | YES |  |  |  |  |  |
+| `avatar_data_url` | TEXT | YES |  |  |  |  |  |
 | `organization` | TEXT | YES |  |  |  |  |  |
 | `job_title` | TEXT | YES |  |  |  |  |  |
 
@@ -333,6 +334,7 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `minimum_count` | INTEGER | YES |  |  |  |  |  |
 | `due_at` | TEXT | YES |  |  |  |  |  |
 | `allow_delegation` | INTEGER | NO |  |  | 0 |  |  |
+| `step_kind` | TEXT | NO |  |  | 'signatory' | `step_kind IN ('signatory', 'external_aut…` |  |
 | `status` | TEXT | NO |  |  | 'pending' | `status IN ('pending', 'active', 'complet…` |  |
 | `created_at` | TEXT | NO |  |  |  |  |  |
 
@@ -340,6 +342,7 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 - `sequence > 0`
 - `action IN ('review', 'approve', 'sign', 'acknowledge')`
 - `completion_rule IN ('all', 'any', 'majority', 'minimum_count')`
+- `step_kind IN ('signatory', 'external_auth')`
 - `status IN ('pending', 'active', 'completed', 'rejected', 'returned', 'skipped', …`
 
 ### `edoc_route_step_assignees`
@@ -890,6 +893,7 @@ erDiagram
     text password_reset_by FK
     text password_reset_requested_at
     text signature_data_url
+    text avatar_data_url
     text organization
     text job_title
   }
@@ -1084,6 +1088,7 @@ erDiagram
     integer minimum_count
     text due_at
     integer allow_delegation
+    text step_kind
     text status
     text created_at
   }

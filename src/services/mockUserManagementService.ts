@@ -4,6 +4,10 @@ import {
   saveMockPermissionStore,
   seedMockUserPermissions,
 } from '../data/mockUserPermissions'
+import {
+  getEdocAccessProfileCompleteness,
+  hasAnyEdocMenuAccess,
+} from '../lib/edocAccessProfileCompleteness'
 import { normalizeUserPermissions } from '../lib/permissions'
 import { generateTemporaryPassword } from '../lib/temporaryPassword'
 import {
@@ -20,12 +24,25 @@ function toManagedUser(
   user: (typeof mockUsers)[number],
   permissions: UserPermissions,
   active = true,
+  documentController = false,
 ): ManagedUser {
+  const normalized = normalizeUserPermissions(permissions, user.role)
+  const completeness = getEdocAccessProfileCompleteness({
+    organization: user.organization,
+    signatureDataUrl: user.signatureDataUrl,
+  })
+  const hasEdocAccess = hasAnyEdocMenuAccess(normalized)
   return {
     ...user,
     active,
+    organization: user.organization?.trim() || null,
+    hasSignature: completeness.hasSignature,
+    profileComplete: completeness.complete,
+    hasEdocAccess,
+    edocProfileIncomplete: hasEdocAccess && !completeness.complete,
     passwordResetRequestedAt: getMockPasswordResetRequestedAt(user.email),
-    permissions,
+    documentController,
+    permissions: normalized,
   }
 }
 
@@ -34,11 +51,13 @@ export const mockUserManagementService = {
     await delay()
     const store = getMockPermissionStore()
     const activeStore = getActiveStore()
+    const controllerStore = getControllerStore()
     return mockUsers.map((user) =>
       toManagedUser(
         { ...user, role: activeStore[user.id]?.role ?? user.role },
         normalizeUserPermissions(store[user.id], activeStore[user.id]?.role ?? user.role),
         activeStore[user.id]?.active ?? true,
+        Boolean(controllerStore[user.id]),
       ),
     )
   },
@@ -56,8 +75,13 @@ export const mockUserManagementService = {
 
     const permissionStore = getMockPermissionStore()
     const activeStore = getActiveStore()
+    const controllerStore = getControllerStore()
     const nextRole = input.role ?? activeStore[userId]?.role ?? user.role
     const nextActive = input.active ?? activeStore[userId]?.active ?? true
+    const nextController =
+      typeof input.documentController === 'boolean'
+        ? input.documentController
+        : Boolean(controllerStore[userId])
 
     if (input.permissions) {
       permissionStore[userId] = input.permissions
@@ -66,11 +90,14 @@ export const mockUserManagementService = {
 
     activeStore[userId] = { role: nextRole, active: nextActive }
     saveActiveStore(activeStore)
+    controllerStore[userId] = nextController
+    saveControllerStore(controllerStore)
 
     return toManagedUser(
       { ...user, role: nextRole },
       normalizeUserPermissions(permissionStore[userId], nextRole),
       nextActive,
+      nextController,
     )
   },
 
@@ -97,12 +124,15 @@ export const mockUserManagementService = {
   resetStore() {
     seedMockUserPermissions()
     saveActiveStore({})
+    saveControllerStore({})
   },
 }
 
 const ACTIVE_KEY = 'gxp-toolkit-managed-users'
+const CONTROLLER_KEY = 'gxp-toolkit-edoc-document-controllers'
 
 type ActiveRecord = Record<string, { role: UserRole; active: boolean }>
+type ControllerRecord = Record<string, boolean>
 
 function getActiveStore(): ActiveRecord {
   const raw = localStorage.getItem(ACTIVE_KEY)
@@ -111,6 +141,15 @@ function getActiveStore(): ActiveRecord {
 
 function saveActiveStore(store: ActiveRecord) {
   localStorage.setItem(ACTIVE_KEY, JSON.stringify(store))
+}
+
+function getControllerStore(): ControllerRecord {
+  const raw = localStorage.getItem(CONTROLLER_KEY)
+  return raw ? (JSON.parse(raw) as ControllerRecord) : {}
+}
+
+function saveControllerStore(store: ControllerRecord) {
+  localStorage.setItem(CONTROLLER_KEY, JSON.stringify(store))
 }
 
 function delay(ms = 180) {

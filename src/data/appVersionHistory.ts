@@ -6,10 +6,20 @@ export type AppVersionEntry = {
 
 export const APP_DEVELOPER = 'Carlo M. Lidres'
 
-export const APP_CURRENT_VERSION = 'v40'
+export const APP_CURRENT_VERSION = 'v41'
 
 /** Curated release notes — newest first. */
 export const APP_VERSION_HISTORY: AppVersionEntry[] = [
+  {
+    version: 'v41',
+    releaseDate: '2026-07-28',
+    changes: [
+      'External Document Controller authorization — cross-org sends require first-action-wins DC approval before transmission',
+      'Block external send when no Document Controller; admin missing-DC banner; self-assign confirm on DC nomination',
+      'User Management authorization picker modal; eDoc profile-completion gate; Account Settings profile picture avatars',
+      'Lean eDoc/APQR dashboards; Document Controller nomination RPC; Supabase step_kind + external-auth create/advance RPCs',
+    ],
+  },
   {
     version: 'v40',
     releaseDate: '2026-07-27',

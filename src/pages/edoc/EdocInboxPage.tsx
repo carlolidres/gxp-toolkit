@@ -9,6 +9,7 @@ import {
   EdocPage,
   formatEdocDate,
 } from '../../components/edoc/EdocComponents'
+import { EdocProfileCompletionGate } from '../../components/edoc/EdocProfileCompletionGate'
 import { DataTable } from '../../components/data-display/DataTable'
 import { useEdocInbox } from '../../features/edoc/useEdocData'
 
@@ -16,6 +17,7 @@ export function EdocInboxPage() {
   const { data, loading, error } = useEdocInbox()
 
   return (
+    <EdocProfileCompletionGate mode="banner">
     <EdocPage title="My Inbox" description="Review, approval, signature, acknowledgment, and delegated tasks assigned to you.">
       {error ? <EdocError message={error} /> : null}
       <Card className="panel">
@@ -42,6 +44,7 @@ export function EdocInboxPage() {
         )}
       </Card>
     </EdocPage>
+    </EdocProfileCompletionGate>
   )
 }
 

@@ -65,10 +65,14 @@ export function PermissionMatrix({
   value,
   onChange,
   readOnly = false,
+  documentController = false,
+  onDocumentControllerChange,
 }: {
   value: UserPermissions
   onChange: (next: UserPermissions) => void
   readOnly?: boolean
+  documentController?: boolean
+  onDocumentControllerChange?: (next: boolean) => void
 }) {
   function toggle(menuId: string, action: PermissionAction, granted: boolean) {
     if (readOnly) return
@@ -85,14 +89,14 @@ export function PermissionMatrix({
             key={group.id}
             aria-labelledby={`perm-group-${group.id}`}
           >
-            <header className="flex items-center gap-2.5 border-b border-[var(--border)] bg-[var(--surface-muted)] px-4 py-3 sm:px-5">
+            <header className="flex flex-wrap items-center gap-2.5 border-b border-[var(--border)] bg-[var(--surface-muted)] px-4 py-3 sm:px-5">
               <span
                 className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--teal-soft)] text-[var(--teal)]"
                 aria-hidden="true"
               >
                 <GroupIcon className="size-4" strokeWidth={2} />
               </span>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <h3 id={`perm-group-${group.id}`} className="text-sm font-semibold text-[var(--app-text)]">
                   {group.label}
                 </h3>
@@ -100,6 +104,18 @@ export function PermissionMatrix({
                   <p className="truncate text-xs text-[var(--muted)]">{group.tooltip}</p>
                 ) : null}
               </div>
+              {group.id === 'edoc' && onDocumentControllerChange ? (
+                <label className="inline-flex min-h-[40px] cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--glow-ring)]">
+                  <input
+                    type="checkbox"
+                    className="user-mgmt-perm-check size-4 rounded border-[var(--border)]"
+                    checked={documentController}
+                    disabled={false}
+                    onChange={(event) => onDocumentControllerChange(event.target.checked)}
+                  />
+                  <span className="font-medium text-[var(--app-text)]">Document Controller</span>
+                </label>
+              ) : null}
             </header>
 
             <div className="user-mgmt-perm-table-wrap overflow-x-auto">

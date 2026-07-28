@@ -5,8 +5,9 @@ import { isSidebarItemActive, submenuNavLinkEnd } from './sidebarMenus'
 
 const apqrItems: SidebarSubmenuItem[] = [
   { id: 'apqr-dashboard', label: 'Dashboard', path: '/apqr', hash: '' },
-  { id: 'apqr-registry', label: 'Client Registry', path: '/apqr/registry', hash: '' },
-  { id: 'apqr-scheduler', label: 'APQR Scheduler', path: '/apqr/scheduler', hash: '' },
+  { id: 'apqr-database', label: 'Records', path: '/apqr/database', hash: '' },
+  { id: 'apqr-scheduler', label: 'Scheduler', path: '/apqr/scheduler', hash: '' },
+  { id: 'apqr-registry', label: 'Clients', path: '/apqr/registry', hash: '' },
 ]
 
 describe('submenuNavLinkEnd', () => {
@@ -27,7 +28,8 @@ describe('submenuNavLinkEnd', () => {
 describe('isSidebarItemActive', () => {
   it('activates only the matching APQR submenu item', () => {
     expect(isSidebarItemActive(apqrItems[0], '/apqr', '')).toBe(true)
-    expect(isSidebarItemActive(apqrItems[0], '/apqr/registry', '')).toBe(false)
-    expect(isSidebarItemActive(apqrItems[1], '/apqr/registry', '')).toBe(true)
+    expect(isSidebarItemActive(apqrItems[0], '/apqr/database', '')).toBe(false)
+    expect(isSidebarItemActive(apqrItems[1], '/apqr/database', '')).toBe(true)
+    expect(isSidebarItemActive(apqrItems[3], '/apqr/registry', '')).toBe(true)
   })
 })

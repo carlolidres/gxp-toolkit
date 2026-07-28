@@ -13,6 +13,8 @@ export interface AuthUser {
   mustChangePassword?: boolean
   /** PNG signature as a data URL (transparent backgrounds allowed) */
   signatureDataUrl?: string | null
+  /** Profile picture as a data URL for avatars */
+  avatarDataUrl?: string | null
   /** Employer / organization label from Account Settings */
   organization?: string | null
   /** Job position / title from Account Settings */

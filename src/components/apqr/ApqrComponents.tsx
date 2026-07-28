@@ -42,6 +42,7 @@ import {
   Trash2,
   TrendingUp,
   Users,
+  Gauge,
   X,
   type LucideIcon,
 } from 'lucide-react'
@@ -383,6 +384,7 @@ const apqrIconMap = {
   chartLine: TrendingUp,
   chartBar: BarChart3,
   clipboard: ClipboardList,
+  gauge: Gauge,
 } as const
 
 export function ApqrIcon({

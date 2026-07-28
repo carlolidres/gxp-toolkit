@@ -24,7 +24,8 @@ export function getRoleDefaultPermissions(role: UserRole): UserPermissions {
 function defaultGrantForRole(role: UserRole, menuId: string, action: PermissionAction): boolean {
   if (role === 'Admin') return true
 
-  if (menuId === 'user-management') {
+  // Opt-in menus: admin enables in User Management.
+  if (menuId === 'user-management' || menuId === 'edoc-all-documents') {
     return false
   }
 
@@ -91,7 +92,9 @@ export function filterNavigationGroups(
   return navigationRegistry
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => canViewMenu(permissions, item.id)),
+      items: group.items.filter(
+        (item) => item.sidebarVisible !== false && canViewMenu(permissions, item.id),
+      ),
     }))
     .filter((group) => group.items.length > 0)
 }
@@ -137,4 +140,61 @@ export function permissionsAreEqual(left: UserPermissions, right: UserPermission
     }
   }
   return true
+}
+
+const DOCUMENT_CONTROLLER_EDOC_MENUS = [
+  'edoc-dashboard',
+  'edoc-inbox',
+  'edoc-create',
+  'edoc-my-documents',
+  'edoc-all-documents',
+  'edoc-audit',
+  'edoc-returned',
+  'edoc-completed',
+  'edoc-routing-templates',
+  'edoc-reports',
+  'edoc-admin',
+] as const
+
+/** Full eDocuSign capability set for a nominated Document Controller. */
+export function getDocumentControllerEdocPermissions(): UserPermissions {
+  const result: UserPermissions = {}
+  for (const menuId of DOCUMENT_CONTROLLER_EDOC_MENUS) {
+    const menu = getMenuById(menuId)
+    if (!menu) continue
+    result[menuId] = {}
+    for (const action of menu.actions) {
+      result[menuId][action] = true
+    }
+  }
+  return result
+}
+
+/** Merge Document Controller eDoc grants into an existing matrix (non-eDoc menus unchanged). */
+export function applyDocumentControllerPermissions(current: UserPermissions): UserPermissions {
+  return {
+    ...current,
+    ...getDocumentControllerEdocPermissions(),
+  }
+}
+
+/** Drop elevated Document Controller eDoc menus back to role defaults; keep other modules. */
+export function clearDocumentControllerPermissions(
+  current: UserPermissions,
+  role: UserRole,
+): UserPermissions {
+  const defaults = getRoleDefaultPermissions(role)
+  const next: UserPermissions = { ...current }
+  for (const menuId of DOCUMENT_CONTROLLER_EDOC_MENUS) {
+    next[menuId] = { ...defaults[menuId] }
+  }
+  return next
+}
+
+export function hasDocumentControllerEdocAccess(permissions: UserPermissions): boolean {
+  return (
+    Boolean(permissions['edoc-all-documents']?.view) &&
+    Boolean(permissions['edoc-admin']?.view) &&
+    Boolean(permissions['edoc-routing-templates']?.view)
+  )
 }

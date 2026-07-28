@@ -49,6 +49,7 @@ export function mapSessionToAuthUser(input: {
   active?: boolean
   mustChangePassword?: boolean
   signatureDataUrl?: string | null
+  avatarDataUrl?: string | null
   organization?: string | null
   jobTitle?: string | null
 }): AuthUser {
@@ -63,6 +64,7 @@ export function mapSessionToAuthUser(input: {
     active: input.active ?? true,
     mustChangePassword: input.mustChangePassword ?? false,
     signatureDataUrl: input.signatureDataUrl ?? null,
+    avatarDataUrl: input.avatarDataUrl ?? null,
     organization: input.organization?.trim() || null,
     jobTitle: input.jobTitle?.trim() || null,
   }

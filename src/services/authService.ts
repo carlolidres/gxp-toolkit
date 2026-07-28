@@ -38,6 +38,8 @@ export interface UpdateProfileInput {
   jobTitle?: string | null
   /** undefined = leave unchanged; null = clear; string = set PNG data URL */
   signatureDataUrl?: string | null
+  /** undefined = leave unchanged; null = clear; string = set avatar data URL */
+  avatarDataUrl?: string | null
 }
 
 export interface PasswordResetResult {
@@ -55,6 +57,7 @@ interface ProfileRow {
   active: boolean
   must_change_password?: boolean
   signature_data_url?: string | null
+  avatar_data_url?: string | null
   organization?: string | null
   job_title?: string | null
 }
@@ -109,7 +112,7 @@ async function fetchProfileForAuthUser(userId: string, _email: string): Promise<
 
     const { data, error } = await client
       .from('profiles')
-      .select('id, email, display_name, role, auth_user_id, active, must_change_password, signature_data_url, organization, job_title')
+      .select('id, email, display_name, role, auth_user_id, active, must_change_password, signature_data_url, avatar_data_url, organization, job_title')
       .eq('auth_user_id', userId)
       .maybeSingle()
 
@@ -127,24 +130,31 @@ async function fetchProfileForAuthUser(userId: string, _email: string): Promise<
 
 async function fetchProfileExtras(profileId: string): Promise<{
   signatureDataUrl: string | null
+  avatarDataUrl: string | null
   organization: string | null
   jobTitle: string | null
 }> {
   const client = getSupabaseClient()
-  if (!client) return { signatureDataUrl: null, organization: null, jobTitle: null }
+  if (!client) {
+    return { signatureDataUrl: null, avatarDataUrl: null, organization: null, jobTitle: null }
+  }
   const { data, error } = await client
     .from('profiles')
-    .select('signature_data_url, organization, job_title')
+    .select('signature_data_url, avatar_data_url, organization, job_title')
     .eq('id', profileId)
     .maybeSingle()
-  if (error || !data) return { signatureDataUrl: null, organization: null, jobTitle: null }
+  if (error || !data) {
+    return { signatureDataUrl: null, avatarDataUrl: null, organization: null, jobTitle: null }
+  }
   const row = data as {
     signature_data_url?: string | null
+    avatar_data_url?: string | null
     organization?: string | null
     job_title?: string | null
   }
   return {
     signatureDataUrl: row.signature_data_url ?? null,
+    avatarDataUrl: row.avatar_data_url ?? null,
     organization: row.organization?.trim() || null,
     jobTitle: row.job_title?.trim() || null,
   }
@@ -155,12 +165,14 @@ async function mapSupabaseSessionUser(userId: string, email: string): Promise<Au
   const needsExtras =
     Boolean(profile?.id) &&
     (profile?.signature_data_url === undefined ||
+      profile?.avatar_data_url === undefined ||
       profile?.organization === undefined ||
       profile?.job_title === undefined)
   const extras = needsExtras && profile?.id
     ? await fetchProfileExtras(profile.id)
     : {
         signatureDataUrl: profile?.signature_data_url ?? null,
+        avatarDataUrl: profile?.avatar_data_url ?? null,
         organization: profile?.organization?.trim() || null,
         jobTitle: profile?.job_title?.trim() || null,
       }
@@ -174,6 +186,7 @@ async function mapSupabaseSessionUser(userId: string, email: string): Promise<Au
     active: profile?.active ?? true,
     mustChangePassword: profile?.must_change_password ?? false,
     signatureDataUrl: profile?.signature_data_url ?? extras.signatureDataUrl,
+    avatarDataUrl: profile?.avatar_data_url ?? extras.avatarDataUrl,
     organization: profile?.organization?.trim() || extras.organization,
     jobTitle: profile?.job_title?.trim() || extras.jobTitle,
   })
@@ -468,6 +481,8 @@ export const authService = {
           input.signatureDataUrl === undefined
             ? cached.signatureDataUrl ?? null
             : input.signatureDataUrl,
+        avatarDataUrl:
+          input.avatarDataUrl === undefined ? cached.avatarDataUrl ?? null : input.avatarDataUrl,
       }
       writeSessionUserJson(JSON.stringify(sessionUser))
       if (organizationNormalized) {
@@ -499,6 +514,9 @@ export const authService = {
     }
     if (input.signatureDataUrl !== undefined) {
       profilePatch.signature_data_url = input.signatureDataUrl
+    }
+    if (input.avatarDataUrl !== undefined) {
+      profilePatch.avatar_data_url = input.avatarDataUrl
     }
     if (organizationNormalized !== undefined) {
       profilePatch.organization = organizationNormalized

@@ -13,6 +13,7 @@ interface ProfileOption {
   id: string
   displayName: string
   email: string
+  organization?: string | null
 }
 
 const nowIso = new Date().toISOString()
@@ -177,6 +178,35 @@ export const edocService = {
     }))
   },
 
+  async getDocument(documentId: string): Promise<EdocDocumentListItem | null> {
+    if (!isSupabaseConfigured()) {
+      return mockDocuments.find((document) => document.id === documentId) ?? null
+    }
+
+    const client = requireClient()
+    const { data, error } = await client
+      .from('edoc_documents')
+      .select('id, document_number, title, status, owner_id, department_name, current_version_number, priority, due_at, updated_at')
+      .eq('id', documentId)
+      .maybeSingle()
+
+    if (error) throw new Error(error.message)
+    if (!data) return null
+
+    return {
+      id: data.id,
+      documentNumber: data.document_number,
+      title: data.title,
+      status: normalizeStatus(data.status),
+      ownerName: data.owner_id,
+      department: data.department_name ?? '',
+      versionNumber: Number(data.current_version_number ?? 1),
+      priority: data.priority ?? 'normal',
+      dueAt: data.due_at,
+      updatedAt: data.updated_at,
+    }
+  },
+
   async getDashboard(): Promise<EdocDashboardMetrics> {
     const documents = await this.listDocuments('all')
     const tasks = await this.listInboxTasks()
@@ -207,6 +237,7 @@ export const edocService = {
       documentTitle: row.document_title,
       documentNumber: row.document_number,
       action: row.action,
+      stepKind: row.step_kind === 'external_auth' ? 'external_auth' : 'signatory',
       status: row.assignment_status,
       dueAt: row.due_at,
       ownerName: row.owner_name ?? row.owner_id,
@@ -217,15 +248,15 @@ export const edocService = {
   async listProfiles(): Promise<ProfileOption[]> {
     if (!isSupabaseConfigured()) {
       return [
-        { id: 'mock-reviewer', displayName: 'Demo Reviewer', email: 'reviewer@example.test' },
-        { id: 'mock-approver', displayName: 'Demo Approver', email: 'approver@example.test' },
+        { id: 'mock-reviewer', displayName: 'Demo Reviewer', email: 'reviewer@example.test', organization: 'Acme' },
+        { id: 'mock-approver', displayName: 'Demo Approver', email: 'approver@example.test', organization: 'Beta' },
       ]
     }
 
     const client = requireClient()
     const { data, error } = await client
       .from('profiles')
-      .select('id, display_name, email')
+      .select('id, display_name, email, organization')
       .eq('active', true)
       .order('display_name', { ascending: true })
 
@@ -234,7 +265,40 @@ export const edocService = {
       id: row.id,
       displayName: row.display_name,
       email: row.email,
+      organization: row.organization ?? null,
     }))
+  },
+
+  async listOrgDocumentControllers(): Promise<Array<{ profileId: string; displayName: string; email: string }>> {
+    if (!isSupabaseConfigured()) return []
+    const client = requireClient()
+    const { data, error } = await client.rpc('edoc_list_org_document_controllers')
+    if (error) throw new Error(error.message)
+    return (data ?? []).map((row: { profile_id: string; display_name: string; email: string }) => ({
+      profileId: row.profile_id,
+      displayName: row.display_name,
+      email: row.email,
+    }))
+  },
+
+  async listMissingControllerWarnings(): Promise<
+    Array<{ organizationLabel: string; memberCount: number; edocOrganizationId: string | null }>
+  > {
+    if (!isSupabaseConfigured()) return []
+    const client = requireClient()
+    const { data, error } = await client.rpc('edoc_admin_missing_controller_warnings')
+    if (error) throw new Error(error.message)
+    return (data ?? []).map(
+      (row: {
+        organization_label: string
+        member_count: number | string
+        edoc_organization_id: string | null
+      }) => ({
+        organizationLabel: row.organization_label,
+        memberCount: Number(row.member_count),
+        edocOrganizationId: row.edoc_organization_id,
+      }),
+    )
   },
 
   async createAndSendDraft(

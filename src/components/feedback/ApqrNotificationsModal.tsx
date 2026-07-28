@@ -79,7 +79,7 @@ export function ApqrNotificationsModal({
                       ) : null}
                       <p className="apqr-notifications-message">{item.message}</p>
                       <Link className="text-button apqr-notifications-link" to={item.link} onClick={onClose}>
-                        Open APQR Scheduler
+                        Open Scheduler
                       </Link>
                     </>
                   }

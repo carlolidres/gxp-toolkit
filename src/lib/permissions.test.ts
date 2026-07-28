@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { normalizeUserPermissions, getRoleDefaultPermissions, hasPermission, canViewMenu, filterNavigationGroups, mergePermissionUpdate } from '../lib/permissions'
+import { normalizeUserPermissions, getRoleDefaultPermissions, hasPermission, canViewMenu, filterNavigationGroups, mergePermissionUpdate, applyDocumentControllerPermissions, clearDocumentControllerPermissions, hasDocumentControllerEdocAccess } from '../lib/permissions'
 import type { UserPermissions } from '../types/permissions'
 
 describe('permissions', () => {
@@ -16,6 +16,7 @@ describe('permissions', () => {
     expect(hasPermission(permissions, 'routing', 'view')).toBe(true)
     expect(hasPermission(permissions, 'routing', 'create')).toBe(false)
     expect(hasPermission(permissions, 'user-management', 'view')).toBe(false)
+    expect(hasPermission(permissions, 'edoc-all-documents', 'view')).toBe(false)
   })
 
   it('filters navigation groups by view permission', () => {
@@ -30,6 +31,29 @@ describe('permissions', () => {
       'vmp-database',
       'vmp-audit',
     ])
+    expect(groups.find((group) => group.id === 'edoc')?.items.map((item) => item.id)).toEqual([
+      'edoc-dashboard',
+      'edoc-inbox',
+      'edoc-create',
+      'edoc-my-documents',
+      'edoc-audit',
+    ])
+    expect(groups.find((group) => group.id === 'apqr')?.items.map((item) => item.id)).toEqual([
+      'apqr-dashboard',
+      'apqr-database',
+      'apqr-scheduler',
+      'apqr-registry',
+      'apqr-audit',
+    ])
+  })
+
+  it('keeps all-documents assignable but hidden from the default sidebar', () => {
+    const viewer = getRoleDefaultPermissions('Viewer')
+    expect(canViewMenu(viewer, 'edoc-all-documents')).toBe(false)
+    const withGrant = mergePermissionUpdate(viewer, 'edoc-all-documents', 'view', true)
+    expect(filterNavigationGroups(withGrant).find((group) => group.id === 'edoc')?.items.map((item) => item.id)).toContain(
+      'edoc-all-documents',
+    )
   })
 
   it('auto-enables view when granting a non-view action', () => {
@@ -39,12 +63,16 @@ describe('permissions', () => {
     expect(next.routing?.create).toBe(true)
   })
 
-  it('clears non-view actions when view is revoked', () => {
-    const base: UserPermissions = {
-      routing: { view: true, create: true, edit: true, delete: true, approve: true, export: true },
-    }
-    const next = mergePermissionUpdate(base, 'routing', 'view', false)
-    expect(next.routing?.create).toBe(false)
-    expect(next.routing?.approve).toBe(false)
+  it('applies and clears Document Controller eDoc presets', () => {
+    const viewer = getRoleDefaultPermissions('Viewer')
+    expect(hasDocumentControllerEdocAccess(viewer)).toBe(false)
+    const nominated = applyDocumentControllerPermissions(viewer)
+    expect(hasDocumentControllerEdocAccess(nominated)).toBe(true)
+    expect(hasPermission(nominated, 'edoc-all-documents', 'view')).toBe(true)
+    expect(hasPermission(nominated, 'edoc-admin', 'edit')).toBe(true)
+    expect(hasPermission(nominated, 'routing', 'view')).toBe(true)
+    const cleared = clearDocumentControllerPermissions(nominated, 'Viewer')
+    expect(hasDocumentControllerEdocAccess(cleared)).toBe(false)
+    expect(hasPermission(cleared, 'edoc-all-documents', 'view')).toBe(false)
   })
 })

@@ -43,11 +43,11 @@ import { useApqrClients, useApqrScheduler } from '../../features/apqr/useApqrDat
 
 const SCHEDULER_PAGE_PROPS = {
   icon: 'calendar',
-  title: 'APQR Scheduler',
+  title: 'Scheduler',
   description: 'Register products, review periods, and commitment schedules.',
   action: (
     <Link to="/apqr/registry">
-      <Button className="button secondary" icon={<ApqrIcon name="users" />}>Client Registry</Button>
+      <Button className="button secondary" icon={<ApqrIcon name="users" />}>Clients</Button>
     </Link>
   ),
 } as const
@@ -69,6 +69,7 @@ export function ApqrSchedulerPage() {
   const [rows, setRows] = useState<ScheduleRowDraft[]>([])
   const [form, setForm] = useState<ScheduleRowDraft>(() => emptyScheduleRow())
   const [editingKey, setEditingKey] = useState<string | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
   const [viewRow, setViewRow] = useState<ScheduleRowDraft | null>(null)
   const [busy, setBusy] = useState(false)
   const [bannerOpen, setBannerOpen] = useState(true)
@@ -189,6 +190,7 @@ export function ApqrSchedulerPage() {
     setCycleYear(defaultApqrCycleYear())
     setForm(emptyScheduleRow(clients?.find((c) => c.id === id)?.client_name ?? ''))
     setEditingKey(null)
+    setFormOpen(false)
   }
 
   function onClientMenuKeyDown(event: React.KeyboardEvent) {
@@ -221,6 +223,16 @@ export function ApqrSchedulerPage() {
       manual_calculated_dates: selectedClient?.auto_compute_dates === false,
     })
     setEditingKey(null)
+  }
+
+  function openNewScheduleForm() {
+    clearForm()
+    setFormOpen(true)
+  }
+
+  function closeForm() {
+    clearForm()
+    setFormOpen(false)
   }
 
   function validateForm(draft: ScheduleRowDraft): string | null {
@@ -333,7 +345,7 @@ export function ApqrSchedulerPage() {
       await saveSchedulerRows(clientId, nextRows, nextRows.map((r) => r.id))
       await scheduler.reload()
       notify(editingKey ? 'Schedule entry updated.' : 'Schedule entry saved.')
-      clearForm()
+      closeForm()
     } catch (err) {
       notify(err instanceof Error ? err.message : 'Failed to save schedule entry')
     } finally {
@@ -369,7 +381,7 @@ export function ApqrSchedulerPage() {
       await saveSchedulerRows(clientId, nextRows, nextRows.map((r) => r.id))
       notify('Successfully Saved')
       await scheduler.reload()
-      clearForm()
+      closeForm()
     } catch (err) {
       notify(err instanceof Error ? err.message : 'Failed to Save')
     } finally {
@@ -423,7 +435,7 @@ export function ApqrSchedulerPage() {
         selectedClient?.auto_compute_dates === false || Boolean(row.manual_calculated_dates),
     })
     setEditingKey(editKey)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setFormOpen(true)
   }
 
   function handleEditSave(row: ScheduleRowDraft) {
@@ -605,19 +617,22 @@ export function ApqrSchedulerPage() {
             </div>
           ) : null}
 
-          <ApqrSchedulerFormPanel
-            form={form}
-            clientName={selectedClient.client_name}
-            clientAutoComputeDates={selectedClient.auto_compute_dates !== false}
-            productSuggestions={productSuggestions}
-            editable={canMutate}
-            busy={busy}
-            modeLabel={editingKey ? `Editing ${form.product_name || 'entry'}` : 'New schedule entry'}
-            actorName={actorName}
-            onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
-            onSubmit={handleSubmit}
-            onClear={clearForm}
-          />
+          {formOpen ? (
+            <ApqrSchedulerFormPanel
+              form={form}
+              clientName={selectedClient.client_name}
+              clientAutoComputeDates={selectedClient.auto_compute_dates !== false}
+              productSuggestions={productSuggestions}
+              editable={canMutate}
+              busy={busy}
+              modeLabel={editingKey ? `Editing ${form.product_name || 'entry'}` : 'New schedule entry'}
+              actorName={actorName}
+              onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+              onSubmit={handleSubmit}
+              onClear={clearForm}
+              onCancel={closeForm}
+            />
+          ) : null}
 
           {scheduler.loading ? <ApqrLoading /> : null}
 
@@ -633,6 +648,8 @@ export function ApqrSchedulerPage() {
             canExport={canExport}
             canEdit={canMutate}
             busy={busy}
+            formOpen={formOpen}
+            onNewEntry={openNewScheduleForm}
             onExport={() => exportSchedulerScheduleCsv(filteredRows, selectedClient.client_name)}
             onSaveAll={() => void handleSaveAll()}
             onView={setViewRow}

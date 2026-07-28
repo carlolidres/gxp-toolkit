@@ -3,6 +3,8 @@
 
 @source "./UserManagementPage.tsx";
 @source "../../components/permissions/PermissionMatrix.tsx";
+@source "../../components/admin/UserSelectModal.tsx";
+@source "../../components/admin/OrganizationManagePanel.tsx";
 
 .user-mgmt-perm-check {
   accent-color: var(--teal);
@@ -33,4 +35,196 @@
 .user-mgmt-perm-table-wrap::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--muted) 35%, transparent);
   border-radius: 999px;
+}
+
+/* Wide user-selection modal — shell + list grid (search/header use Tailwind in component) */
+.user-mgmt-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.user-mgmt-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--navy) 45%, transparent);
+}
+
+.user-mgmt-modal {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(1100px, 100%);
+  max-height: min(88vh, 860px);
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 24px 64px color-mix(in srgb, var(--navy) 28%, transparent);
+}
+
+.user-mgmt-modal-list {
+  --user-mgmt-modal-cols: minmax(10rem, 1.2fr) minmax(10rem, 1.3fr) 6.5rem minmax(7rem, 1fr) 7.5rem 7rem;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.user-mgmt-modal-list-head {
+  display: grid;
+  grid-template-columns: var(--user-mgmt-modal-cols);
+  gap: 0.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 0.55rem 1.4rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.user-mgmt-modal-list-head > span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.user-mgmt-modal-list-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-mgmt-modal-row {
+  display: grid;
+  grid-template-columns: var(--user-mgmt-modal-cols);
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: var(--app-text);
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.user-mgmt-modal-row:hover {
+  border-color: var(--border);
+  background: var(--surface-muted);
+}
+
+.user-mgmt-modal-row:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--teal) 45%, var(--border));
+  box-shadow: 0 0 0 2px var(--glow-ring);
+}
+
+.user-mgmt-modal-row.is-selected {
+  border-color: color-mix(in srgb, var(--teal) 40%, var(--border));
+  background: var(--teal-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teal) 20%, transparent);
+}
+
+.user-mgmt-modal-name {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.user-mgmt-modal-name strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.user-mgmt-modal-avatar {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.user-mgmt-modal-row.is-selected .user-mgmt-modal-avatar {
+  background: var(--teal);
+  color: var(--on-primary);
+}
+
+.user-mgmt-modal-email,
+.user-mgmt-modal-org {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.user-mgmt-modal-org {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.user-mgmt-modal-role {
+  display: inline-flex;
+  justify-content: center;
+  width: fit-content;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.user-mgmt-modal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.user-mgmt-modal-status.is-ok {
+  color: var(--teal);
+}
+
+.user-mgmt-modal-status.is-missing {
+  color: var(--danger-text, #b45309);
+}
+
+@media (max-width: 900px) {
+  .user-mgmt-modal-list-head {
+    display: none;
+  }
+
+  .user-mgmt-modal-row {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
 }

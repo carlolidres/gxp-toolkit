@@ -16,6 +16,13 @@ export function useEdocDocuments(scope: 'my' | 'all' | 'returned' | 'completed' 
   return useAsyncData(() => edocService.listDocuments(scope), [scope])
 }
 
+export function useEdocDocument(documentId?: string) {
+  return useAsyncData(
+    () => (documentId ? edocService.getDocument(documentId) : Promise.resolve(null)),
+    [documentId ?? ''],
+  )
+}
+
 export function useEdocInbox() {
   return useAsyncData(() => edocService.listInboxTasks(), [])
 }

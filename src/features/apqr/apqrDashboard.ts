@@ -1,5 +1,10 @@
 import { buildDashboardMetrics } from './apqrService'
-import { addCalendarDays, assignCommitmentPriority, daysRemainingOrOverdue } from './scheduling'
+import {
+  addCalendarDays,
+  assignCommitmentPriority,
+  daysRemainingOrOverdue,
+  PRIORITY_SORT,
+} from './scheduling'
 import { formatAppDate } from '../../utils/dateUtils'
 import type {
   ApqrDashboardMetrics,
@@ -9,7 +14,20 @@ import type {
   ApqrSchedulerRowInput,
   ApqrTriageSlice,
   ApqrUpcomingAction,
+  DashboardWorkFilter,
 } from './types'
+
+export type { DashboardWorkFilter }
+
+export const DASHBOARD_WORK_FILTER_LABELS: Record<DashboardWorkFilter, string> = {
+  all: 'All',
+  overdue: 'Overdue',
+  dueSoon: 'Due soon',
+  missingInfo: 'Missing info',
+  awaitingClient: 'Awaiting client',
+  followUps: 'Follow-ups due',
+  stability: 'Stability due',
+}
 
 const TRIAGE_COLORS: Record<string, string> = {
   Overdue: '#e03131',
@@ -194,82 +212,158 @@ function dueLabelForRow(row: ApqrDatabaseRow, today: string): { label: string; t
   return { label: `Due in ${days} days`, tone: 'neutral' }
 }
 
-export function buildUpcomingActions(rows: ApqrDatabaseRow[], limit = 6): ApqrUpcomingAction[] {
-  const today = new Date().toISOString().slice(0, 10)
+function isCommitmentDueThisMonth(row: ApqrDatabaseRow, asOf: string): boolean {
+  if (!row.commitment_schedule) return false
+  const d = new Date(`${row.commitment_schedule}T12:00:00Z`)
+  const today = new Date(`${asOf}T12:00:00Z`)
+  return d.getUTCFullYear() === today.getUTCFullYear() && d.getUTCMonth() === today.getUTCMonth()
+}
 
-  const categories: Array<{
-    title: string
-    tone: ApqrUpcomingAction['tone']
-    match: (row: ApqrDatabaseRow) => boolean
-    dueLabel: (row: ApqrDatabaseRow) => string
-    rank: (row: ApqrDatabaseRow) => number
-  }> = [
-    {
-      title: 'Stability Actions Due',
-      tone: 'warning',
-      match: (row) =>
-        Boolean(
-          row.stability_pull_out_date &&
-            row.stability_pull_out_date <= today &&
-            (!row.stability_tabulation_status || row.stability_tabulation_status === 'Not Sent'),
-        ),
-      dueLabel: () => 'Action required',
-      rank: (row) => row.days_remaining_or_overdue ?? 0,
-    },
-    {
-      title: 'Overdue Commitments',
-      tone: 'danger',
-      match: (row) => row.priority === 'Overdue Commitment',
-      dueLabel: () => 'Overdue',
-      rank: (row) => row.days_remaining_or_overdue ?? 0,
-    },
-    {
-      title: 'Critical Commitments',
-      tone: 'danger',
-      match: (row) => row.priority === 'Critical Commitment',
-      dueLabel: (row) => dueLabelForRow(row, today).label,
-      rank: (row) => row.days_remaining_or_overdue ?? 999,
-    },
-    {
-      title: 'Follow-Ups Due',
-      tone: 'info',
-      match: (row) => Boolean(row.next_follow_up_due_date && row.next_follow_up_due_date <= today),
-      dueLabel: () => 'Follow-up due',
-      rank: () => 0,
-    },
-    {
-      title: 'High-Priority Commitments',
-      tone: 'warning',
-      match: (row) => row.priority === 'High-Priority Commitment',
-      dueLabel: (row) => dueLabelForRow(row, today).label,
-      rank: (row) => row.days_remaining_or_overdue ?? 999,
-    },
-    {
-      title: 'Moderate Priority',
-      tone: 'neutral',
-      match: (row) => row.priority === 'Moderate Priority',
-      dueLabel: (row) => dueLabelForRow(row, today).label,
-      rank: (row) => row.days_remaining_or_overdue ?? 999,
-    },
-  ]
+function isFollowUpDue(row: ApqrDatabaseRow, asOf: string): boolean {
+  return Boolean(row.next_follow_up_due_date && row.next_follow_up_due_date <= asOf)
+}
 
-  return categories
-    .map((category) => {
-      const match = rows
-        .filter(category.match)
-        .sort((a, b) => category.rank(a) - category.rank(b))[0]
-      if (!match) return null
+function isStabilityActionDue(row: ApqrDatabaseRow, asOf: string): boolean {
+  return Boolean(
+    row.stability_pull_out_date &&
+      row.stability_pull_out_date <= asOf &&
+      (!row.stability_tabulation_status || row.stability_tabulation_status === 'Not Sent'),
+  )
+}
+
+function isOverdueCommitment(row: ApqrDatabaseRow): boolean {
+  return row.priority === 'Overdue Commitment' || row.priority === 'Overdue Stability Action'
+}
+
+/** Critical / High-Priority / due this month — excludes already-overdue rows. */
+export function isDueSoon(row: ApqrDatabaseRow, asOf = new Date().toISOString().slice(0, 10)): boolean {
+  if (isOverdueCommitment(row)) return false
+  if (
+    row.priority === 'Critical Commitment' ||
+    row.priority === 'Critical Stability Action' ||
+    row.priority === 'High-Priority Commitment'
+  ) {
+    return true
+  }
+  return isCommitmentDueThisMonth(row, asOf)
+}
+
+export function countDueSoon(rows: ApqrDatabaseRow[], asOf = new Date().toISOString().slice(0, 10)): number {
+  return rows.filter((row) => isDueSoon(row, asOf)).length
+}
+
+export function matchesDashboardWorkFilter(
+  row: ApqrDatabaseRow,
+  filter: DashboardWorkFilter,
+  asOf = new Date().toISOString().slice(0, 10),
+): boolean {
+  if (filter === 'all') return true
+  if (filter === 'overdue') return isOverdueCommitment(row)
+  if (filter === 'dueSoon') return isDueSoon(row, asOf)
+  if (filter === 'missingInfo') return row.missing_critical_count > 0
+  if (filter === 'awaitingClient') return row.apqr_report_status === 'For Client Approval'
+  if (filter === 'followUps') return isFollowUpDue(row, asOf)
+  if (filter === 'stability') return isStabilityActionDue(row, asOf)
+  return true
+}
+
+/** Lower rank = more urgent. Ties break by days remaining (more overdue first). */
+export function urgencyRank(row: ApqrDatabaseRow, asOf = new Date().toISOString().slice(0, 10)): number {
+  if (isOverdueCommitment(row)) return 0
+  if (row.priority === 'Critical Commitment' || row.priority === 'Critical Stability Action') return 1
+  if (row.missing_critical_count > 0) return 2
+  if (isFollowUpDue(row, asOf) || isStabilityActionDue(row, asOf)) return 3
+  if (row.priority === 'High-Priority Commitment') return 4
+  if (isDueSoon(row, asOf)) return 5
+  return 10 + (PRIORITY_SORT[row.priority] ?? 9)
+}
+
+export function sortRowsByUrgency(
+  rows: ApqrDatabaseRow[],
+  asOf = new Date().toISOString().slice(0, 10),
+): ApqrDatabaseRow[] {
+  return [...rows].sort((a, b) => {
+    const rankDiff = urgencyRank(a, asOf) - urgencyRank(b, asOf)
+    if (rankDiff !== 0) return rankDiff
+    const daysA = a.days_remaining_or_overdue ?? daysRemainingOrOverdue(a.commitment_schedule, asOf) ?? 9999
+    const daysB = b.days_remaining_or_overdue ?? daysRemainingOrOverdue(b.commitment_schedule, asOf) ?? 9999
+    return daysA - daysB
+  })
+}
+
+function attentionReason(row: ApqrDatabaseRow, asOf: string): {
+  title: string
+  tone: ApqrUpcomingAction['tone']
+  dueLabel: string
+} {
+  if (isOverdueCommitment(row)) {
+    return { title: 'Overdue commitment', tone: 'danger', dueLabel: dueLabelForRow(row, asOf).label }
+  }
+  if (row.priority === 'Critical Commitment' || row.priority === 'Critical Stability Action') {
+    return { title: 'Critical commitment', tone: 'danger', dueLabel: dueLabelForRow(row, asOf).label }
+  }
+  if (row.missing_critical_count > 0) {
+    return {
+      title: 'Missing critical info',
+      tone: 'danger',
+      dueLabel: `${row.missing_critical_count} field${row.missing_critical_count === 1 ? '' : 's'}`,
+    }
+  }
+  if (isStabilityActionDue(row, asOf)) {
+    return { title: 'Stability action due', tone: 'warning', dueLabel: 'Action required' }
+  }
+  if (isFollowUpDue(row, asOf)) {
+    return { title: 'Follow-up due', tone: 'info', dueLabel: 'Follow-up due' }
+  }
+  if (row.priority === 'High-Priority Commitment') {
+    return { title: 'High-priority commitment', tone: 'warning', dueLabel: dueLabelForRow(row, asOf).label }
+  }
+  if (isDueSoon(row, asOf)) {
+    return { title: 'Due soon', tone: 'warning', dueLabel: dueLabelForRow(row, asOf).label }
+  }
+  const due = dueLabelForRow(row, asOf)
+  return { title: row.priority, tone: due.tone, dueLabel: due.label }
+}
+
+function isActionableAttentionRow(row: ApqrDatabaseRow, asOf: string): boolean {
+  if (row.priority === 'Completed') return false
+  return (
+    isOverdueCommitment(row) ||
+    row.priority === 'Critical Commitment' ||
+    row.priority === 'Critical Stability Action' ||
+    row.missing_critical_count > 0 ||
+    isFollowUpDue(row, asOf) ||
+    isStabilityActionDue(row, asOf) ||
+    row.priority === 'High-Priority Commitment' ||
+    isDueSoon(row, asOf)
+  )
+}
+
+/** Ranked multi-row work queue for the Needs Attention panel. */
+export function buildNeedsAttentionQueue(
+  rows: ApqrDatabaseRow[],
+  limit = 10,
+  asOf = new Date().toISOString().slice(0, 10),
+): ApqrUpcomingAction[] {
+  return sortRowsByUrgency(rows.filter((row) => isActionableAttentionRow(row, asOf)), asOf)
+    .slice(0, limit)
+    .map((row) => {
+      const reason = attentionReason(row, asOf)
       return {
-        id: `${category.title}-${match.apqr_id}`,
-        title: category.title,
-        productName: match.product_name,
-        dueLabel: category.dueLabel(match),
-        tone: category.tone,
-        link: `/apqr/form?apqr=${encodeURIComponent(match.apqr_id)}`,
+        id: row.apqr_id,
+        title: reason.title,
+        productName: row.product_name,
+        clientName: row.client_name,
+        dueLabel: reason.dueLabel,
+        tone: reason.tone,
+        link: `/apqr/form?apqr=${encodeURIComponent(row.apqr_id)}`,
       }
     })
-    .filter((action): action is ApqrUpcomingAction => action !== null)
-    .slice(0, limit)
+}
+
+/** @deprecated Prefer buildNeedsAttentionQueue — kept for callers expecting the old name. */
+export function buildUpcomingActions(rows: ApqrDatabaseRow[], limit = 10): ApqrUpcomingAction[] {
+  return buildNeedsAttentionQueue(rows, limit)
 }
 
 export function formatReviewCycleLabel(start: string, end: string): string {

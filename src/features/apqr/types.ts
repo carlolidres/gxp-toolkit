@@ -175,10 +175,21 @@ export interface ApqrUpcomingAction {
   id: string
   title: string
   productName: string
+  clientName?: string
   dueLabel: string
   tone: 'danger' | 'warning' | 'info' | 'neutral'
   link: string
 }
+
+/** KPI / work-queue filter on the lean APQR dashboard. */
+export type DashboardWorkFilter =
+  | 'all'
+  | 'overdue'
+  | 'dueSoon'
+  | 'missingInfo'
+  | 'awaitingClient'
+  | 'followUps'
+  | 'stability'
 
 export interface ApqrMetricTrend {
   text: string

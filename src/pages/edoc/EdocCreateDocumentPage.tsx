@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Button, Steps, Tooltip } from 'antd'
+import { Alert, Button, Steps, Tooltip } from 'antd'
 import {
   AlignLeft,
   ArrowLeft,
@@ -23,6 +23,7 @@ import {
 
 import { EdocError, EdocPage } from '../../components/edoc/EdocComponents'
 import { EdocFieldPlacementEditor } from '../../components/edoc/EdocFieldPlacementEditor'
+import { EdocProfileCompletionGate } from '../../components/edoc/EdocProfileCompletionGate'
 import { EdocSignatoryRoutingBuilder } from '../../components/edoc/EdocSignatoryRoutingBuilder'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { DateInput } from '../../components/forms/FormControls'
@@ -46,6 +47,13 @@ import type {
   EdocRoutingMode,
 } from '../../features/edoc/types'
 import { useAuth } from '../../hooks/useAuth'
+import { getEdocAccessProfileCompleteness } from '../../lib/edocAccessProfileCompleteness'
+import {
+  externalAuthWarningMessage,
+  missingCreatorOrganizationMessage,
+  missingDocumentControllerMessage,
+  needsExternalAuth,
+} from '../../lib/edocExternalAuth'
 import { iconSize, iconStroke } from '../../theme/iconSizes'
 import {
   VMP_FIELD_CLASS,
@@ -267,6 +275,13 @@ export function EdocCreateDocumentPage() {
 
   async function sendDocument() {
     setError(null)
+    const accessProfile = getEdocAccessProfileCompleteness(user)
+    if (!accessProfile.complete) {
+      return setError(accessProfile.reminderMessage)
+    }
+    if (!user?.organization?.trim()) {
+      return setError(missingCreatorOrganizationMessage())
+    }
     if (!file) return setError('Upload and validate a PDF before sending.')
 
     const validation = validateSignatoryRouting({ noSignatories, levels })
@@ -275,6 +290,23 @@ export function EdocCreateDocumentPage() {
 
     if (!noSignatories && missingFieldLabels.length > 0) {
       return setError(`Place required fields for: ${missingFieldLabels.join(', ')}.`)
+    }
+
+    const assigneeOrgs = levels.flatMap((level) =>
+      level.assigneeIds.map(
+        (id) => profiles.data?.find((profile) => profile.id === id)?.organization ?? null,
+      ),
+    )
+    const external = !noSignatories && needsExternalAuth(user.organization, assigneeOrgs)
+    if (external) {
+      try {
+        const controllers = await edocService.listOrgDocumentControllers()
+        if (controllers.length === 0) {
+          return setError(missingDocumentControllerMessage(user.organization.trim()))
+        }
+      } catch (err) {
+        return setError(err instanceof Error ? err.message : 'Could not verify Document Controllers.')
+      }
     }
 
     const routing = compileSignatoryLevelsToRouteSteps({
@@ -300,9 +332,11 @@ export function EdocCreateDocumentPage() {
         activeAssignmentId: result.activeAssignmentId,
       })
       notify(
-        result.activeAssignmentId
-          ? 'Document sent. Opening your inbox assignment…'
-          : 'Document sent. Signatories will see it in My Inbox when their turn is active.',
+        external
+          ? 'Submitted for Document Controller authorization before external routing.'
+          : result.activeAssignmentId
+            ? 'Document sent. Opening your inbox assignment…'
+            : 'Document sent. Signatories will see it in My Inbox when their turn is active.',
         'success',
       )
       if (result.activeAssignmentId) {
@@ -322,6 +356,7 @@ export function EdocCreateDocumentPage() {
   )
 
   return (
+    <EdocProfileCompletionGate title="Complete your profile to create documents">
     <EdocPage title="Create Document" description="Prepare metadata, upload a private PDF, configure routing, place fields, and send.">
       <section className={`${VMP_SECTION_CARD_CLASS} p-5 sm:p-6`}>
         <Steps
@@ -653,6 +688,22 @@ export function EdocCreateDocumentPage() {
 
         {!created && activeStep === 4 ? (
           <div className="space-y-5">
+            {!noSignatories &&
+            needsExternalAuth(
+              user?.organization,
+              levels.flatMap((level) =>
+                level.assigneeIds.map(
+                  (id) => profiles.data?.find((profile) => profile.id === id)?.organization ?? null,
+                ),
+              ),
+            ) ? (
+              <Alert
+                type="info"
+                showIcon
+                message="External recipients detected"
+                description={externalAuthWarningMessage()}
+              />
+            ) : null}
             <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="Document review summary">
               {[
                 { label: 'Document', value: metadata.documentNumber || '—', icon: FileDigit },
@@ -734,5 +785,6 @@ export function EdocCreateDocumentPage() {
         ) : null}
       </section>
     </EdocPage>
+    </EdocProfileCompletionGate>
   )
 }

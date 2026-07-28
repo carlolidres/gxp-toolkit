@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   password_reset_requested_at   TEXT,
   -- PNG signature data URL for Account Settings (transparent backgrounds allowed)
   signature_data_url            TEXT,
+  -- Profile picture data URL for Account Settings / app chrome avatars
+  avatar_data_url               TEXT,
   -- Employer / organization label from Account Settings
   organization                  TEXT,
   -- Job position / title from Account Settings

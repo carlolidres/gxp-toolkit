@@ -24,6 +24,7 @@ import { EdocAuditPage } from '../pages/edoc/EdocAuditPage'
 import { EdocCreateDocumentPage } from '../pages/edoc/EdocCreateDocumentPage'
 import { EdocDashboardPage } from '../pages/edoc/EdocDashboardPage'
 import { EdocDocumentsPage } from '../pages/edoc/EdocDocumentsPage'
+import { EdocDocumentViewPage } from '../pages/edoc/EdocDocumentViewPage'
 import { EdocInboxPage } from '../pages/edoc/EdocInboxPage'
 import { EdocReportsPage } from '../pages/edoc/EdocReportsPage'
 import { EdocRoutingTemplatesPage } from '../pages/edoc/EdocRoutingTemplatesPage'
@@ -174,6 +175,22 @@ export function AppRoutes() {
           element={
             <MenuPermissionRoute menuId="edoc-all-documents">
               <EdocDocumentsPage scope="all" title="All Documents" />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="edoc/view/:documentId"
+          element={
+            <MenuPermissionRoute
+              anyOfMenuIds={[
+                'edoc-my-documents',
+                'edoc-all-documents',
+                'edoc-returned',
+                'edoc-completed',
+                'edoc-dashboard',
+              ]}
+            >
+              <EdocDocumentViewPage />
             </MenuPermissionRoute>
           }
         />

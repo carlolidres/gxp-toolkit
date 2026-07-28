@@ -1,15 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Input, Select } from 'antd'
 import {
-  Area,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
-  ComposedChart,
   LabelList,
-  Line,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -23,12 +20,17 @@ import { useChartPalette } from '../../components/charts/chartTheme'
 import {
   apqrCycleYearOptions,
   buildDashboardTrends,
+  buildNeedsAttentionQueue,
   buildTriageDistribution,
-  buildUpcomingActions,
+  countDueSoon,
+  DASHBOARD_WORK_FILTER_LABELS,
   defaultApqrCycleYear,
   filterRowsByReviewCycle,
   formatApqrCycleYearLabel,
+  matchesDashboardWorkFilter,
   reviewCycleFromYear,
+  sortRowsByUrgency,
+  type DashboardWorkFilter,
 } from '../../features/apqr/apqrDashboard'
 import {
   buildDashboardMetrics,
@@ -36,9 +38,10 @@ import {
   formatApqrDate,
   formatReviewCoverage,
 } from '../../features/apqr/apqrService'
-import type { ApqrDashboardMetrics, ApqrDatabaseRow, ApqrMetricTrend } from '../../features/apqr/types'
+import type { ApqrDatabaseRow, ApqrMetricTrend, ApqrUpcomingAction } from '../../features/apqr/types'
 import { useColumnResize } from '../../hooks/useColumnResize'
 import { useMenuPermission } from '../../hooks/useMenuPermission'
+import { usePermissions } from '../../hooks/usePermissions'
 import { useApqrDatabase } from '../../features/apqr/useApqrData'
 import { apqrPriorityDisplay } from '../../features/apqr/scheduling'
 import { exportRows } from '../../utils/exportUtils'
@@ -70,16 +73,76 @@ const DEFAULT_COLUMNS: ColumnKey[] = Object.keys(COLUMN_LABELS) as ColumnKey[]
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 
+const ACTION_KPIS: Array<{
+  filter: Exclude<DashboardWorkFilter, 'all'>
+  label: string
+  icon: string
+  tone: 'info' | 'success' | 'warning' | 'danger'
+  value: (m: ReturnType<typeof buildDashboardMetrics>, dueSoon: number) => number
+  trendKey: keyof ReturnType<typeof buildDashboardTrends>
+}> = [
+  {
+    filter: 'overdue',
+    label: 'Overdue',
+    icon: 'alert',
+    tone: 'danger',
+    value: (m) => m.overdueCommitments,
+    trendKey: 'overdueCommitments',
+  },
+  {
+    filter: 'dueSoon',
+    label: 'Due soon',
+    icon: 'calendar',
+    tone: 'warning',
+    value: (_m, dueSoon) => dueSoon,
+    trendKey: 'dueThisMonth',
+  },
+  {
+    filter: 'missingInfo',
+    label: 'Missing info',
+    icon: 'info',
+    tone: 'danger',
+    value: (m) => m.missingCriticalInformation,
+    trendKey: 'missingCriticalInformation',
+  },
+  {
+    filter: 'awaitingClient',
+    label: 'Awaiting client',
+    icon: 'user',
+    tone: 'info',
+    value: (m) => m.pendingClientApproval,
+    trendKey: 'pendingClientApproval',
+  },
+  {
+    filter: 'followUps',
+    label: 'Follow-ups due',
+    icon: 'mail',
+    tone: 'info',
+    value: (m) => m.followUpsDue,
+    trendKey: 'followUpsDue',
+  },
+  {
+    filter: 'stability',
+    label: 'Stability due',
+    icon: 'lab',
+    tone: 'warning',
+    value: (m) => m.stabilityActionsDue,
+    trendKey: 'stabilityActionsDue',
+  },
+]
+
 export function ApqrDashboardPage() {
   const rows = useApqrDatabase()
   const { canExport } = useMenuPermission('apqr-dashboard')
+  const { canViewMenu } = usePermissions()
   const [cycleYear, setCycleYear] = useState(defaultApqrCycleYear)
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [workFilter, setWorkFilter] = useState<DashboardWorkFilter>('all')
   const [search, setSearch] = useState('')
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS)
   const [columnsOpen, setColumnsOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
+  const workQueueRef = useRef<HTMLElement | null>(null)
   const { getColumnStyle, onResizeHandleMouseDown } = useColumnResize<ColumnKey>('apqr-triage-column-widths')
 
   const allRows = rows.data ?? []
@@ -94,20 +157,24 @@ export function ApqrDashboardPage() {
   const trends = useMemo(() => buildDashboardTrends(scopedRows), [scopedRows])
   const monthly = useMemo(() => buildMonthlyDeliveryTrend(scopedRows), [scopedRows])
   const triage = useMemo(() => buildTriageDistribution(scopedRows), [scopedRows])
-  const upcoming = useMemo(() => buildUpcomingActions(scopedRows), [scopedRows])
+  const dueSoonCount = useMemo(() => countDueSoon(scopedRows), [scopedRows])
+  const attention = useMemo(() => buildNeedsAttentionQueue(scopedRows), [scopedRows])
 
   const filteredTable = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return scopedRows
-    return scopedRows.filter(
-      (row) =>
+    const matched = scopedRows.filter((row) => {
+      if (!matchesDashboardWorkFilter(row, workFilter)) return false
+      if (!q) return true
+      return (
         row.apqr_id.toLowerCase().includes(q) ||
         row.client_name.toLowerCase().includes(q) ||
         row.client_code.toLowerCase().includes(q) ||
         row.product_name.toLowerCase().includes(q) ||
-        (row.apqr_report_status ?? '').toLowerCase().includes(q),
-    )
-  }, [scopedRows, search])
+        (row.apqr_report_status ?? '').toLowerCase().includes(q)
+      )
+    })
+    return sortRowsByUrgency(matched)
+  }, [scopedRows, search, workFilter])
 
   const totalRows = filteredTable.length
   const totalPages = Math.max(1, Math.ceil(totalRows / pageSize))
@@ -122,7 +189,14 @@ export function ApqrDashboardPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [search, pageSize, cycleYear])
+  }, [search, pageSize, cycleYear, workFilter])
+
+  function applyWorkFilter(filter: DashboardWorkFilter) {
+    setWorkFilter((current) => (current === filter ? 'all' : filter))
+    requestAnimationFrame(() => {
+      workQueueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
 
   if (rows.loading) {
     return (
@@ -135,19 +209,11 @@ export function ApqrDashboardPage() {
   return (
     <ApqrPage
       title="Dashboard"
-      description="Commitment-schedule triage and delivery performance."
+      description={`${formatApqrCycleYearLabel(cycleYear)} · ${m.totalActive} active`}
       action={
         <div className="apqr-dashboard-toolbar">
-          <Button
-            className={`button secondary apqr-toolbar-filters${filtersOpen ? ' is-active' : ''}`}
-            onClick={() => setFiltersOpen((open) => !open)}
-            aria-expanded={filtersOpen}
-          >
-            <ApqrIcon name="filter" />
-            Filters
-          </Button>
           <div className="apqr-cycle-year-filter" role="group" aria-label="APQR cycle year">
-            <span className="apqr-dashboard-toolbar-label">APQR Cycle Year</span>
+            <span className="apqr-dashboard-toolbar-label">Cycle year</span>
             <label className="apqr-cycle-year-field">
               <Select
                 value={cycleYear}
@@ -158,89 +224,81 @@ export function ApqrDashboardPage() {
               <ApqrIcon name="calendar" />
             </label>
           </div>
-          <Link className="button primary apqr-toolbar-database" to="/apqr/database">
-            <ApqrIcon name="database" />
-            Open Database
-          </Link>
+          {canViewMenu('apqr-database') ? (
+            <Link className="button primary apqr-toolbar-database" to="/apqr/database">
+              <ApqrIcon name="database" />
+              Records
+            </Link>
+          ) : null}
+          {canViewMenu('apqr-scheduler') ? (
+            <Link className="button secondary" to="/apqr/scheduler">
+              <ApqrIcon name="calendar" />
+              Scheduler
+            </Link>
+          ) : null}
+          {canViewMenu('apqr-registry') ? (
+            <Link className="button secondary" to="/apqr/registry">
+              <ApqrIcon name="users" />
+              Clients
+            </Link>
+          ) : null}
         </div>
       }
     >
       {rows.error ? <ApqrError message={rows.error} /> : null}
 
-      {filtersOpen ? (
-        <section className="panel apqr-filter-panel">
-          <div className="apqr-filter-panel-header">
-            <h2>Global Filter</h2>
-            <p className="help-text apqr-filter-panel-summary">
-              Showing APQRs for cycle year <strong>{cycleYear}</strong> (
-              {formatApqrCycleYearLabel(cycleYear)}; {scopedRows.length} of {allRows.length} records).
-            </p>
-          </div>
-          <div className="inline-form">
-            <Button className="button secondary" onClick={() => setCycleYear(defaultApqrCycleYear())}>
-              Reset to current cycle year
-            </Button>
-          </div>
-        </section>
-      ) : null}
-
-      <div className="apqr-kpi-board">
-        <section className="apqr-kpi-grid" aria-label="APQR summary metrics">
-          <KpiCard metricKey="totalActive" label="Total Active APQRs" value={m.totalActive} trend={trends.totalActive} icon="stack" />
-          <KpiCard metricKey="overdueCommitments" label="Overdue Commitments" value={m.overdueCommitments} trend={trends.overdueCommitments} icon="alert" tone="danger" />
-          <KpiCard metricKey="criticalCommitments" label="Critical Commitments" value={m.criticalCommitments} trend={trends.criticalCommitments} icon="flag" tone="danger" />
-          <KpiCard metricKey="highPriorityCommitments" label="High-Priority Commitments" value={m.highPriorityCommitments} trend={trends.highPriorityCommitments} icon="priority" tone="warning" />
-          <KpiCard metricKey="dueThisMonth" label="Due This Month" value={m.dueThisMonth} trend={trends.dueThisMonth} icon="calendar" tone="warning" />
-          <KpiCard metricKey="deliveredThisMonth" label="Delivered This Month" value={m.deliveredThisMonth} trend={trends.deliveredThisMonth} icon="check" tone="success" />
-        </section>
-        <section className="apqr-kpi-grid" aria-label="APQR delivery metrics">
-          <KpiCard metricKey="onTimeDeliveryRate" label="On-Time Delivery Rate" value={`${m.onTimeDeliveryRate}%`} trend={trends.onTimeDeliveryRate} icon="gauge" />
-          <KpiCard metricKey="overdueDeliveries" label="Overdue Deliveries" value={m.overdueDeliveries} trend={trends.overdueDeliveries} icon="clock" tone="danger" />
-          <KpiCard metricKey="pendingClientApproval" label="Pending Client Approval" value={m.pendingClientApproval} trend={trends.pendingClientApproval} icon="user" />
-          <KpiCard metricKey="followUpsDue" label="Follow-Ups Due" value={m.followUpsDue} trend={trends.followUpsDue} icon="mail" />
-          <KpiCard metricKey="stabilityActionsDue" label="Stability Actions Due" value={m.stabilityActionsDue} trend={trends.stabilityActionsDue} icon="lab" tone="warning" />
-          <KpiCard metricKey="missingCriticalInformation" label="Missing Critical Info" value={m.missingCriticalInformation} trend={trends.missingCriticalInformation} icon="info" tone="danger" />
-        </section>
-      </div>
-
-      <section className="apqr-dashboard-panels">
-        <div className="apqr-dashboard-main">
-          <div className="apqr-dashboard-charts-row">
-            <article className="panel apqr-panel-compact apqr-panel-triage">
-              <PanelHeader title="APQR Commitment Triage Distribution" icon="chartPie" />
-              <p className="help-text">{scopedRows.length} active records in range</p>
-              <div className="apqr-panel-body">
-                <TriageDonutChart data={triage} total={scopedRows.length} />
-              </div>
-            </article>
-            <article className="panel apqr-panel-compact apqr-panel-delivery-trend">
-              <PanelHeader title="Monthly APQR Delivery Trend" icon="chartLine" />
-              <p className="help-text">Last 12 months by Final APQR Delivery Date</p>
-              <div className="apqr-panel-body">
-                <DeliveryTrendChart data={monthly} />
-              </div>
-            </article>
-          </div>
-          <article className="panel apqr-panel-compact apqr-panel-delivery-performance">
-            <PanelHeader title="Monthly APQR Delivery Performance" icon="chartBar" />
-            <p className="help-text">Green = on time · Red = delivered overdue</p>
-            <DeliveryPerformanceChart data={monthly} />
-          </article>
+      <section className="apqr-kpi-board" aria-label="Action metrics">
+        <div className="apqr-kpi-grid apqr-kpi-grid-lean">
+          {ACTION_KPIS.map((kpi) => (
+            <KpiCard
+              key={kpi.filter}
+              label={kpi.label}
+              value={kpi.value(m, dueSoonCount)}
+              trend={trends[kpi.trendKey]}
+              icon={kpi.icon}
+              tone={kpi.tone}
+              active={workFilter === kpi.filter}
+              onClick={() => applyWorkFilter(kpi.filter)}
+            />
+          ))}
         </div>
+      </section>
+
+      <section className="apqr-dashboard-panels apqr-dashboard-attention-row" aria-label="Needs attention and triage mix">
         <article className="panel apqr-panel-compact apqr-panel-actions">
           <div className="apqr-upcoming-header">
-            <PanelHeader title="Upcoming Actions" icon="clipboard" />
-            <p className="help-text">Next items requiring attention</p>
+            <PanelHeader title="Needs Attention" icon="clipboard" />
+            <p className="help-text">Highest-urgency items in this cycle</p>
           </div>
           <div className="apqr-upcoming-scroll">
-            <UpcomingActionsList items={upcoming} />
+            <NeedsAttentionList items={attention} onViewAll={() => applyWorkFilter('all')} />
+          </div>
+        </article>
+        <article className="panel apqr-panel-compact apqr-panel-triage">
+          <PanelHeader title="Priority mix" icon="chartPie" />
+          <p className="help-text">{scopedRows.length} active records</p>
+          <div className="apqr-panel-body">
+            <TriageDonutChart data={triage} total={scopedRows.length} />
           </div>
         </article>
       </section>
 
-      <section className="panel apqr-triage-panel">
+      <section className="panel apqr-triage-panel" ref={workQueueRef} aria-labelledby="apqr-work-queue-title">
         <div className="panel-heading apqr-triage-heading">
-          <h2>Triage Table</h2>
+          <div className="apqr-work-queue-title-block">
+            <h2 id="apqr-work-queue-title">Work queue</h2>
+            {workFilter !== 'all' ? (
+              <button
+                type="button"
+                className="apqr-filter-chip"
+                onClick={() => setWorkFilter('all')}
+                aria-label={`Clear filter ${DASHBOARD_WORK_FILTER_LABELS[workFilter]}`}
+              >
+                {DASHBOARD_WORK_FILTER_LABELS[workFilter]}
+                <ApqrIcon name="close" />
+              </button>
+            ) : null}
+          </div>
           <div className="apqr-table-toolbar">
             <label className="apqr-search-field">
               <ApqrIcon name="search" />
@@ -249,6 +307,7 @@ export function ApqrDashboardPage() {
                 value={search}
                 placeholder="Search APQR ID, client, product…"
                 onChange={(e) => setSearch(e.target.value)}
+                aria-label="Filter work queue"
               />
             </label>
             <div className="apqr-columns-menu">
@@ -318,7 +377,9 @@ export function ApqrDashboardPage() {
               ))}
             </tbody>
           </table>
-          {filteredTable.length === 0 ? <p className="messages-empty apqr-triage-empty">No records match the current filters.</p> : null}
+          {filteredTable.length === 0 ? (
+            <p className="messages-empty apqr-triage-empty">No records match the current filters.</p>
+          ) : null}
         </div>
         {totalRows > 0 ? (
           <div className="apqr-scheduler-pagination apqr-triage-pagination">
@@ -385,6 +446,20 @@ export function ApqrDashboardPage() {
           </div>
         ) : null}
       </section>
+
+      <section className="apqr-dashboard-analytics" aria-label="Delivery analytics">
+        <article className="panel apqr-panel-compact apqr-panel-delivery-performance">
+          <PanelHeader title="Delivery (12 months)" icon="chartBar" />
+          <p className="help-text">
+            On-time rate <strong>{m.onTimeDeliveryRate}%</strong>
+            {' · '}
+            Delivered this month <strong>{m.deliveredThisMonth}</strong>
+            {' · '}
+            Green = on time · Red = overdue
+          </p>
+          <DeliveryPerformanceChart data={monthly} onTimeRate={m.onTimeDeliveryRate} />
+        </article>
+      </section>
     </ApqrPage>
   )
 }
@@ -422,23 +497,31 @@ function KpiCard({
   trend,
   icon,
   tone = 'info',
+  active,
+  onClick,
 }: {
-  metricKey: keyof ApqrDashboardMetrics
   label: string
   value: number | string
   trend: ApqrMetricTrend
   icon: string
   tone?: 'info' | 'success' | 'warning' | 'danger'
+  active?: boolean
+  onClick: () => void
 }) {
   return (
-    <Link className={`apqr-kpi-card tone-${tone}`} to="/apqr/database">
+    <button
+      type="button"
+      className={`apqr-kpi-card tone-${tone}${active ? ' is-active' : ''}`}
+      aria-pressed={active}
+      onClick={onClick}
+    >
       <span className={`apqr-kpi-icon tone-${tone}`} aria-hidden>
         <KpiIcon name={icon} />
       </span>
       <span className="apqr-kpi-label">{label}</span>
       <strong className="apqr-kpi-value">{value}</strong>
       <small className={`apqr-kpi-trend trend-${trend.tone}`}>{trend.text}</small>
-    </Link>
+    </button>
   )
 }
 
@@ -494,11 +577,27 @@ function KpiIcon({ name }: { name: string }) {
       </svg>
     )
   }
-  if (name === 'gauge') {
+  if (name === 'lab') {
     return (
       <svg {...shared}>
-        <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
-        <path d="M12 4v2M6.3 6.3l1.4 1.4M4 12h2M18 12h2M17.7 6.3l-1.4 1.4" />
+        <path d="M9 3h6" />
+        <path d="M10 3v6l-5 8a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-8V3" />
+      </svg>
+    )
+  }
+  if (name === 'user') {
+    return (
+      <svg {...shared}>
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M5 19a7 7 0 0 1 14 0" />
+      </svg>
+    )
+  }
+  if (name === 'info') {
+    return (
+      <svg {...shared}>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 10v6M12 7h.01" />
       </svg>
     )
   }
@@ -519,9 +618,6 @@ function PanelHeader({ title, icon }: { title: string; icon: string }) {
         </span>
         {title}
       </h2>
-      <span className="apqr-panel-header-menu" aria-hidden>
-        <ApqrIcon name="more" />
-      </span>
     </div>
   )
 }
@@ -634,79 +730,17 @@ function renderStackedBarLabel(props: {
   )
 }
 
-function DeliveryTrendChart({ data }: { data: ReturnType<typeof buildMonthlyDeliveryTrend> }) {
+function DeliveryPerformanceChart({
+  data,
+  onTimeRate,
+}: {
+  data: ReturnType<typeof buildMonthlyDeliveryTrend>
+  onTimeRate: number
+}) {
   const palette = useChartPalette()
-  const totalDelivered = data.reduce((sum, point) => sum + point.delivered, 0)
-  const gradientId = 'apqr-delivery-trend-fill'
-  const axis = deliveryAxisProps(palette)
-
-  return (
-    <>
-      <div className="chart apqr-chart-compact">
-        <ResponsiveContainer>
-          <ComposedChart data={data} margin={{ top: 14, right: 8, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={palette.secondary} stopOpacity={0.28} />
-                <stop offset="100%" stopColor={palette.secondary} stopOpacity={0.03} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke={palette.grid} strokeDasharray="4 4" vertical={false} />
-            <XAxis
-              dataKey="label"
-              {...axis}
-              interval="preserveStartEnd"
-              dy={4}
-              tick={(props) => deliveryMonthAxisTick({ ...props, textAnchor: 'middle', dy: 16, fill: palette.axis })}
-            />
-            <YAxis
-              allowDecimals={false}
-              {...axis}
-              width={30}
-              label={{
-                value: 'APQRs Delivered',
-                angle: -90,
-                position: 'insideLeft',
-                offset: 8,
-                style: { fill: palette.axis, fontSize: 10, textAnchor: 'middle' },
-              }}
-            />
-            <Tooltip
-              cursor={{ stroke: palette.grid, strokeDasharray: '4 4' }}
-              contentStyle={deliveryChartTooltipStyle(palette)}
-              formatter={(value: number) => [value, 'Delivered']}
-            />
-            <Area
-              type="monotone"
-              dataKey="delivered"
-              fill={`url(#${gradientId})`}
-              stroke="none"
-              isAnimationActive={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="delivered"
-              stroke={palette.secondary}
-              strokeWidth={2.5}
-              dot={{ r: 3.5, fill: palette.secondary, stroke: '#ffffff', strokeWidth: 1.5 }}
-              activeDot={{ r: 5, fill: palette.secondary, stroke: '#ffffff', strokeWidth: 2 }}
-              isAnimationActive={false}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-      <p className="apqr-chart-summary">
-        Total Delivered (12 months): <strong>{totalDelivered} APQR{totalDelivered === 1 ? '' : 's'}</strong>
-      </p>
-    </>
-  )
-}
-
-function DeliveryPerformanceChart({ data }: { data: ReturnType<typeof buildMonthlyDeliveryTrend> }) {
-  const palette = useChartPalette()
-  const recent = data.slice(-6)
-  const onTimeTotal = recent.reduce((sum, point) => sum + point.onTime, 0)
-  const overdueTotal = recent.reduce((sum, point) => sum + point.overdue, 0)
+  const onTimeTotal = data.reduce((sum, point) => sum + point.onTime, 0)
+  const overdueTotal = data.reduce((sum, point) => sum + point.overdue, 0)
+  const deliveredTotal = data.reduce((sum, point) => sum + point.delivered, 0)
   const axis = deliveryAxisProps(palette)
 
   return (
@@ -717,7 +751,7 @@ function DeliveryPerformanceChart({ data }: { data: ReturnType<typeof buildMonth
             <ApqrIcon name="check" />
           </span>
           <span>
-            Delivered On Time
+            Delivered on time
             <strong>{onTimeTotal}</strong>
           </span>
         </div>
@@ -726,14 +760,32 @@ function DeliveryPerformanceChart({ data }: { data: ReturnType<typeof buildMonth
             <ApqrIcon name="warning" />
           </span>
           <span>
-            Delivered Overdue
+            Delivered overdue
             <strong>{overdueTotal}</strong>
+          </span>
+        </div>
+        <div className="apqr-chart-summary-tile tone-rate">
+          <span className="apqr-chart-summary-icon" aria-hidden>
+            <ApqrIcon name="gauge" />
+          </span>
+          <span>
+            On-time rate
+            <strong>{onTimeRate}%</strong>
+          </span>
+        </div>
+        <div className="apqr-chart-summary-tile">
+          <span className="apqr-chart-summary-icon" aria-hidden>
+            <ApqrIcon name="package" />
+          </span>
+          <span>
+            Total delivered
+            <strong>{deliveredTotal}</strong>
           </span>
         </div>
       </div>
       <div className="chart apqr-chart-compact apqr-performance-chart">
         <ResponsiveContainer>
-          <BarChart data={recent} layout="vertical" margin={{ top: 4, right: 12, left: 8, bottom: 18 }}>
+          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 12, left: 8, bottom: 18 }}>
             <CartesianGrid stroke={palette.grid} strokeDasharray="4 4" horizontal={false} />
             <XAxis
               type="number"
@@ -770,28 +822,40 @@ function DeliveryPerformanceChart({ data }: { data: ReturnType<typeof buildMonth
   )
 }
 
-function UpcomingActionsList({ items }: { items: ReturnType<typeof buildUpcomingActions> }) {
+function NeedsAttentionList({
+  items,
+  onViewAll,
+}: {
+  items: ApqrUpcomingAction[]
+  onViewAll: () => void
+}) {
   if (!items.length) {
-    return <p className="messages-empty">No upcoming actions in the selected range.</p>
+    return <p className="messages-empty">No items need attention in the selected cycle.</p>
   }
 
   return (
-    <ul className="apqr-upcoming-list">
-      {items.map((item) => (
-        <li key={item.id}>
-          <Link to={item.link} className={`apqr-upcoming-item tone-${item.tone}`}>
-            <span className={`apqr-upcoming-icon tone-${item.tone}`} aria-hidden>
-              <ApqrIcon name={item.tone === 'danger' || item.tone === 'warning' ? 'warning' : 'calendar'} />
-            </span>
-            <span className="apqr-upcoming-copy">
-              <strong>{item.title}</strong>
-              <span>{item.productName}</span>
-            </span>
-            <span className={`apqr-upcoming-badge tone-${item.tone}`}>{item.dueLabel}</span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="apqr-upcoming-list">
+        {items.map((item) => (
+          <li key={item.id}>
+            <Link to={item.link} className={`apqr-upcoming-item tone-${item.tone}`}>
+              <span className={`apqr-upcoming-icon tone-${item.tone}`} aria-hidden>
+                <ApqrIcon name={item.tone === 'danger' || item.tone === 'warning' ? 'warning' : 'calendar'} />
+              </span>
+              <span className="apqr-upcoming-copy">
+                <strong>{item.title}</strong>
+                <span>{item.productName}</span>
+                {item.clientName ? <span className="apqr-upcoming-client">{item.clientName}</span> : null}
+              </span>
+              <span className={`apqr-upcoming-badge tone-${item.tone}`}>{item.dueLabel}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <button type="button" className="button secondary apqr-upcoming-view-all" onClick={onViewAll}>
+        View all in work queue
+      </button>
+    </>
   )
 }
 

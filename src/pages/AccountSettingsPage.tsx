@@ -3,6 +3,7 @@ import { Alert, Button, Card } from 'antd'
 import {
   Briefcase,
   Building2,
+  Camera,
   ImageIcon,
   Mail,
   Save,
@@ -22,6 +23,11 @@ import {
   normalizeOrganizationValue,
   validateOrganizationValue,
 } from '../lib/profileOrganization'
+import {
+  PROFILE_AVATAR_MAX_BYTES,
+  readAvatarAsDataUrl,
+  validateAvatarImage,
+} from '../lib/profileAvatar'
 import {
   PROFILE_SIGNATURE_MAX_BYTES,
   readFileAsDataUrl,
@@ -64,6 +70,7 @@ export function AccountSettingsPage() {
   const { user, updateProfile, hasRole } = useAuth()
   const { notify } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
   const canManageOptions = hasRole(['Admin'])
   const initialNames = useMemo(
     () => splitDisplayName(user?.name ?? '', user?.email ?? ''),
@@ -79,6 +86,8 @@ export function AccountSettingsPage() {
   const [jobTitleError, setJobTitleError] = useState<string | null>(null)
   const [signaturePreview, setSignaturePreview] = useState<string | null>(user?.signatureDataUrl ?? null)
   const [signatureDirty, setSignatureDirty] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatarDataUrl ?? null)
+  const [avatarDirty, setAvatarDirty] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
 
@@ -111,6 +120,12 @@ export function AccountSettingsPage() {
       setSignaturePreview(user?.signatureDataUrl ?? null)
     }
   }, [signatureDirty, user?.signatureDataUrl, user?.id])
+
+  useEffect(() => {
+    if (!avatarDirty) {
+      setAvatarPreview(user?.avatarDataUrl ?? null)
+    }
+  }, [avatarDirty, user?.avatarDataUrl, user?.id])
 
   useEffect(() => {
     let cancelled = false
@@ -187,6 +202,32 @@ export function AccountSettingsPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  async function handleAvatarFile(file: File | null) {
+    setProfileError(null)
+    if (!file) return
+
+    const validationError = validateAvatarImage(file)
+    if (validationError) {
+      setProfileError(validationError)
+      return
+    }
+
+    try {
+      const dataUrl = await readAvatarAsDataUrl(file)
+      setAvatarPreview(dataUrl)
+      setAvatarDirty(true)
+    } catch (err) {
+      setProfileError(getAuthErrorMessage(err, 'Could not read the profile picture.'))
+    }
+  }
+
+  function clearAvatar() {
+    setAvatarPreview(null)
+    setAvatarDirty(true)
+    setProfileError(null)
+    if (avatarInputRef.current) avatarInputRef.current.value = ''
+  }
+
   async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setProfileError(null)
@@ -222,8 +263,10 @@ export function AccountSettingsPage() {
         jobTitle: jobTitleNormalized || null,
         organization: organizationNormalized || null,
         ...(signatureDirty ? { signatureDataUrl: signaturePreview } : {}),
+        ...(avatarDirty ? { avatarDataUrl: avatarPreview } : {}),
       })
       setSignatureDirty(false)
+      setAvatarDirty(false)
       setJobTitle(jobTitleNormalized)
       if (organizationNormalized) {
         const options = await organizationOptionsService.list()
@@ -244,7 +287,7 @@ export function AccountSettingsPage() {
     <VrmsPage
       eyebrow="Account"
       title="Account Settings"
-      description="Update your profile name, position, organization, and PNG signature used for eDoc signatory fields. Password changes are managed by an administrator."
+      description="Update your profile picture, name, position, organization, and PNG signature used for eDoc signatory fields. Password changes are managed by an administrator."
     >
       <div className="account-settings-page settings-grid max-w-3xl">
         <Card
@@ -259,6 +302,66 @@ export function AccountSettingsPage() {
           }
         >
           <form className="flex flex-col gap-5" onSubmit={handleProfileSubmit} noValidate>
+            <section
+              className="flex flex-col gap-4 rounded-2xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-muted,#f4f7fa)_45%,var(--surface))] p-4 sm:flex-row sm:items-center"
+              aria-labelledby="account-avatar-heading"
+            >
+              <div
+                className={`profile-avatar-preview${avatarPreview ? '' : ' is-empty'}`}
+                aria-live="polite"
+              >
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="Profile picture preview" />
+                ) : (
+                  <span className="profile-avatar-initials" aria-hidden>
+                    {user?.initials ?? '—'}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3
+                  id="account-avatar-heading"
+                  className="m-0 inline-flex items-center gap-2 text-sm font-semibold text-[var(--navy)]"
+                >
+                  <Camera size={iconSize.sm} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />
+                  Profile picture
+                </h3>
+                <p className="mt-1 mb-3 text-xs leading-relaxed text-[var(--muted)]">
+                  Shown in the top bar and sidebar. JPG, PNG, or WebP · max{' '}
+                  {Math.round(PROFILE_AVATAR_MAX_BYTES / 1024)} KB
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                    className="sr-only"
+                    aria-label="Upload profile picture"
+                    onChange={(event) => {
+                      void handleAvatarFile(event.target.files?.[0] ?? null)
+                    }}
+                  />
+                  <Button
+                    type="default"
+                    icon={<UploadIcon size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                    onClick={() => avatarInputRef.current?.click()}
+                  >
+                    Upload photo
+                  </Button>
+                  {avatarPreview ? (
+                    <Button
+                      type="default"
+                      danger
+                      icon={<Trash2 size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                      onClick={clearAvatar}
+                    >
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </section>
+
             {signatoryProfile.complete ? (
               <Alert
                 type="success"

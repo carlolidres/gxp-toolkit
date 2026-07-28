@@ -1,6 +1,6 @@
 # Data Map
 
-Last Updated: `2026-07-27`
+Last Updated: `2026-07-28`
 
 ## Purpose
 
@@ -12,7 +12,7 @@ This is a concise human map. It does not replace executable SQL.
 
 | Path | Role | Editing rule |
 |---|---|---|
-| `database/sqlite/schema.sql` | Core SQLite schema (profiles incl. `signature_data_url`, `organization`, `job_title`, `profile_organization_options`, VMP, feedback) | Edit when core app models change |
+| `database/sqlite/schema.sql` | Core SQLite schema (profiles incl. `signature_data_url`, `avatar_data_url`, `organization`, `job_title`, `profile_organization_options`, VMP, feedback) | Edit when core app models change |
 | `database/sqlite/edoc_schema.sql` | eDoc SQLite reference (19 `edoc_*` tables) | Edit before Supabase eDoc migration changes |
 | `database/sqlite/edoc_seed.sql` | eDoc pilot fixtures (non-production) | Pilot data only |
 | `database/sqlite/seed.sql` | Placeholder SQLite seed template | Do not put regulated/production data here |
@@ -33,6 +33,9 @@ Workflow app status: `workflow-app/` uses its own local SQLite store for approva
 | `supabase/migrations/20260724120000_profile_signature_png.sql` | `profiles.signature_data_url` for Account Settings PNG signature | Applied remote 2026-07-25 |
 | `supabase/migrations/20260725120000_profile_organization.sql` | `profiles.organization` + `profile_organization_options` catalog | Applied remote 2026-07-25 |
 | `supabase/migrations/20260725130000_profile_job_title.sql` | `profiles.job_title` for Account Settings Position/Title | Applied remote 2026-07-25 |
+| `supabase/migrations/20260728140000_profile_avatar.sql` | `profiles.avatar_data_url` for Account Settings / chrome avatars | Applied remote 2026-07-28 |
+| `supabase/migrations/20260728150000_edoc_external_auth_gate.sql` | `edoc_route_steps.step_kind`; external-auth gate in `edoc_create_and_start_route`; notify/list/warnings RPCs | Applied remote 2026-07-28 |
+| `supabase/migrations/20260728151000_edoc_external_auth_advance.sql` | Inbox `step_kind`; `edoc_advance_route` external auth; DC nomination audit/self-assign | Applied remote 2026-07-28 |
 | `supabase/migrations/20260725140000_fix_edoc_profile_id_ambiguity.sql` | Rename PL/pgSQL `profile_id` → `v_profile_id` in `edoc_create_and_start_route` (Postgres 42702) | Applied remote 2026-07-25 |
 | `supabase/migrations/20260727100000_edoc_send_inbox_pdf_access.sql` | Send returns file keys + active assignment; assignees become org members; owner storage upload policies | Applied remote 2026-07-27 |
 | `supabase/migrations/20260727110000_fix_edoc_route_id_ambiguity.sql` | Rename PL/pgSQL vars (`v_route_id`, …) in `edoc_create_and_start_route` (Postgres ambiguous `route_id`) | Applied remote 2026-07-27 |
@@ -75,7 +78,7 @@ Audit import note: the source audit CSV has misleading headers for document-rela
 
 | Entity | Table or bundle key | Purpose | Primary Key | Source |
 |---|---|---|---|---|
-| Profile | `profiles` | Application profile and authorization metadata linked to optional Supabase Auth identity; includes `must_change_password`, `password_reset_requested_at`, `signature_data_url`, `organization`, and `job_title` for Account Settings | `id` text | `supabase/migrations/20260617000000_vrms_schema.sql`, `20260623200000_admin_default_password_reset.sql`, `20260709102630_admin_approved_password_reset.sql`, `20260724120000_profile_signature_png.sql`, `20260725120000_profile_organization.sql`, `20260725130000_profile_job_title.sql` |
+| Profile | `profiles` | Application profile and authorization metadata linked to optional Supabase Auth identity; includes `must_change_password`, `password_reset_requested_at`, `signature_data_url`, `avatar_data_url`, `organization`, and `job_title` for Account Settings | `id` text | `supabase/migrations/20260617000000_vrms_schema.sql`, `20260623200000_admin_default_password_reset.sql`, `20260709102630_admin_approved_password_reset.sql`, `20260724120000_profile_signature_png.sql`, `20260725120000_profile_organization.sql`, `20260725130000_profile_job_title.sql`, `20260728140000_profile_avatar.sql` |
 | Profile organization option | `profile_organization_options` | Shared Organization autocomplete catalog (CI unique on trimmed value); authenticated insert, admin delete | `id` text | `database/sqlite/schema.sql`; `supabase/migrations/20260725120000_profile_organization.sql` |
 | User menu permission | `user_menu_permissions` | Menu/action grants by profile | `(user_id, menu_id)` | `supabase/migrations/20260618100000_user_menu_permissions.sql` |
 | Routing document | `routing_documents` / `routingDocuments` | VRMS document routing record and signatory tracker | `routing_tracker` | `reference/VRMSdatabase/VRMS - Documents.csv` |
@@ -99,9 +102,17 @@ Payload type: `EdocCreateDraftInput` in `src/features/edoc/types.ts`.
 | PDF upload | `file.name`, `sizeBytes`, `mimeType`, `sha256` | Client validates MIME/extension + PDF signature (`fileValidation`) before continue. In-memory `pdfBytes` drive placement preview via pdf.js (`usePdfDocument`); worker served from `public/pdf.worker.min.mjs` under Vite `base`. |
 | Routing | `routing.mode`, `steps[]` (action, assignees, completion rule, minimum count, due, delegation) | Every step needs ≥1 assignee before send (unless no-signatories). |
 | Field placement | `fields[]` (assignee draft id, type, page, normalized x/y/w/h, rotation, required) | One required field per assignee draft before send. Name / Position-Title / Signature overlays are filled from each assignee’s Account Settings profile at signing time. |
-| Review / send | Summary only | Calls RPC `edoc_create_and_start_route` (returns `document_id`, `route_id`, `version_id`, `file_id`, `bucket_id`, `object_key`, `active_assignment_id`); client uploads PDF bytes to `edoc-originals`; navigates to creator workspace when they have an active assignment, else My Inbox. Assignees are added as org members so inbox RLS joins succeed. |
+| Review / send | Summary only | Calls RPC `edoc_create_and_start_route` (returns `document_id`, `route_id`, `version_id`, `file_id`, `bucket_id`, `object_key`, `active_assignment_id`, `needs_external_auth`); client uploads PDF bytes to `edoc-originals`; navigates to creator workspace when they have an active assignment, else My Inbox. Same-org assignees are added as org members immediately. |
 
-Related tables (via RPC): `edoc_documents`, `edoc_document_versions`, `edoc_document_files`, `edoc_document_routes`, `edoc_route_steps`, `edoc_route_step_assignees`, `edoc_signature_fields`, `edoc_audit_events`.
+### External Document Controller authorization
+
+- Compare: normalized `profiles.organization` (creator vs each assignee). Helper: `src/lib/edocExternalAuth.ts`.
+- Controllers: creator eDoc org members with `membership_role = 'controller'` and `status = 'active'`.
+- When external + no DC: raise; audit `external_auth_blocked_no_controller`; notify org peers + app admins via `edoc_notify_profiles` → `edoc_notifications`.
+- When external + DCs: prepend route step `step_kind = 'external_auth'`, action `approve`, `completion_rule = 'any'`; defer `edoc_organization_members` bootstrap for non-DC assignees until first approve in `edoc_advance_route`.
+- Inbox view `edoc_assignment_inbox` exposes `step_kind` for Workspace UI banners.
+
+Related tables (via RPC): `edoc_documents`, `edoc_document_versions`, `edoc_document_files`, `edoc_document_routes`, `edoc_route_steps`, `edoc_route_step_assignees`, `edoc_signature_fields`, `edoc_audit_events`, `edoc_notifications`.
 
 Signatory profile completeness (client): first name, last name, `job_title`, and `signature_data_url` must be set in Account Settings before eDoc signing (`src/lib/signatoryProfileCompleteness.ts`).
 

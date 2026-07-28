@@ -1,7 +1,11 @@
 import { getSupabaseClient } from '../lib/supabase'
 import { requireSupabaseSession } from '../lib/supabaseAuth'
 import { initialsFromName, mapUserRoleToProfileRole, mapVrmsRoleToUserRole } from '../lib/authMapping'
-import { normalizeUserPermissions } from '../lib/permissions'
+import {
+  getEdocAccessProfileCompleteness,
+  hasAnyEdocMenuAccess,
+} from '../lib/edocAccessProfileCompleteness'
+import { normalizeUserPermissions, hasDocumentControllerEdocAccess } from '../lib/permissions'
 import { rowsToUserPermissions, userPermissionsToRows } from '../lib/permissionStorage'
 import type { UserRole } from '../types/auth'
 import type { ManagedUser, UpdateManagedUserInput, UserPermissions } from '../types/permissions'
@@ -14,6 +18,8 @@ interface ProfileRow {
   active: boolean
   auth_user_id: string | null
   password_reset_requested_at?: string | null
+  organization?: string | null
+  signature_data_url?: string | null
 }
 
 function requireClient() {
@@ -27,8 +33,18 @@ async function requireAuthenticatedClient() {
   return requireSupabaseSession(client)
 }
 
-function toManagedUser(profile: ProfileRow, permissions: UserPermissions): ManagedUser {
+function toManagedUser(
+  profile: ProfileRow,
+  permissions: UserPermissions,
+  documentController = false,
+): ManagedUser {
   const role = mapVrmsRoleToUserRole(profile.role)
+  const normalized = normalizeUserPermissions(permissions, role)
+  const completeness = getEdocAccessProfileCompleteness({
+    organization: profile.organization,
+    signatureDataUrl: profile.signature_data_url,
+  })
+  const hasEdocAccess = hasAnyEdocMenuAccess(normalized)
   return {
     id: profile.id,
     name: profile.display_name,
@@ -36,8 +52,14 @@ function toManagedUser(profile: ProfileRow, permissions: UserPermissions): Manag
     role,
     initials: initialsFromName(profile.display_name, profile.email),
     active: profile.active,
+    organization: profile.organization?.trim() || null,
+    hasSignature: completeness.hasSignature,
+    profileComplete: completeness.complete,
+    hasEdocAccess,
+    edocProfileIncomplete: hasEdocAccess && !completeness.complete,
     passwordResetRequestedAt: profile.password_reset_requested_at ?? null,
-    permissions: normalizeUserPermissions(permissions, role),
+    documentController,
+    permissions: normalized,
   }
 }
 
@@ -81,7 +103,7 @@ async function loadProfile(profileId: string): Promise<ProfileRow> {
 
   const { data: fallback, error: fallbackError } = await client
     .from('profiles')
-    .select('id, email, display_name, role, active, auth_user_id, password_reset_requested_at')
+    .select('id, email, display_name, role, active, auth_user_id, password_reset_requested_at, organization, signature_data_url')
     .eq('id', profileId)
     .maybeSingle()
 
@@ -95,7 +117,7 @@ export const supabaseUserManagementService = {
     const client = await requireAuthenticatedClient()
     const { data: profiles, error } = await client
       .from('profiles')
-      .select('id, email, display_name, role, active, auth_user_id, password_reset_requested_at')
+      .select('id, email, display_name, role, active, auth_user_id, password_reset_requested_at, organization, signature_data_url')
       .order('display_name', { ascending: true })
 
     if (error) throw new Error(error.message)
@@ -118,9 +140,25 @@ export const supabaseUserManagementService = {
       permissionsByUser.set(row.user_id, current)
     }
 
-    return rows.map((profile) =>
-      toManagedUser(profile, permissionsByUser.get(profile.id) ?? {}),
+    const controllerIds = new Set<string>()
+    const { data: controllers, error: controllerError } = await client.rpc(
+      'admin_list_edoc_document_controllers',
     )
+    if (!controllerError && Array.isArray(controllers)) {
+      for (const row of controllers) {
+        const id = typeof row === 'string' ? row : (row as { profile_id?: string }).profile_id
+        if (id) controllerIds.add(id)
+      }
+    }
+
+    return rows.map((profile) => {
+      const permissions = permissionsByUser.get(profile.id) ?? {}
+      return toManagedUser(
+        profile,
+        permissions,
+        controllerIds.has(profile.id) || hasDocumentControllerEdocAccess(permissions),
+      )
+    })
   },
 
   async getPermissions(userRef: string, role: UserRole): Promise<UserPermissions> {
@@ -165,6 +203,24 @@ export const supabaseUserManagementService = {
       if (permissionError) throw new Error(permissionError.message)
     }
 
+    let documentController = false
+    if (typeof input.documentController === 'boolean') {
+      const { error: controllerError } = await client.rpc('admin_set_edoc_document_controller', {
+        target_profile_id: profileId,
+        is_controller: input.documentController,
+      })
+      if (controllerError) throw new Error(controllerError.message)
+      documentController = input.documentController
+    } else {
+      const { data: controllers } = await client.rpc('admin_list_edoc_document_controllers')
+      if (Array.isArray(controllers)) {
+        documentController = controllers.some((row) => {
+          const id = typeof row === 'string' ? row : (row as { profile_id?: string }).profile_id
+          return id === profileId
+        })
+      }
+    }
+
     const updatedProfile: ProfileRow = {
       ...current,
       role: profileRole,
@@ -172,7 +228,7 @@ export const supabaseUserManagementService = {
     }
 
     const rows = await loadPermissionRows(profileId)
-    return toManagedUser(updatedProfile, rowsToUserPermissions(rows))
+    return toManagedUser(updatedProfile, rowsToUserPermissions(rows), documentController)
   },
 
   async resetUserPassword(profileId: string): Promise<void> {

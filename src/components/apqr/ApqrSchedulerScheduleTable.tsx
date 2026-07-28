@@ -44,6 +44,8 @@ export function ApqrSchedulerScheduleTable({
   canExport,
   canEdit,
   busy,
+  formOpen = false,
+  onNewEntry,
   onExport,
   onSaveAll,
   onView,
@@ -63,6 +65,8 @@ export function ApqrSchedulerScheduleTable({
   canExport: boolean
   canEdit: boolean
   busy: boolean
+  formOpen?: boolean
+  onNewEntry?: () => void
   onExport: () => void
   onSaveAll: () => void
   onView: (row: ScheduleRowDraft) => void
@@ -78,11 +82,30 @@ export function ApqrSchedulerScheduleTable({
 
   return (
     <section className="panel apqr-scheduler-table-panel" aria-labelledby="apqr-scheduler-table-title">
-      <div className="panel-heading apqr-scheduler-heading">
-        <div className="apqr-scheduler-table-titles">
-          <h2 id="apqr-scheduler-table-title">APQR Schedule for {clientName}</h2>
+      <header className="apqr-scheduler-heading">
+        <div className="apqr-scheduler-heading-top">
+          <div className="apqr-scheduler-heading-identity min-w-0">
+            <div className="apqr-scheduler-heading-title-row">
+              <span className="apqr-scheduler-heading-icon" aria-hidden="true">
+                <ApqrIcon name="calendar" />
+              </span>
+              <h2 id="apqr-scheduler-table-title" className="min-w-0 truncate">
+                Schedule
+              </h2>
+              <span className="apqr-scheduler-count" aria-label={`${totalRows} schedule entries`}>
+                {totalRows}
+              </span>
+            </div>
+            <p className="apqr-scheduler-heading-client truncate" title={clientName}>
+              {clientName}
+            </p>
+          </div>
+
           <label className="apqr-scheduler-cycle-year" htmlFor="apqr-scheduler-cycle-year">
-            <span>APQR Cycle Year</span>
+            <span className="apqr-scheduler-cycle-year-label">
+              <ApqrIcon name="clock" aria-hidden />
+              Cycle year
+            </span>
             <select
               id="apqr-scheduler-cycle-year"
               value={cycleYear}
@@ -97,8 +120,9 @@ export function ApqrSchedulerScheduleTable({
             </select>
           </label>
         </div>
-        <div className="apqr-table-toolbar">
-          <label className="apqr-search-field">
+
+        <div className="apqr-table-toolbar apqr-scheduler-heading-toolbar" role="toolbar" aria-label="Schedule actions">
+          <label className="apqr-search-field apqr-scheduler-search">
             <ApqrIcon name="search" />
             <input
               type="search"
@@ -108,20 +132,36 @@ export function ApqrSchedulerScheduleTable({
               onChange={(e) => onSearchChange(e.target.value)}
             />
           </label>
-          {canEdit && rows.length > 0 ? (
-            <button type="button" className="button primary" disabled={busy} onClick={onSaveAll}>
-              <ApqrIcon name="save" />
-              Save All
-            </button>
-          ) : null}
-          {canExport ? (
-            <button type="button" className="button secondary" disabled={!totalRows} onClick={onExport}>
-              <ApqrIcon name="export" />
-              Export CSV
-            </button>
-          ) : null}
+
+          <div className="apqr-scheduler-heading-actions">
+            {canEdit && onNewEntry ? (
+              <button
+                type="button"
+                className="button primary"
+                disabled={busy}
+                aria-expanded={formOpen}
+                aria-controls="apqr-scheduler-form-panel"
+                onClick={onNewEntry}
+              >
+                <ApqrIcon name="plus" />
+                <span className="apqr-scheduler-action-label">New entry</span>
+              </button>
+            ) : null}
+            {canEdit && rows.length > 0 ? (
+              <button type="button" className="button secondary" disabled={busy} onClick={onSaveAll}>
+                <ApqrIcon name="save" />
+                <span className="apqr-scheduler-action-label">Save all</span>
+              </button>
+            ) : null}
+            {canExport ? (
+              <button type="button" className="button secondary" disabled={!totalRows} onClick={onExport}>
+                <ApqrIcon name="export" />
+                <span className="apqr-scheduler-action-label">Export</span>
+              </button>
+            ) : null}
+          </div>
         </div>
-      </div>
+      </header>
 
       <div className="table-scroll apqr-scheduler-table-scroll">
         <table className="data-table apqr-scheduler-table compact">

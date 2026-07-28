@@ -98,12 +98,12 @@ function ensureProductCodeBeforeDepartment(columns: ColumnKey[]): ColumnKey[] {
 const DATABASE_PAGE_PROPS = {
   icon: 'database',
   headerClassName: 'apqr-page-header--database',
-  title: 'APQR Database',
+  title: 'Records',
   description: 'Consolidated APQR records from Scheduler and Form.',
   action: (
     <Link className="button secondary apqr-page-header-action" to="/apqr/scheduler">
       <ApqrIcon name="calendar" />
-      APQR Scheduler
+      Scheduler
     </Link>
   ),
 } as const
@@ -362,7 +362,7 @@ export function ApqrDatabasePage() {
           <div className="apqr-database-heading-title">
             <h2 id="apqr-database-list-title">
               <ApqrIcon name="database" />
-              All APQR Records
+              All Records
             </h2>
             <span className="apqr-database-count" aria-label={`${filtered.length} records`}>
               {filtered.length}

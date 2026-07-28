@@ -96,6 +96,8 @@ export interface EdocInboxTask {
   documentTitle: string
   documentNumber: string
   action: EdocAssignableAction
+  /** signatory | external_auth — from route step */
+  stepKind?: 'signatory' | 'external_auth'
   status: EdocAssigneeStatus
   dueAt: string | null
   ownerName: string

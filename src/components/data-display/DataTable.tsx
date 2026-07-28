@@ -11,9 +11,11 @@ export interface TableColumn<T> {
 export function DataTable<T extends { id: string }>({
   rows,
   columns,
+  onRowClick,
 }: {
   rows: T[]
   columns: TableColumn<T>[]
+  onRowClick?: (row: T) => void
 }) {
   const antdColumns: ColumnsType<T> = columns.map((column) => ({
     key: String(column.key),
@@ -32,6 +34,23 @@ export function DataTable<T extends { id: string }>({
         pagination={false}
         size="middle"
         locale={{ emptyText: 'No records found.' }}
+        rowClassName={onRowClick ? 'data-table-row-clickable' : undefined}
+        onRow={
+          onRowClick
+            ? (row) => ({
+                onClick: () => onRowClick(row),
+                onKeyDown: (event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    onRowClick(row)
+                  }
+                },
+                tabIndex: 0,
+                role: 'link',
+                'aria-label': 'View document',
+              })
+            : undefined
+        }
       />
     </div>
   )

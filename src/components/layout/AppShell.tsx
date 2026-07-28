@@ -5,7 +5,6 @@ import {
   Bell,
   FileCheck2,
   FileText,
-  Gift,
   Info,
   LayoutDashboard,
   LogOut,
@@ -31,6 +30,7 @@ import { useTheme } from '../../hooks/useTheme'
 import { MessagesModal } from '../feedback/MessagesModal'
 import { ApqrNotificationsModal } from '../feedback/ApqrNotificationsModal'
 import { VersionHistoryDrawer } from '../feedback/VersionHistoryDrawer'
+import { MissingDocumentControllerBanner } from '../admin/MissingDocumentControllerBanner'
 import { GxpLogo } from '../brand/GxpLogo'
 import { useFeedbackMessages } from '../../hooks/useFeedbackMessages'
 import { useApqrNotifications } from '../../hooks/useApqrNotifications'
@@ -148,29 +148,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           ) : (
             <p className="sidebar-permissions-loading">Loading menus…</p>
           )}
-        </div>
-
-        <div className="sidebar-footer">
-          <div className="sidebar-profile">
-            <div className="sidebar-profile-main">
-              <Avatar className="sidebar-profile-avatar" size={36}>
-                {user?.initials}
-              </Avatar>
-              <div className="sidebar-profile-meta">
-                <strong>{user?.name}</strong>
-                <span>{user?.role} account</span>
-              </div>
-            </div>
-            <Tooltip title="Registry settings">
-              <Button
-                type="text"
-                className="sidebar-profile-action"
-                aria-label="Registry settings"
-                onClick={() => navigate('/registry')}
-                icon={<Gift size={iconSize.md} strokeWidth={iconStroke} aria-hidden />}
-              />
-            </Tooltip>
-          </div>
         </div>
       </aside>
 
@@ -297,7 +274,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   navigate('/account')
                 }}
               >
-                <Avatar size={28}>{user?.initials}</Avatar>
+                <Avatar size={28} src={user?.avatarDataUrl || undefined} alt="">
+                  {user?.initials}
+                </Avatar>
                 <span className="topbar-profile-text">
                   <strong>{user?.name}</strong>
                   <span>{user?.role}</span>
@@ -315,6 +294,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
+        <MissingDocumentControllerBanner />
         <main>{children}</main>
       </div>
 

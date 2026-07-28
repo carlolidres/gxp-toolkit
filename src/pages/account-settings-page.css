@@ -39,3 +39,32 @@
   max-height: 7.5rem;
   object-fit: contain;
 }
+
+.account-settings-page .profile-avatar-preview {
+  display: grid;
+  place-items: center;
+  width: 5.5rem;
+  height: 5.5rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.account-settings-page .profile-avatar-preview.is-empty {
+  background: color-mix(in srgb, var(--teal) 10%, var(--surface));
+}
+
+.account-settings-page .profile-avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-settings-page .profile-avatar-initials {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--teal);
+}
