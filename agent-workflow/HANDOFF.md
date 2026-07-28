@@ -3,12 +3,12 @@
 Last Updated: `2026-07-28`
 Version: `v41`
 Branch: `main` (+ `master` for Pages deploy)
-Commit: `7018acb`
-Deployment: pending GitHub Pages (push to `master`)
+Commit: `283be0c` (docs after `7018acb` feature)
+Deployment: [GitHub Pages success](https://github.com/carlolidres/gxp-toolkit/actions/runs/30364041144)
 
 ## Current Status
 
-**v41** — External Document Controller authorization, User Management picker, eDoc profile gate, profile avatars, lean dashboards.
+**v41 deployed** — External Document Controller authorization, User Management picker, eDoc profile gate, profile avatars, lean dashboards.
 
 ## Key implementation notes
 
@@ -34,12 +34,11 @@ Deployment: pending GitHub Pages (push to `master`)
 | `src/lib/edocExternalAuth.test.ts` | `PASSED` | 2 tests |
 | `npm run type-check` | `PASSED` | `tsc -b` |
 | `npm run db:map` | `PASSED` | 32 tables |
-| GitHub Pages deploy | `PENDING` | push to `master` |
+| GitHub Pages deploy | `PASSED` | [30364041144](https://github.com/carlolidres/gxp-toolkit/actions/runs/30364041144) |
 
 ## Next Action
 
-1. Confirm GitHub Pages workflow success after push.
-2. Browser-smoke external auth flows on staging/Pages when convenient.
+1. Browser-smoke external auth flows on Pages/staging when convenient.
 
 ## Prior stable release
 
