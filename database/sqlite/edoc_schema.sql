@@ -117,6 +117,7 @@ CREATE TABLE IF NOT EXISTS edoc_document_routes (
   mode            TEXT NOT NULL CHECK (mode IN ('sequential', 'parallel', 'mixed')),
   status          TEXT NOT NULL DEFAULT 'draft'
                     CHECK (status IN ('draft', 'active', 'completed', 'rejected', 'returned', 'cancelled', 'expired')),
+  transaction_id  TEXT NOT NULL UNIQUE,
   started_at      TEXT,
   completed_at    TEXT,
   created_at      TEXT NOT NULL
@@ -184,6 +185,7 @@ CREATE TABLE IF NOT EXISTS edoc_signature_fields (
   y               REAL NOT NULL CHECK (y >= 0 AND y <= 1),
   width           REAL NOT NULL CHECK (width > 0 AND width <= 1),
   height          REAL NOT NULL CHECK (height > 0 AND height <= 1),
+  rotation        REAL NOT NULL DEFAULT 0,
   required        INTEGER NOT NULL DEFAULT 1,
   created_at      TEXT NOT NULL
 );
@@ -198,7 +200,12 @@ CREATE TABLE IF NOT EXISTS edoc_signature_events (
   assignment_id         TEXT NOT NULL REFERENCES edoc_route_step_assignees(id),
   signer_id             TEXT NOT NULL REFERENCES profiles(id),
   signer_display_name   TEXT NOT NULL,
+  signer_email          TEXT,
+  signer_organization   TEXT,
   signature_meaning     TEXT NOT NULL,
+  signature_appearance_type TEXT,
+  display_timezone      TEXT,
+  field_ids             TEXT,
   auth_method           TEXT NOT NULL,
   auth_timestamp        TEXT NOT NULL,
   signing_timestamp     TEXT NOT NULL,
@@ -216,10 +223,13 @@ CREATE TABLE IF NOT EXISTS edoc_completion_certificates (
   organization_id   TEXT NOT NULL REFERENCES edoc_organizations(id),
   document_id       TEXT NOT NULL REFERENCES edoc_documents(id),
   version_id        TEXT NOT NULL REFERENCES edoc_document_versions(id),
-  route_id          TEXT NOT NULL REFERENCES edoc_document_routes(id),
+  route_id          TEXT NOT NULL UNIQUE REFERENCES edoc_document_routes(id),
   bucket_id         TEXT NOT NULL DEFAULT 'edoc-certificates',
   object_key        TEXT NOT NULL UNIQUE,
   verification_code TEXT NOT NULL UNIQUE,
+  final_pdf_sha256  TEXT,
+  page_count        INTEGER,
+  status            TEXT NOT NULL DEFAULT 'generated',
   issued_at         TEXT NOT NULL
 );
 
@@ -290,6 +300,34 @@ CREATE TABLE IF NOT EXISTS edoc_settings (
   setting_value   TEXT NOT NULL DEFAULT '{}',
   updated_at      TEXT NOT NULL,
   UNIQUE (organization_id, setting_key)
+);
+
+CREATE TABLE IF NOT EXISTS edoc_page_integrity_codes (
+  id                          TEXT PRIMARY KEY,
+  organization_id             TEXT NOT NULL REFERENCES edoc_organizations(id),
+  document_id                 TEXT NOT NULL REFERENCES edoc_documents(id) ON DELETE CASCADE,
+  version_id                  TEXT NOT NULL REFERENCES edoc_document_versions(id) ON DELETE CASCADE,
+  route_id                    TEXT NOT NULL REFERENCES edoc_document_routes(id) ON DELETE CASCADE,
+  certificate_id              TEXT NOT NULL REFERENCES edoc_completion_certificates(id) ON DELETE CASCADE,
+  page_number                 INTEGER NOT NULL CHECK (page_number > 0),
+  algorithm                   TEXT NOT NULL DEFAULT 'edoc-page-integrity-v1',
+  page_content_sha256         TEXT NOT NULL,
+  page_integrity_code         TEXT NOT NULL,
+  page_integrity_code_display TEXT NOT NULL,
+  created_at                  TEXT NOT NULL,
+  UNIQUE (certificate_id, page_number)
+);
+
+CREATE TABLE IF NOT EXISTS edoc_verification_lookups (
+  id                 TEXT PRIMARY KEY,
+  verification_code  TEXT NOT NULL,
+  certificate_id     TEXT REFERENCES edoc_completion_certificates(id),
+  result_status      TEXT NOT NULL,
+  uploaded_sha256    TEXT,
+  matched            INTEGER,
+  source_ip          TEXT,
+  user_agent         TEXT,
+  created_at         TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_edoc_documents_org_status ON edoc_documents (organization_id, status);

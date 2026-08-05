@@ -9,6 +9,9 @@ import { LoginPage } from '../pages/LoginPage'
 import { SignUpPage } from '../pages/SignUpPage'
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
 import { ResetPasswordPage } from '../pages/ResetPasswordPage'
+import { PrivacyNoticePage } from '../pages/PrivacyNoticePage'
+import { TermsOfUsePage } from '../pages/TermsOfUsePage'
+import { EdocPublicVerifyPage } from '../pages/edoc/EdocPublicVerifyPage'
 import { AccountSettingsPage } from '../pages/AccountSettingsPage'
 import { VrmsDashboardPage } from '../pages/vrms/VrmsDashboardPage'
 import { VrmsRoutingPage } from '../pages/vrms/VrmsRoutingPage'
@@ -45,6 +48,10 @@ export function AppRoutes() {
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/privacy" element={<PrivacyNoticePage />} />
+      <Route path="/terms" element={<TermsOfUsePage />} />
+      <Route path="/verify" element={<EdocPublicVerifyPage />} />
+      <Route path="/verify/:code" element={<EdocPublicVerifyPage />} />
 
       <Route
         path="/"

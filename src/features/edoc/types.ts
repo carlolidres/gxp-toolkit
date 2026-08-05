@@ -163,6 +163,10 @@ export interface EdocActionResult {
   routeCompleted: boolean
   documentStatus: EdocDocumentStatus
   message: string
+  fieldLayout?: {
+    adjusted: boolean
+    message: string | null
+  }
 }
 
 export interface EdocAuditEvent {

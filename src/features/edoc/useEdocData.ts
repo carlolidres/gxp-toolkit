@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
+import { subscribeEdocInboxChanged } from './edocInboxSync'
 import { edocService } from './edocService'
 import type {
   EdocAuditEvent,
@@ -23,8 +24,20 @@ export function useEdocDocument(documentId?: string) {
   )
 }
 
-export function useEdocInbox() {
-  return useAsyncData(() => edocService.listInboxTasks(), [])
+export function useEdocInbox(enabled = true) {
+  const state = useAsyncData(
+    () => (enabled ? edocService.listInboxTasks() : Promise.resolve([])),
+    [enabled],
+  )
+
+  useEffect(() => {
+    if (!enabled) return
+    return subscribeEdocInboxChanged(() => {
+      void state.refresh()
+    })
+  }, [enabled, state.refresh])
+
+  return state
 }
 
 export function useEdocAudit(documentId?: string) {

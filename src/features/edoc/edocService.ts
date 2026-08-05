@@ -1,4 +1,6 @@
 import { getSupabaseClient, isSupabaseConfigured } from '../../lib/supabase'
+import { notifyEdocInboxChanged } from './edocInboxSync'
+import { isEdocIntegrityPackageComplete } from './pageIntegrity'
 import type {
   EdocActionResult,
   EdocAuditEvent,
@@ -117,6 +119,20 @@ async function currentProfileId(): Promise<string> {
   return String(data)
 }
 
+async function resolveProfileLabels(profileIds: string[]): Promise<Map<string, string>> {
+  const uniqueIds = [...new Set(profileIds.filter(Boolean))]
+  const labels = new Map<string, string>()
+  if (uniqueIds.length === 0) return labels
+
+  const client = requireClient()
+  const { data, error } = await client.rpc('edoc_profile_labels', { p_profile_ids: uniqueIds })
+  if (error) throw new Error(error.message)
+  for (const row of data ?? []) {
+    labels.set(String(row.id), String(row.display_name))
+  }
+  return labels
+}
+
 function normalizeStatus(value: unknown): EdocDocumentStatus {
   const status = String(value || 'draft')
   const allowed: EdocDocumentStatus[] = [
@@ -164,12 +180,13 @@ export const edocService = {
     const { data, error } = await query
     if (error) throw new Error(error.message)
 
+    const ownerLabels = await resolveProfileLabels((data ?? []).map((row) => row.owner_id))
     return (data ?? []).map((row) => ({
       id: row.id,
       documentNumber: row.document_number,
       title: row.title,
       status: normalizeStatus(row.status),
-      ownerName: row.owner_id,
+      ownerName: ownerLabels.get(row.owner_id) ?? row.owner_id,
       department: row.department_name ?? '',
       versionNumber: Number(row.current_version_number ?? 1),
       priority: row.priority ?? 'normal',
@@ -193,12 +210,13 @@ export const edocService = {
     if (error) throw new Error(error.message)
     if (!data) return null
 
+    const ownerLabels = await resolveProfileLabels([data.owner_id])
     return {
       id: data.id,
       documentNumber: data.document_number,
       title: data.title,
       status: normalizeStatus(data.status),
-      ownerName: data.owner_id,
+      ownerName: ownerLabels.get(data.owner_id) ?? data.owner_id,
       department: data.department_name ?? '',
       versionNumber: Number(data.current_version_number ?? 1),
       priority: data.priority ?? 'normal',
@@ -254,14 +272,16 @@ export const edocService = {
     }
 
     const client = requireClient()
-    const { data, error } = await client
-      .from('profiles')
-      .select('id, display_name, email, organization')
-      .eq('active', true)
-      .order('display_name', { ascending: true })
+    // profiles RLS is own-row (or admin). Use org-scoped SECURITY DEFINER RPC for assignee pickers.
+    const { data, error } = await client.rpc('edoc_list_assignable_profiles')
 
     if (error) throw new Error(error.message)
-    return (data ?? []).map((row) => ({
+    return (data ?? []).map((row: {
+      id: string
+      display_name: string
+      email: string
+      organization: string | null
+    }) => ({
       id: row.id,
       displayName: row.display_name,
       email: row.email,
@@ -312,6 +332,7 @@ export const edocService = {
     activeAssignmentId: string | null
   }> {
     if (!isSupabaseConfigured()) {
+      notifyEdocInboxChanged()
       return {
         documentId: `mock-doc-${Date.now()}`,
         routeId: `mock-route-${Date.now()}`,
@@ -352,6 +373,7 @@ export const edocService = {
       }
     }
 
+    notifyEdocInboxChanged()
     return {
       documentId: result.document_id,
       routeId: result.route_id,
@@ -366,13 +388,14 @@ export const edocService = {
     bucketId: string
     objectKey: string
     fileName: string
+    fileRole?: string
   } | null> {
     if (!isSupabaseConfigured()) return null
 
     const client = requireClient()
     const { data, error } = await client
       .from('edoc_document_files')
-      .select('id, bucket_id, object_key, file_name')
+      .select('id, bucket_id, object_key, file_name, file_role')
       .eq('document_id', documentId)
       .eq('file_role', 'original')
       .order('created_at', { ascending: false })
@@ -386,6 +409,116 @@ export const edocService = {
       bucketId: data.bucket_id,
       objectKey: data.object_key,
       fileName: data.file_name,
+      fileRole: data.file_role,
+    }
+  },
+
+  /** Prefer Final Signed PDF (certificate) → latest signed → original. */
+  async getPreferredDocumentFile(
+    documentId: string,
+    options?: {
+      forSigning?: boolean
+      preferSha256?: string | null
+      preferObjectKey?: string | null
+    },
+  ): Promise<{
+    id: string
+    bucketId: string
+    objectKey: string
+    fileName: string
+    fileRole: string
+    label: string
+    sha256: string | null
+  } | null> {
+    if (!isSupabaseConfigured()) return null
+    const client = requireClient()
+    const { data, error } = await client
+      .from('edoc_document_files')
+      .select('id, bucket_id, object_key, file_name, file_role, sha256, created_at')
+      .eq('document_id', documentId)
+      .in('file_role', ['certificate', 'signed', 'original'])
+      .order('created_at', { ascending: false })
+
+    if (error) throw new Error(error.message)
+    const rows = data ?? []
+    const preferSha = options?.preferSha256?.trim().toLowerCase() || null
+    const preferKey = options?.preferObjectKey?.trim() || null
+
+    const byDigest = preferSha
+      ? rows.find((row) => (row.sha256 || '').toLowerCase() === preferSha)
+      : null
+    const byObjectKey = preferKey
+      ? rows.find((row) => row.object_key === preferKey)
+      : null
+
+    const certificate = rows.find((row) => row.file_role === 'certificate')
+    // Signing must follow the live content chain (signed → original), never the final package.
+    const signedForChain = rows.find((row) => (
+      row.file_role === 'signed'
+      && !String(row.object_key).includes('final-completed-')
+    )) ?? rows.find((row) => row.file_role === 'signed')
+    const original = rows.find((row) => row.file_role === 'original')
+    const chosen = options?.forSigning
+      ? (signedForChain ?? original)
+      : (byDigest ?? byObjectKey ?? certificate ?? signedForChain ?? original)
+    if (!chosen) return null
+    return {
+      id: chosen.id,
+      bucketId: chosen.bucket_id,
+      objectKey: chosen.object_key,
+      fileName: chosen.file_name,
+      fileRole: chosen.file_role,
+      sha256: chosen.sha256 ?? null,
+      label:
+        chosen.file_role === 'certificate'
+          ? 'Final Signed PDF'
+          : chosen.file_role === 'signed'
+            ? 'Signed PDF'
+            : 'Original PDF',
+    }
+  },
+
+  async getCompletionCertificateMeta(documentId: string): Promise<{
+    pageCount: number | null
+    contentPageCount: number | null
+    verificationCode: string | null
+    finalPdfSha256: string | null
+    objectKey: string | null
+    hasPageIntegrity: boolean
+  } | null> {
+    if (!isSupabaseConfigured()) return null
+    const client = requireClient()
+    const { data, error } = await client
+      .from('edoc_completion_certificates')
+      .select('id, page_count, content_page_count, verification_code, final_pdf_sha256, object_key, status')
+      .eq('document_id', documentId)
+      .order('issued_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (error) throw new Error(error.message)
+    if (!data) return null
+    if (data.status === 'generating') {
+      return {
+        pageCount: data.page_count ?? null,
+        contentPageCount: data.content_page_count ?? null,
+        verificationCode: data.verification_code ?? null,
+        finalPdfSha256: data.final_pdf_sha256 ?? null,
+        objectKey: data.object_key ?? null,
+        hasPageIntegrity: false,
+      }
+    }
+    const { count, error: integrityError } = await client
+      .from('edoc_page_integrity_codes')
+      .select('id', { count: 'exact', head: true })
+      .eq('certificate_id', data.id)
+    if (integrityError) throw new Error(integrityError.message)
+    return {
+      pageCount: data.page_count ?? null,
+      contentPageCount: data.content_page_count ?? null,
+      verificationCode: data.verification_code ?? null,
+      finalPdfSha256: data.final_pdf_sha256 ?? null,
+      objectKey: data.object_key ?? null,
+      hasPageIntegrity: isEdocIntegrityPackageComplete(count ?? 0, data.content_page_count),
     }
   },
 
@@ -401,7 +534,19 @@ export const edocService = {
     const { data, error } = await client.functions.invoke('edoc-file-access', {
       body: { fileId, accessType },
     })
-    if (error) throw new Error(error.message)
+    if (error) {
+      const context = (error as { context?: Response }).context
+      if (context && typeof context.json === 'function') {
+        try {
+          const payload = (await context.json()) as { error?: string; message?: string }
+          const detail = payload.error || payload.message
+          if (detail) throw new Error(detail)
+        } catch (parseError) {
+          if (parseError instanceof Error && parseError.message !== error.message) throw parseError
+        }
+      }
+      throw new Error(error.message || 'Could not request PDF file access.')
+    }
     const payload = data as { signedUrl?: string; expiresInSeconds?: number; error?: string } | null
     if (payload?.error) throw new Error(payload.error)
     if (!payload?.signedUrl) throw new Error('Signed file URL was not returned.')
@@ -411,13 +556,125 @@ export const edocService = {
     }
   },
 
-  async loadDocumentPdfBytes(documentId: string): Promise<ArrayBuffer> {
-    const file = await this.getDocumentOriginalFile(documentId)
-    if (!file) throw new Error('No original PDF is registered for this document.')
+  async loadDocumentPdfBytes(
+    documentId: string,
+    options?: { forSigning?: boolean },
+  ): Promise<ArrayBuffer> {
+    const file =
+      (await this.getPreferredDocumentFile(documentId, options)) ??
+      (await this.getDocumentOriginalFile(documentId))
+    if (!file) throw new Error('No PDF is registered for this document.')
     const access = await this.requestFileAccess(file.id, 'preview')
-    const response = await fetch(access.signedUrl)
-    if (!response.ok) throw new Error(`Could not download the PDF (HTTP ${response.status}).`)
-    return response.arrayBuffer()
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => controller.abort(), 60_000)
+    try {
+      const response = await fetch(access.signedUrl, { signal: controller.signal })
+      if (!response.ok) throw new Error(`Could not download the PDF (HTTP ${response.status}).`)
+      const buffer = await response.arrayBuffer()
+      if (buffer.byteLength < 5) throw new Error('Downloaded PDF is empty.')
+      return buffer
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        throw new Error('PDF download timed out. Check your connection and try again.')
+      }
+      throw err
+    } finally {
+      window.clearTimeout(timer)
+    }
+  },
+
+  async finalizeDocument(routeId: string): Promise<{ ok: boolean; idempotent?: boolean; error?: string; verificationCode?: string }> {
+    if (!isSupabaseConfigured()) return { ok: true, idempotent: true }
+    const client = requireClient()
+    const { data, error } = await client.functions.invoke('edoc-finalize-document', {
+      body: { routeId },
+    })
+    if (error) {
+      const context = (error as { context?: Response }).context
+      if (context && typeof context.json === 'function') {
+        try {
+          const payload = (await context.json()) as { error?: string }
+          if (payload.error) return { ok: false, error: payload.error }
+        } catch {
+          // fall through
+        }
+      }
+      return { ok: false, error: error.message }
+    }
+    const payload = data as { error?: string; idempotent?: boolean; verification_code?: string } | null
+    if (payload?.error) return { ok: false, error: payload.error }
+    return {
+      ok: true,
+      idempotent: Boolean(payload?.idempotent),
+      verificationCode: payload?.verification_code,
+    }
+  },
+
+  /** Finalize the latest completed route for a document (integrity PDF + verify code). */
+  async finalizeCompletedDocument(documentId: string): Promise<{
+    ok: boolean
+    idempotent?: boolean
+    error?: string
+    verificationCode?: string
+  }> {
+    if (!isSupabaseConfigured()) return { ok: true, idempotent: true }
+    const client = requireClient()
+    const { data: route, error } = await client
+      .from('edoc_document_routes')
+      .select('id')
+      .eq('document_id', documentId)
+      .eq('status', 'completed')
+      .order('completed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (error) return { ok: false, error: error.message }
+    if (!route?.id) return { ok: false, error: 'No completed route found for this document.' }
+    return this.finalizeDocument(route.id)
+  },
+
+  async adminDeleteDocument(documentId: string): Promise<{
+    ok: boolean
+    documentNumber?: string | null
+    title?: string | null
+    message?: string
+  }> {
+    if (!isSupabaseConfigured()) {
+      return { ok: true, message: 'Mock document deleted.' }
+    }
+    const client = requireClient()
+    const { data, error } = await client.functions.invoke('edoc-admin-delete-document', {
+      body: { documentId },
+    })
+    if (error) {
+      const context = (error as { context?: Response }).context
+      if (context && typeof context.json === 'function') {
+        try {
+          const payload = (await context.json()) as { error?: string; message?: string }
+          const detail = payload.error || payload.message
+          if (detail) throw new Error(detail)
+        } catch (parseError) {
+          if (parseError instanceof Error && parseError.message !== error.message) throw parseError
+        }
+      }
+      throw new Error(error.message)
+    }
+    const payload = data as {
+      ok?: boolean
+      error?: string
+      documentNumber?: string | null
+      title?: string | null
+      storageErrors?: string[]
+    } | null
+    if (payload?.error) throw new Error(payload.error)
+    const storageNote = payload?.storageErrors?.length
+      ? ` Storage cleanup warnings: ${payload.storageErrors.join('; ')}`
+      : ''
+    return {
+      ok: true,
+      documentNumber: payload?.documentNumber ?? null,
+      title: payload?.title ?? null,
+      message: `Document permanently deleted.${storageNote}`,
+    }
   },
 
   async completeAssignment(input: {
@@ -427,7 +684,13 @@ export const edocService = {
     reason?: string
     comment?: string
   }): Promise<EdocActionResult> {
+    if (input.action === 'review') {
+      throw new Error(
+        'Reviewed-by tasks must be completed with an electronic signature (Sign document).',
+      )
+    }
     if (!isSupabaseConfigured()) {
+      notifyEdocInboxChanged()
       return {
         ok: true,
         routeCompleted: false,
@@ -437,15 +700,54 @@ export const edocService = {
     }
 
     const client = requireClient()
+    const optionalNote = input.comment?.trim() || ''
     const { data, error } = await client.rpc('edoc_advance_route', {
       p_route_id: input.routeId,
       p_assignment_id: input.assignmentId,
       p_action: input.action,
       p_reason: input.reason ?? null,
-      p_comment: input.comment ?? null,
+      p_comment: optionalNote || null,
     })
     if (error) throw new Error(error.message)
-    return data as EdocActionResult
+    const result = data as EdocActionResult
+
+    // Optional note is stored on step_actions; also surface it in the audit timeline.
+    if (optionalNote) {
+      const { data: routeRow } = await client
+        .from('edoc_document_routes')
+        .select('organization_id, document_id, version_id')
+        .eq('id', input.routeId)
+        .maybeSingle()
+      if (routeRow) {
+        const { error: noteError } = await client.rpc('edoc_create_audit_event', {
+          p_organization_id: routeRow.organization_id,
+          p_event_type: 'signer_note',
+          p_entity_type: 'assignment',
+          p_entity_id: input.assignmentId,
+          p_document_id: routeRow.document_id,
+          p_version_id: routeRow.version_id,
+          p_reason: optionalNote.slice(0, 2000),
+          p_previous_value: null,
+          p_new_value: { source: 'optional_note', action: input.action },
+        })
+        if (noteError) {
+          console.warn('Optional note audit event failed:', noteError.message)
+        }
+      }
+    }
+
+    if (result.routeCompleted) {
+      const finalized = await this.finalizeDocument(input.routeId)
+      if (!finalized.ok) {
+        notifyEdocInboxChanged()
+        return {
+          ...result,
+          message: `${result.message ?? 'Route completed.'} Final PDF generation pending: ${finalized.error ?? 'retry later'}.`,
+        }
+      }
+    }
+    notifyEdocInboxChanged()
+    return result
   },
 
   async signAssignment(input: {
@@ -456,8 +758,10 @@ export const edocService = {
     signatureMeaning: string
     typedSignature: string
     versionSha256: string
+    comment?: string
   }): Promise<EdocActionResult> {
     if (!isSupabaseConfigured()) {
+      notifyEdocInboxChanged()
       return {
         ok: true,
         routeCompleted: true,
@@ -470,8 +774,54 @@ export const edocService = {
     const { data, error } = await client.functions.invoke('edoc-sign-document', {
       body: input,
     })
-    if (error) throw new Error(error.message)
-    return data as EdocActionResult
+    if (error) {
+      const context = (error as { context?: Response }).context
+      if (context && typeof context.json === 'function') {
+        try {
+          const payload = (await context.json()) as { error?: string; message?: string }
+          const detail = payload.error || payload.message
+          if (detail) throw new Error(detail)
+        } catch (parseError) {
+          if (parseError instanceof Error && parseError.message !== error.message) throw parseError
+        }
+      }
+      throw new Error(error.message)
+    }
+    const payload = data as (EdocActionResult & {
+      error?: string
+      finalize?: { error?: string; verification_code?: string; idempotent?: boolean }
+      fieldLayout?: { adjusted?: boolean; message?: string | null }
+    }) | null
+    if (payload?.error) throw new Error(payload.error)
+
+    // Edge finalize is the primary writer; client retries only when edge failed or package incomplete.
+    let finalizeNote: string | undefined
+    if (payload?.routeCompleted) {
+      const edgeFailed = Boolean(
+        !payload.finalize
+        || (typeof payload.finalize === 'object' && payload.finalize && 'error' in payload.finalize && payload.finalize.error),
+      )
+      const cert = await this.getCompletionCertificateMeta(input.documentId)
+      const incomplete = !cert?.hasPageIntegrity || !cert.verificationCode || !cert.finalPdfSha256
+      if (edgeFailed || incomplete) {
+        const finalized = await this.finalizeCompletedDocument(input.documentId)
+        if (!finalized.ok) {
+          finalizeNote = `Final PDF generation pending: ${finalized.error ?? 'retry later'}.`
+        }
+      }
+    }
+
+    notifyEdocInboxChanged()
+    return {
+      ...(payload as EdocActionResult),
+      message: [payload?.message, finalizeNote].filter(Boolean).join(' ') || 'Signature recorded.',
+      fieldLayout: payload?.fieldLayout
+        ? {
+            adjusted: Boolean(payload.fieldLayout.adjusted),
+            message: payload.fieldLayout.message ?? null,
+          }
+        : undefined,
+    }
   },
 
   async listAuditEvents(documentId?: string): Promise<EdocAuditEvent[]> {

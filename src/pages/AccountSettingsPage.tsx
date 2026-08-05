@@ -30,7 +30,7 @@ import {
 } from '../lib/profileAvatar'
 import {
   PROFILE_SIGNATURE_MAX_BYTES,
-  readFileAsDataUrl,
+  prepareSignaturePngDataUrl,
   validateSignaturePng,
 } from '../lib/profileSignature'
 import { getSignatoryProfileCompleteness } from '../lib/signatoryProfileCompleteness'
@@ -187,7 +187,7 @@ export function AccountSettingsPage() {
     }
 
     try {
-      const dataUrl = await readFileAsDataUrl(file)
+      const dataUrl = await prepareSignaturePngDataUrl(file)
       setSignaturePreview(dataUrl)
       setSignatureDirty(true)
     } catch (err) {
@@ -514,7 +514,7 @@ export function AccountSettingsPage() {
                     Signature (PNG)
                   </h3>
                   <p className="mt-1 mb-0 text-xs text-[var(--muted)]">
-                    PNG only · transparent backgrounds allowed · max{' '}
+                    PNG only · white/paper backgrounds are removed on upload · max{' '}
                     {Math.round(PROFILE_SIGNATURE_MAX_BYTES / 1024)} KB
                   </p>
                 </div>

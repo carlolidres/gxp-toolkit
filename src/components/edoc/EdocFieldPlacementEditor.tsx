@@ -8,12 +8,13 @@ import {
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import { Tooltip } from 'antd'
+import { Alert, Tooltip } from 'antd'
 import {
   ChevronLeft,
   ChevronRight,
   Copy,
   Layers,
+  MousePointerSquareDashed,
   Redo2,
   RotateCw,
   Trash2,
@@ -23,21 +24,27 @@ import {
 } from 'lucide-react'
 
 import { EdocPdfPageCanvas } from './EdocPdfPageCanvas'
+import { EdocSignatureStampPreview } from './EdocSignatureStampPreview'
 import {
   createEdocFieldDraft,
-  edocFieldTypeLabels,
   fieldTypesForAction,
 } from '../../features/edoc/fieldRules'
 import {
   clampFieldToPage,
+  findOverlappingField,
+  isSignatureRectTooSmall,
+  normalizeCreateRect,
   normalizeRotation,
   resolveSoftOverlap,
   signatoryColorForIndex,
 } from '../../features/edoc/fieldPlacementGeometry'
+import {
+  STAMP_MODE_LABEL,
+  pickPreferredMode,
+} from '../../features/edoc/pdfStampGeometry'
 import { usePdfDocument } from '../../features/edoc/usePdfDocument'
 import type { EdocAssignableAction, EdocFieldDraft, EdocFieldType } from '../../features/edoc/types'
 import { iconSize, iconStroke } from '../../theme/iconSizes'
-import { VMP_INPUT_CLASS } from '../../pages/vmp/vmp-form-shared'
 
 export interface EdocPlacementSignatory {
   id: string
@@ -62,11 +69,31 @@ interface DragState {
   pageRect: DOMRect
   createAssigneeId: string | null
   createFieldType: EdocFieldType | null
+  startNormX: number
+  startNormY: number
 }
+
+type DrawTool = {
+  assigneeId: string
+  fieldType: EdocFieldType
+} | null
 
 const MIN_ZOOM = 0.7
 const MAX_ZOOM = 2.2
 const BASE_PAGE_WIDTH = 640
+
+function roleForAction(action: EdocAssignableAction): string {
+  if (action === 'approve') return 'Approver'
+  if (action === 'review') return 'Reviewer'
+  if (action === 'acknowledge') return 'Acknowledger'
+  return 'Signatory'
+}
+
+function layoutModeForField(field: EdocFieldDraft, pageCssWidth: number, pageCssHeight: number): string {
+  const ptW = field.width * pageCssWidth * 0.75
+  const ptH = field.height * pageCssHeight * 0.75
+  return STAMP_MODE_LABEL[pickPreferredMode(ptW, ptH)]
+}
 
 export function EdocFieldPlacementEditor({
   pdfBytes,
@@ -88,6 +115,9 @@ export function EdocFieldPlacementEditor({
   const [renderedSize, setRenderedSize] = useState({ width: BASE_PAGE_WIDTH, height: BASE_PAGE_WIDTH * 1.294 })
   const [past, setPast] = useState<EdocFieldDraft[][]>([])
   const [future, setFuture] = useState<EdocFieldDraft[][]>([])
+  const [drawTool, setDrawTool] = useState<DrawTool>(null)
+  const [createPreview, setCreatePreview] = useState<{ x: number; y: number; width: number; height: number } | null>(null)
+  const [placementWarning, setPlacementWarning] = useState<string | null>(null)
   const pageRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<DragState | null>(null)
   const fieldsRef = useRef(fields)
@@ -110,10 +140,19 @@ export function EdocFieldPlacementEditor({
   )
 
   const selected = fields.find((field) => field.id === selectedId) ?? null
+  const selectedOverlap = selected ? findOverlappingField(selected, fields) : null
 
   useEffect(() => {
     if (pageCount > 0 && pageNumber > pageCount) setPageNumber(pageCount)
   }, [pageCount, pageNumber])
+
+  useEffect(() => {
+    if (selectedOverlap) {
+      setPlacementWarning('Fields cannot overlap. Move or resize until the warning clears before sending.')
+    } else if (placementWarning?.includes('overlap')) {
+      setPlacementWarning(null)
+    }
+  }, [selectedOverlap, placementWarning])
 
   const commitFields = useCallback((next: EdocFieldDraft[], recordHistory = true) => {
     if (recordHistory) {
@@ -138,6 +177,9 @@ export function EdocFieldPlacementEditor({
     const updated = next.find((field) => field.id === fieldId)
     if (!updated) return
     const resolved = resolveSoftOverlap(updated, next)
+    if (findOverlappingField(resolved, next)) {
+      setPlacementWarning('Fields cannot overlap. Adjust placement until they no longer intersect.')
+    }
     commitFields(next.map((field) => (field.id === fieldId ? resolved : field)), recordHistory)
   }, [commitFields])
 
@@ -161,19 +203,25 @@ export function EdocFieldPlacementEditor({
     })
   }
 
-  function placeField(assigneeDraftId: string, fieldType: EdocFieldType, x: number, y: number) {
-    const created = resolveSoftOverlap(
-      createEdocFieldDraft({
-        assigneeDraftId,
-        fieldType,
-        pageNumber,
-        x,
-        y,
-      }),
-      fieldsRef.current,
-    )
+  function placeField(assigneeDraftId: string, fieldType: EdocFieldType, x: number, y: number, width?: number, height?: number) {
+    const draft = createEdocFieldDraft({
+      assigneeDraftId,
+      fieldType,
+      pageNumber,
+      x,
+      y,
+      width,
+      height,
+    })
+    const created = resolveSoftOverlap(draft, fieldsRef.current)
+    if (findOverlappingField(created, fieldsRef.current)) {
+      setPlacementWarning('Cannot place field — it would overlap another field. Draw in a free area.')
+      return
+    }
+    setPlacementWarning(null)
     commitFields([...fieldsRef.current, created])
     setSelectedId(created.id)
+    setDrawTool(null)
   }
 
   function duplicateSelected() {
@@ -187,6 +235,10 @@ export function EdocFieldPlacementEditor({
       },
       fields,
     )
+    if (findOverlappingField(copy, fields)) {
+      setPlacementWarning('Cannot duplicate here — no free space without overlap.')
+      return
+    }
     commitFields([...fields, { ...copy, ...clampFieldToPage(copy) }])
     setSelectedId(copy.id)
   }
@@ -232,7 +284,7 @@ export function EdocFieldPlacementEditor({
         x: point.x,
         y: point.y,
       })
-      placeField(payload.assigneeId, payload.fieldType, draft.x, draft.y)
+      placeField(payload.assigneeId, payload.fieldType, draft.x, draft.y, draft.width, draft.height)
     } catch {
       // ignore invalid drag payloads
     }
@@ -258,6 +310,8 @@ export function EdocFieldPlacementEditor({
       pageRect,
       createAssigneeId: null,
       createFieldType: null,
+      startNormX: field.x,
+      startNormY: field.y,
     }
     setSelectedId(field.id)
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -275,9 +329,45 @@ export function EdocFieldPlacementEditor({
     beginPointerInteraction(field, 'rotate', event)
   }
 
+  function beginCreateDraw(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!drawTool || !pageRef.current) return
+    if ((event.target as HTMLElement).closest('.edoc-field-box-live')) return
+    event.preventDefault()
+    const pageRect = pageRef.current.getBoundingClientRect()
+    const start = clientToNormalized(event.clientX, event.clientY, pageRect)
+    historySnapshotRef.current = fieldsRef.current
+    dragRef.current = {
+      mode: 'create',
+      fieldId: null,
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      originX: start.x,
+      originY: start.y,
+      originWidth: 0,
+      originHeight: 0,
+      originRotation: 0,
+      pageRect,
+      createAssigneeId: drawTool.assigneeId,
+      createFieldType: drawTool.fieldType,
+      startNormX: start.x,
+      startNormY: start.y,
+    }
+    setCreatePreview({ x: start.x, y: start.y, width: 0, height: 0 })
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
   function onPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
     const drag = dragRef.current
-    if (!drag || drag.pointerId !== event.pointerId || !drag.fieldId) return
+    if (!drag || drag.pointerId !== event.pointerId) return
+
+    if (drag.mode === 'create') {
+      const end = clientToNormalized(event.clientX, event.clientY, drag.pageRect)
+      setCreatePreview(normalizeCreateRect(drag.startNormX, drag.startNormY, end.x, end.y))
+      return
+    }
+
+    if (!drag.fieldId) return
     const dx = (event.clientX - drag.startClientX) / drag.pageRect.width
     const dy = (event.clientY - drag.startClientY) / drag.pageRect.height
 
@@ -306,6 +396,25 @@ export function EdocFieldPlacementEditor({
     const drag = dragRef.current
     if (!drag || drag.pointerId !== event.pointerId) return
     dragRef.current = null
+
+    if (drag.mode === 'create' && drag.createAssigneeId && drag.createFieldType) {
+      const end = clientToNormalized(event.clientX, event.clientY, drag.pageRect)
+      const rect = normalizeCreateRect(drag.startNormX, drag.startNormY, end.x, end.y)
+      setCreatePreview(null)
+      if (drag.createFieldType === 'signature' && isSignatureRectTooSmall(rect.width, rect.height)) {
+        setPlacementWarning(
+          'Signature area is too small. Try a taller slim strip (narrow margin) or a wider short banner (~180×36 px), or enlarge the box.',
+        )
+        return
+      }
+      if (drag.createFieldType !== 'signature' && (rect.width < 0.03 || rect.height < 0.03)) {
+        setPlacementWarning('Field is too small. Draw a larger area.')
+        return
+      }
+      placeField(drag.createAssigneeId, drag.createFieldType, rect.x, rect.y, rect.width, rect.height)
+      return
+    }
+
     if (drag.fieldId) {
       const current = fieldsRef.current.find((field) => field.id === drag.fieldId)
       if (current) {
@@ -316,6 +425,9 @@ export function EdocFieldPlacementEditor({
           setFuture([])
           historySnapshotRef.current = null
         }
+        if (findOverlappingField(resolved, fieldsRef.current)) {
+          setPlacementWarning('Fields cannot overlap. Adjust placement before continuing.')
+        }
         onChange(fieldsRef.current.map((field) => (field.id === current.id ? resolved : field)))
       }
     }
@@ -323,6 +435,12 @@ export function EdocFieldPlacementEditor({
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement) {
+      return
+    }
+    if (event.key === 'Escape' && drawTool) {
+      event.preventDefault()
+      setDrawTool(null)
+      setCreatePreview(null)
       return
     }
     const meta = event.ctrlKey || event.metaKey
@@ -412,7 +530,17 @@ export function EdocFieldPlacementEditor({
           <button type="button" className="edoc-placement-tool edoc-placement-tool-danger" aria-label="Delete selected field" disabled={!selected} onClick={deleteSelected}>
             <Trash2 size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />
           </button>
+          {drawTool ? (
+            <span className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-[color-mix(in_srgb,var(--teal)_12%,transparent)] px-2 py-1 text-[11px] font-semibold text-[var(--teal)]">
+              <MousePointerSquareDashed size={14} strokeWidth={iconStroke} aria-hidden />
+              Draw on PDF · Esc to cancel
+            </span>
+          ) : null}
         </div>
+
+        {placementWarning ? (
+          <Alert type="warning" showIcon closable message={placementWarning} onClose={() => setPlacementWarning(null)} />
+        ) : null}
 
         <div
           className="edoc-pdf-surface rounded-xl border border-[var(--border)] bg-[var(--surface-subtle)] p-4 sm:p-5"
@@ -424,14 +552,21 @@ export function EdocFieldPlacementEditor({
           {document ? (
             <div
               ref={pageRef}
-              className="edoc-pdf-page-live relative mx-auto overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--surface-elevated)] shadow-[var(--shadow)]"
-              style={{ width: pageWidth, height: renderedSize.height }}
+              className={`edoc-pdf-page-live relative mx-auto overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--surface-elevated)] shadow-[var(--shadow)] ${drawTool ? 'is-draw-mode' : ''}`}
+              style={{
+                width: pageWidth,
+                height: renderedSize.height,
+                cursor: drawTool ? 'crosshair' : undefined,
+              }}
               onDragOver={(event) => event.preventDefault()}
               onDrop={onPageDrop}
+              onPointerDown={beginCreateDraw}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
-              onClick={() => setSelectedId(null)}
+              onClick={() => {
+                if (!drawTool) setSelectedId(null)
+              }}
             >
               <EdocPdfPageCanvas
                 document={document}
@@ -439,16 +574,37 @@ export function EdocFieldPlacementEditor({
                 width={pageWidth}
                 onRenderedSize={setRenderedSize}
               />
+              {createPreview && createPreview.width > 0.005 && createPreview.height > 0.005 ? (
+                <div
+                  className={`edoc-field-create-preview ${
+                    drawTool?.fieldType === 'signature' && isSignatureRectTooSmall(createPreview.width, createPreview.height)
+                      ? 'is-too-small'
+                      : 'is-ok'
+                  }`}
+                  style={{
+                    left: `${createPreview.x * 100}%`,
+                    top: `${createPreview.y * 100}%`,
+                    width: `${createPreview.width * 100}%`,
+                    height: `${createPreview.height * 100}%`,
+                  }}
+                />
+              ) : null}
               {pageFields.map((field) => {
                 const signatory = signatories.find((item) => item.id === field.assigneeDraftId)
                 const color = colorByAssignee.get(field.assigneeDraftId) ?? signatoryColorForIndex(0)
                 const isSelected = field.id === selectedId
-                const label = `${edocFieldTypeLabels[field.fieldType]} · ${signatory?.displayName ?? 'Signatory'}`
+                const isSignature = field.fieldType === 'signature'
+                const layoutLabel = isSignature
+                  ? layoutModeForField(field, renderedSize.width, renderedSize.height)
+                  : null
+                const dimLabel = `${Math.round(field.width * renderedSize.width)}×${Math.round(field.height * renderedSize.height)}px`
+                const label = `${signatory?.displayName ?? 'Signatory'}${layoutLabel ? ` · ${layoutLabel}` : ''}`
+                const overlaps = Boolean(findOverlappingField(field, fields))
                 return (
-                  <Tooltip key={field.id} title={`${label} · Page ${field.pageNumber} · ${Math.round(field.rotation)}°`}>
+                  <Tooltip key={field.id} title={`${label} · ${dimLabel} · Page ${field.pageNumber}`}>
                     <button
                       type="button"
-                      className={`edoc-field-box-live ${isSelected ? 'is-selected' : ''}`}
+                      className={`edoc-field-box-live ${isSelected ? 'is-selected' : ''} ${isSignature ? 'is-signature' : ''} ${overlaps ? 'is-invalid' : ''}`}
                       aria-label={label}
                       aria-pressed={isSelected}
                       style={{
@@ -457,7 +613,7 @@ export function EdocFieldPlacementEditor({
                         width: `${field.width * 100}%`,
                         height: `${field.height * 100}%`,
                         transform: `rotate(${field.rotation}deg)`,
-                        background: color.fill,
+                        background: isSignature ? 'transparent' : color.fill,
                         borderColor: color.stroke,
                         color: color.text,
                       }}
@@ -467,8 +623,28 @@ export function EdocFieldPlacementEditor({
                       }}
                       onPointerDown={(event) => beginMove(field, event)}
                     >
-                      <span className="edoc-field-box-live-label">{signatory?.displayName ?? 'Signatory'}</span>
-                      <span className="edoc-field-box-live-type">{edocFieldTypeLabels[field.fieldType]}</span>
+                      {isSignature ? (
+                        <EdocSignatureStampPreview
+                          className="edoc-field-stamp-preview"
+                          editing
+                          signerName={signatory?.displayName ?? 'Signatory'}
+                          role={signatory ? roleForAction(signatory.action) : 'Signatory'}
+                          reason="Approved this document"
+                          email=""
+                          signedAtLabel="Preview · local time"
+                        />
+                      ) : (
+                        <span className="edoc-field-box-live-label">{signatory?.displayName ?? 'Signatory'}</span>
+                      )}
+                      {isSelected ? (
+                        <span className="edoc-field-meta-chip">
+                          {layoutLabel ? `${layoutLabel} · ` : ''}{dimLabel}
+                        </span>
+                      ) : (
+                        <span className="edoc-field-assignee-chip" style={{ background: color.stroke }}>
+                          {signatory?.displayName?.split(' ')[0] ?? 'Signer'}
+                        </span>
+                      )}
                       {isSelected ? (
                         <>
                           <span
@@ -490,78 +666,57 @@ export function EdocFieldPlacementEditor({
             </div>
           ) : null}
         </div>
-        <p className="m-0 text-xs text-[var(--muted)]">
-          Drag fields from the palette onto the page. Move, resize from the corner, rotate from the top handle. Arrow keys nudge; Delete removes; Ctrl/Cmd+Z undo; Ctrl/Cmd+D duplicate; R rotates.
-        </p>
       </div>
 
       <aside className="edoc-field-panel rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5 shadow-[var(--shadow)]">
         <h2 className="m-0 flex items-center gap-2 text-base font-semibold text-[var(--navy)]">
           <Layers size={iconSize.sm} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />
-          Required fields
+          Signatories
         </h2>
 
         {emptyMessage ? (
           <p className="m-0 text-sm text-[var(--muted)]">{emptyMessage}</p>
         ) : signatories.length === 0 ? (
-          <p className="m-0 text-sm text-[var(--muted)]">Add assignees in the routing step before placing fields.</p>
+          <p className="m-0 text-sm text-[var(--muted)]">Add assignees in the routing step before placing signatures.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {signatories.map((signatory, index) => {
               const color = signatoryColorForIndex(index)
-              const allowedFields = fieldTypesForAction(signatory.action)
+              const fieldType = fieldTypesForAction(signatory.action)[0] ?? 'signature'
               const placedCount = fields.filter((field) => field.assigneeDraftId === signatory.id).length
+              const active = drawTool?.assigneeId === signatory.id
               return (
                 <div key={signatory.id} className="edoc-field-row rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-3">
-                  <div className="flex items-start gap-2">
-                    <span className="mt-1 h-3 w-3 shrink-0 rounded-full" style={{ background: color.stroke }} aria-hidden />
+                  <div className="flex items-center gap-2">
+                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: color.stroke }} aria-hidden />
                     <div className="min-w-0 flex-1">
-                      <strong className="block text-sm text-[var(--navy)]">{signatory.label}</strong>
-                      <span className="text-xs text-[var(--muted)]">{placedCount} field{placedCount === 1 ? '' : 's'} placed</span>
+                      <strong className="block truncate text-sm text-[var(--navy)]">{signatory.displayName}</strong>
+                      <span className="text-xs text-[var(--muted)]">
+                        {signatory.label}
+                        {placedCount > 0 ? ` · ${placedCount} placed` : ''}
+                      </span>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {allowedFields.map((fieldType) => (
-                      <button
-                        key={fieldType}
-                        type="button"
-                        draggable
-                        className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-xs font-medium text-[var(--navy)] transition hover:border-[var(--teal)] hover:text-[var(--teal)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--teal)]"
-                        style={{ borderColor: color.stroke }}
-                        aria-label={`Drag ${edocFieldTypeLabels[fieldType]} for ${signatory.displayName}`}
-                        onDragStart={(event) => onPaletteDragStart(event, signatory.id, fieldType)}
-                        onClick={() => placeField(signatory.id, fieldType, 0.12 + (placedCount % 3) * 0.08, 0.7)}
-                      >
-                        {edocFieldTypeLabels[fieldType]}
-                      </button>
-                    ))}
-                  </div>
-                  <label className="grid gap-1 text-xs text-[var(--muted)]">
-                    Or add to current page
-                    <select
-                      className={VMP_INPUT_CLASS}
-                      aria-label={`Add field for ${signatory.label}`}
-                      defaultValue=""
-                      onChange={(event) => {
-                        if (!event.target.value) return
-                        placeField(signatory.id, event.target.value as EdocFieldType, 0.12, 0.72)
-                        event.currentTarget.value = ''
+                    <button
+                      type="button"
+                      className={`shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--teal)] ${active ? 'border-[var(--teal)] bg-[color-mix(in_srgb,var(--teal)_12%,transparent)] text-[var(--teal)]' : 'border-[var(--border)] bg-[var(--surface)] text-[var(--navy)] hover:border-[var(--teal)] hover:text-[var(--teal)]'}`}
+                      style={{ borderColor: active ? undefined : color.stroke }}
+                      aria-label={active ? `Cancel drawing for ${signatory.displayName}` : `Place signature for ${signatory.displayName}`}
+                      aria-pressed={active}
+                      draggable
+                      onDragStart={(event) => onPaletteDragStart(event, signatory.id, fieldType)}
+                      onClick={() => {
+                        setDrawTool(active ? null : { assigneeId: signatory.id, fieldType })
+                        setPlacementWarning(active ? null : `Click and drag on the PDF to place ${signatory.displayName}'s signature.`)
                       }}
                     >
-                      <option value="" disabled>Add field</option>
-                      {allowedFields.map((fieldType) => (
-                        <option key={fieldType} value={fieldType}>{edocFieldTypeLabels[fieldType]}</option>
-                      ))}
-                    </select>
-                  </label>
+                      {active ? 'Cancel' : placedCount > 0 ? 'Add another' : 'Place'}
+                    </button>
+                  </div>
                 </div>
               )
             })}
           </div>
         )}
-        <p className="m-0 text-xs leading-relaxed text-[var(--muted)]">
-          Name, Position/Title, and Signature overlays are filled from each assignee&apos;s Account Settings profile at signing time. Coordinates are stored as normalized page values (0–1) with rotation in degrees.
-        </p>
       </aside>
     </div>
   )

@@ -25,21 +25,31 @@ export function FormField({ label, hint, children }: { label: string; hint?: str
   )
 }
 
-export function TextInput({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+export function TextInput({
+  className,
+  status,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & { status?: 'error' | 'warning' }) {
   return (
     <Input
       className={className}
+      status={status}
       {...(props as Record<string, unknown>)}
     />
   )
 }
 
-export function PasswordInput({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+export function PasswordInput({
+  className,
+  status,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & { status?: 'error' | 'warning' }) {
   const [visible, setVisible] = useState(false)
 
   return (
     <Input.Password
       className={className}
+      status={status}
       visibilityToggle={{
         visible,
         onVisibleChange: setVisible,

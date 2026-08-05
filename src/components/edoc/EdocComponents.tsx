@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Alert, Empty, Space, Spin, Tooltip, Typography } from 'antd'
+import { Alert, Empty, Spin, Tooltip, Typography } from 'antd'
 import {
   Archive,
   Ban,
@@ -11,8 +11,10 @@ import {
   FileWarning,
   Inbox,
   Loader2,
+  PenLine,
   RotateCcw,
   Send,
+  ShieldCheck,
   TimerOff,
   TriangleAlert,
   XCircle,
@@ -20,7 +22,11 @@ import {
 } from 'lucide-react'
 
 import { formatAppDate } from '../../utils/dateUtils'
-import type { EdocDocumentStatus, EdocPriority } from '../../features/edoc/types'
+import type {
+  EdocAssignableAction,
+  EdocDocumentStatus,
+  EdocPriority,
+} from '../../features/edoc/types'
 import { iconSize, iconStroke } from '../../theme/iconSizes'
 
 const { Title, Paragraph, Text } = Typography
@@ -104,7 +110,7 @@ const statusMeta: Record<EdocDocumentStatus, StatusMeta> = {
   },
   archived: {
     label: 'Archived',
-    description: 'Document is retained for reference and no longer in active workflow.',
+    description: 'Document is retained for reference and is no longer in active workflow.',
     tone: 'default',
     Icon: Archive,
   },
@@ -137,6 +143,36 @@ const priorityMeta: Record<EdocPriority, PriorityMeta> = {
   },
 }
 
+const actionMeta: Record<
+  EdocAssignableAction,
+  { label: string; description: string; tone: EdocTone; Icon: LucideIcon }
+> = {
+  review: {
+    label: 'Review',
+    description: 'Review and electronically sign this document.',
+    tone: 'processing',
+    Icon: FilePen,
+  },
+  approve: {
+    label: 'Approve',
+    description: 'Approve this document to continue routing.',
+    tone: 'success',
+    Icon: ShieldCheck,
+  },
+  sign: {
+    label: 'Sign',
+    description: 'Apply your electronic signature.',
+    tone: 'warning',
+    Icon: PenLine,
+  },
+  acknowledge: {
+    label: 'Acknowledge',
+    description: 'Acknowledge receipt and understanding.',
+    tone: 'default',
+    Icon: CheckCircle2,
+  },
+}
+
 export function getEdocStatusLabel(status: EdocDocumentStatus): string {
   return statusMeta[status].label
 }
@@ -145,16 +181,22 @@ export function getEdocPriorityLabel(priority: EdocPriority): string {
   return priorityMeta[priority].label
 }
 
-function EdocStatusIcon({
+export function getEdocActionLabel(action: EdocAssignableAction): string {
+  return actionMeta[action].label
+}
+
+function EdocMetaPill({
   label,
   description,
   tone,
   Icon,
+  showLabel = true,
 }: {
   label: string
   description: string
   tone: EdocTone
   Icon: LucideIcon
+  showLabel?: boolean
 }) {
   return (
     <Tooltip
@@ -166,13 +208,17 @@ function EdocStatusIcon({
       }
     >
       <span
-        className={`edoc-status-icon tone-${tone}`}
+        className={`edoc-meta-pill tone-${tone}${showLabel ? '' : ' edoc-meta-pill--icon'}`}
         aria-label={`${label}. ${description}`}
         role="img"
         tabIndex={0}
       >
-        <Icon size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />
-        <span className="visually-hidden">{label}</span>
+        <Icon size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />
+        {showLabel ? (
+          <span className="edoc-meta-pill-label">{label}</span>
+        ) : (
+          <span className="visually-hidden">{label}</span>
+        )}
       </span>
     </Tooltip>
   )
@@ -183,64 +229,100 @@ export function EdocPage({
   title,
   description,
   action,
+  icon: Icon,
   children,
 }: {
   eyebrow?: string
   title: string
   description?: string
   action?: ReactNode
+  icon?: LucideIcon
   children: ReactNode
 }) {
   return (
     <div className="page edoc-page">
-      <section className="page-header">
-        <div>
-          <Text className="eyebrow" type="secondary">
+      <section className="page-header edoc-page-header">
+        <div className="edoc-page-header-copy">
+          <Text className="eyebrow edoc-page-eyebrow" type="secondary">
             {eyebrow}
           </Text>
-          <Title level={2} style={{ margin: 0 }}>
-            {title}
-          </Title>
+          <div className="edoc-page-title-row">
+            {Icon ? (
+              <span className="edoc-page-header-icon" aria-hidden>
+                <Icon size={iconSize.md} strokeWidth={iconStroke} />
+              </span>
+            ) : null}
+            <Title level={2} className="edoc-page-title">
+              {title}
+            </Title>
+          </div>
           {description ? (
-            <Paragraph type="secondary" style={{ marginBottom: 0 }}>
+            <Paragraph type="secondary" className="edoc-page-description">
               {description}
             </Paragraph>
           ) : null}
         </div>
-        {action ? <Space wrap>{action}</Space> : null}
+        {action ? <div className="edoc-page-header-actions">{action}</div> : null}
       </section>
       {children}
     </div>
   )
 }
 
-export function EdocStatusBadge({ status }: { status: EdocDocumentStatus }) {
+export function EdocStatusBadge({
+  status,
+  showLabel = true,
+}: {
+  status: EdocDocumentStatus
+  showLabel?: boolean
+}) {
   const meta = statusMeta[status]
   return (
-    <EdocStatusIcon
+    <EdocMetaPill
       label={meta.label}
       description={meta.description}
       tone={meta.tone}
       Icon={meta.Icon}
+      showLabel={showLabel}
     />
   )
 }
 
-export function EdocPriorityBadge({ priority }: { priority: EdocPriority }) {
+export function EdocPriorityBadge({
+  priority,
+  showLabel = true,
+}: {
+  priority: EdocPriority
+  showLabel?: boolean
+}) {
   const meta = priorityMeta[priority]
   return (
-    <EdocStatusIcon
+    <EdocMetaPill
       label={meta.label}
       description={meta.description}
       tone={meta.tone}
       Icon={meta.Icon}
+      showLabel={showLabel}
+    />
+  )
+}
+
+export function EdocActionBadge({ action }: { action: EdocAssignableAction }) {
+  const meta = actionMeta[action]
+  return (
+    <EdocMetaPill
+      label={meta.label}
+      description={meta.description}
+      tone={meta.tone}
+      Icon={meta.Icon}
+      showLabel
     />
   )
 }
 
 export function EdocLoading({ label = 'Loading eDoc data...' }: { label?: string }) {
   return (
-    <div className="vrms-loading" role="status" aria-live="polite">
+    <div className="edoc-loading" role="status" aria-live="polite">
       <Spin
         tip={label}
         indicator={<Loader2 className="anticon-spin" size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />}
@@ -257,19 +339,33 @@ export function EdocError({ message }: { message: string }) {
       icon={<FileWarning size={iconSize.md} strokeWidth={iconStroke} aria-hidden />}
       message={message}
       role="alert"
+      className="edoc-error-alert"
     />
   )
 }
 
-export function EdocEmpty({ title, description }: { title: string; description: string }) {
+export function EdocEmpty({
+  title,
+  description,
+  action,
+}: {
+  title: string
+  description: string
+  action?: ReactNode
+}) {
   return (
     <Empty
-      className="panel edoc-empty"
-      image={<Inbox size={iconSize.dashboard} strokeWidth={iconStroke} aria-hidden />}
+      className="edoc-empty"
+      image={
+        <span className="edoc-empty-icon" aria-hidden>
+          <Inbox size={iconSize.dashboard} strokeWidth={iconStroke} />
+        </span>
+      }
       description={
-        <div>
+        <div className="edoc-empty-copy">
           <h2>{title}</h2>
           <p>{description}</p>
+          {action ? <div className="edoc-empty-action">{action}</div> : null}
         </div>
       }
     />
@@ -278,4 +374,13 @@ export function EdocEmpty({ title, description }: { title: string; description: 
 
 export function formatEdocDate(value: string | null): string {
   return formatAppDate(value, 'Not set')
+}
+
+export function formatEdocEventType(eventType: string): string {
+  if (eventType === 'signer_note') return 'Optional Note'
+  return eventType
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
 }

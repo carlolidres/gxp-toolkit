@@ -1,20 +1,31 @@
 # Active Plan
 
-Last Updated: `2026-07-28`
+Last Updated: `2026-08-04`
 
 Plan Owner: `Cursor`
 
-Status: `COMPLETE` (v41 commit/deploy in progress)
+Status: `IN PROGRESS` → Phase 1 software complete; validation package deferred
+
+Active visual/requirements plan: `plans/edoc-integrity-verification/plan.md`
 
 ## Objective
 
-External Document Controller authorization: when any signatory’s Account Settings organization differs from the creator’s, prepend a first-action-wins DC authorization step; block send if no controller; notify and audit throughout.
+Deliver Phase 1 eDoc integrity footers, page codes, signature verify links/QR, and public verification without claiming FDA certification. Add PDF zoom on document/workspace preview.
 
-## Acceptance
+## Done (Phase 1)
 
-1. [x] Migration: external org detect, DC prepend step (`completion_rule any`), defer member bootstrap, block if no DC + audit
-2. [x] Advance path for `external_auth`: lock, sibling/creator notifications, bootstrap on approve
-3. [x] TS helper + Create/Workspace UI warnings; race error messaging
-4. [x] Admin persistent missing-DC warning + self-assign confirm/audit on DC nomination
-5. [x] Tests, type-check, db:map, pilot docs, HANDOFF/PLAN
-6. [x] Version bump to v41 + commit/push/deploy (owner requested)
+1. Canonicalization helpers + unit tests  
+2. Finalize: footers, links, QR, page-code persistence, audit events  
+3. Migration + `edoc_public_verify_certificate` RPC  
+4. Public verify page + hash upload compare  
+5. Staging migrate + finalize deploy  
+6. PDF zoom in/out (document view + signing workspace)  
+7. URS §1–§9 mapped in plan (software vs deferred)
+
+## Remaining / deferred
+
+- PAdES / TSA  
+- Full URS / RTM / IQ-OQ-PQ / VSR  
+- MFA policy, WORM storage, CDN bot protection  
+- Live E2E finalize smoke by owner  
+- Exhaustive audit-event catalog gaps (separate backlog)  

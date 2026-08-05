@@ -1,4 +1,15 @@
 import type { EdocFieldDraft } from './types'
+import {
+  MIN_SIGNATURE_FIELD_NORM,
+  meetsSignatureMinArea,
+  signatureMinNormForSize,
+} from './pdfStampGeometry'
+
+export {
+  MIN_SIGNATURE_AREA_NORM,
+  meetsSignatureMinArea,
+  signatureMinNormForSize,
+} from './pdfStampGeometry'
 
 export function clampNormalized(value: number, min = 0, max = 1): number {
   if (!Number.isFinite(value)) return min
@@ -11,20 +22,49 @@ export function normalizeRotation(degrees: number): number {
   return Math.round(wrapped * 10) / 10
 }
 
-export function clampFieldToPage(field: Pick<EdocFieldDraft, 'x' | 'y' | 'width' | 'height'>): {
+/** Absolute floor — prefer aspect-aware `signatureMinNormForSize`. */
+export const MIN_SIGNATURE_NORM = {
+  width: MIN_SIGNATURE_FIELD_NORM.width,
+  height: MIN_SIGNATURE_FIELD_NORM.height,
+} as const
+
+export function clampFieldToPage(field: Pick<EdocFieldDraft, 'x' | 'y' | 'width' | 'height'> & { fieldType?: string }): {
   x: number
   y: number
   width: number
   height: number
 } {
-  const width = clampNormalized(field.width, 0.03, 0.95)
-  const height = clampNormalized(field.height, 0.03, 0.95)
+  const isSignature = field.fieldType === 'signature'
+  if (!isSignature) {
+    const width = clampNormalized(field.width, 0.03, 0.95)
+    const height = clampNormalized(field.height, 0.03, 0.95)
+    return {
+      width,
+      height,
+      x: clampNormalized(field.x, 0, 1 - width),
+      y: clampNormalized(field.y, 0, 1 - height),
+    }
+  }
+
+  const proposedW = Math.max(field.width, MIN_SIGNATURE_NORM.width)
+  const proposedH = Math.max(field.height, MIN_SIGNATURE_NORM.height)
+  const aspectMin = signatureMinNormForSize(proposedW, proposedH)
+  // Grow toward the aspect-aware min without forcing a square onto a banner (or vice versa).
+  const width = clampNormalized(Math.max(field.width, aspectMin.width * 0.92), MIN_SIGNATURE_NORM.width, 0.95)
+  const height = clampNormalized(Math.max(field.height, aspectMin.height * 0.92), MIN_SIGNATURE_NORM.height, 0.95)
   return {
     width,
     height,
     x: clampNormalized(field.x, 0, 1 - width),
     y: clampNormalized(field.y, 0, 1 - height),
   }
+}
+
+/** True when a drawn signature rect is too small even for slim/banner. */
+export function isSignatureRectTooSmall(width: number, height: number): boolean {
+  if (!meetsSignatureMinArea(width, height)) return true
+  const min = signatureMinNormForSize(width, height)
+  return width < min.width * 0.85 || height < min.height * 0.85
 }
 
 export function fieldsOverlap(
@@ -41,14 +81,24 @@ export function fieldsOverlap(
   )
 }
 
-/** Soft nudge away from overlapping siblings while remaining on-page. */
+export function findOverlappingField(
+  field: EdocFieldDraft,
+  others: readonly EdocFieldDraft[],
+): EdocFieldDraft | null {
+  return others.find((other) => other.id !== field.id && fieldsOverlap(field, other)) ?? null
+}
+
+/**
+ * Soft nudge away from overlapping siblings while remaining on-page.
+ * Returns null when a hard collision remains (caller should warn / reject save).
+ */
 export function resolveSoftOverlap(
   field: EdocFieldDraft,
   others: readonly EdocFieldDraft[],
 ): EdocFieldDraft {
   let next = { ...field, ...clampFieldToPage(field) }
   for (let attempt = 0; attempt < 8; attempt += 1) {
-    const collision = others.find((other) => other.id !== next.id && fieldsOverlap(next, other))
+    const collision = findOverlappingField(next, others)
     if (!collision) return next
     next = {
       ...next,
@@ -60,6 +110,11 @@ export function resolveSoftOverlap(
     }
   }
   return next
+}
+
+/** True when field still intersects another field after soft resolve. */
+export function hasHardOverlap(field: EdocFieldDraft, others: readonly EdocFieldDraft[]): boolean {
+  return findOverlappingField(resolveSoftOverlap(field, others), others) != null
 }
 
 export const SIGNATORY_COLOR_PALETTE = [
@@ -119,5 +174,22 @@ export function redoHistory<T>(past: T[], present: T, future: T[]): {
     past: [...past, present],
     present: next,
     future: future.slice(1),
+  }
+}
+
+/** Normalize a drag-create rectangle (handles reverse drag). */
+export function normalizeCreateRect(
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+): { x: number; y: number; width: number; height: number } {
+  const x = Math.min(startX, endX)
+  const y = Math.min(startY, endY)
+  return {
+    x,
+    y,
+    width: Math.abs(endX - startX),
+    height: Math.abs(endY - startY),
   }
 }

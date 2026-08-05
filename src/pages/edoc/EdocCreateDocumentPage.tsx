@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type DragEvent, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Alert, Button, Steps, Tooltip } from 'antd'
 import {
@@ -112,6 +112,18 @@ function WizardActions({
 
 const wizardSteps = ['Metadata', 'PDF upload', 'Routing setup', 'Field placement', 'Review and send']
 
+/** Default document number when the field is left blank. Shown muted until the user edits. */
+const DOCUMENT_NUMBER_DEFAULT = 'NA'
+
+function isDocumentNumberDefault(value: string): boolean {
+  return value.trim().toUpperCase() === DOCUMENT_NUMBER_DEFAULT
+}
+
+function resolveDocumentNumber(value: string): string {
+  const trimmed = value.trim()
+  return trimmed === '' ? DOCUMENT_NUMBER_DEFAULT : trimmed
+}
+
 export function EdocCreateDocumentPage() {
   const navigate = useNavigate()
   const profiles = useEdocProfiles()
@@ -126,7 +138,7 @@ export function EdocCreateDocumentPage() {
   } | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [metadata, setMetadata] = useState<EdocCreateDraftInput['metadata']>({
-    documentNumber: '',
+    documentNumber: DOCUMENT_NUMBER_DEFAULT,
     title: '',
     description: '',
     documentType: '',
@@ -142,6 +154,7 @@ export function EdocCreateDocumentPage() {
   const [file, setFile] = useState<EdocCreateDraftInput['file']>(null)
   const [pdfBytes, setPdfBytes] = useState<ArrayBuffer | null>(null)
   const [selectedFileName, setSelectedFileName] = useState('')
+  const [pdfDropActive, setPdfDropActive] = useState(false)
   const [routingMode, setRoutingMode] = useState<EdocRoutingMode>('sequential')
   const [noSignatories, setNoSignatories] = useState(false)
   const [levels, setLevels] = useState<EdocSignatoryLevelDraft[]>([])
@@ -201,8 +214,9 @@ export function EdocCreateDocumentPage() {
         mode: routingMode,
         levels,
         noSignatories,
+        dueAt: metadata.dueAt,
       }),
-    [levels, noSignatories, routingMode],
+    [levels, metadata.dueAt, noSignatories, routingMode],
   )
 
   function updateMetadata(key: keyof EdocCreateDraftInput['metadata'], value: string) {
@@ -212,7 +226,8 @@ export function EdocCreateDocumentPage() {
   function continueFromMetadata(event: FormEvent) {
     event.preventDefault()
     setError(null)
-    if (!metadata.documentNumber.trim()) return setError('Document number is required.')
+    const documentNumber = resolveDocumentNumber(metadata.documentNumber)
+    setMetadata((current) => ({ ...current, documentNumber }))
     if (!metadata.title.trim()) return setError('Title is required.')
     setActiveStep(1)
   }
@@ -240,6 +255,45 @@ export function EdocCreateDocumentPage() {
       mimeType: fileInput.type || 'application/pdf',
       sha256: await sha256Hex(fileInput),
     })
+  }
+
+  function pickPdfFromFileList(files: FileList | null): File | null {
+    if (!files?.length) return null
+    const listed = Array.from(files)
+    return (
+      listed.find(
+        (candidate) =>
+          candidate.type === 'application/pdf' || candidate.name.toLowerCase().endsWith('.pdf'),
+      ) ?? listed[0] ?? null
+    )
+  }
+
+  function handlePdfDragEnter(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+    event.stopPropagation()
+    setPdfDropActive(true)
+  }
+
+  function handlePdfDragOver(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+    event.stopPropagation()
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
+    if (!pdfDropActive) setPdfDropActive(true)
+  }
+
+  function handlePdfDragLeave(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+    event.stopPropagation()
+    const next = event.relatedTarget
+    if (next instanceof Node && event.currentTarget.contains(next)) return
+    setPdfDropActive(false)
+  }
+
+  function handlePdfDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+    event.stopPropagation()
+    setPdfDropActive(false)
+    void handlePdfSelected(pickPdfFromFileList(event.dataTransfer.files))
   }
 
   function continueFromRouting() {
@@ -313,13 +367,21 @@ export function EdocCreateDocumentPage() {
       mode: routingMode,
       levels,
       noSignatories,
+      dueAt: metadata.dueAt,
     })
 
     setSubmitting(true)
     try {
+      const resolvedMetadata = {
+        ...metadata,
+        documentNumber: resolveDocumentNumber(metadata.documentNumber),
+      }
+      if (resolvedMetadata.documentNumber !== metadata.documentNumber) {
+        setMetadata(resolvedMetadata)
+      }
       const result = await edocService.createAndSendDraft(
         {
-          metadata,
+          metadata: resolvedMetadata,
           file,
           routing,
           fields: noSignatories ? [] : fields,
@@ -409,12 +471,31 @@ export function EdocCreateDocumentPage() {
               >
                 <input
                   id="edoc-document-number"
-                  className={VMP_INPUT_CLASS}
+                  className={`${VMP_INPUT_CLASS}${
+                    isDocumentNumberDefault(metadata.documentNumber)
+                      ? ' text-[var(--muted)]'
+                      : ''
+                  }`}
                   value={metadata.documentNumber}
-                  onChange={(event) => updateMetadata('documentNumber', event.target.value)}
+                  onFocus={(event) => {
+                    if (isDocumentNumberDefault(event.currentTarget.value)) {
+                      updateMetadata('documentNumber', '')
+                    }
+                  }}
+                  onChange={(event) => {
+                    let next = event.target.value
+                    if (isDocumentNumberDefault(metadata.documentNumber)) {
+                      next = next.replace(/^NA/i, '')
+                    }
+                    updateMetadata('documentNumber', next)
+                  }}
+                  onBlur={(event) => {
+                    if (!event.currentTarget.value.trim()) {
+                      updateMetadata('documentNumber', DOCUMENT_NUMBER_DEFAULT)
+                    }
+                  }}
                   required
                   autoComplete="off"
-                  placeholder="e.g. EDOC-2026-001"
                 />
               </WizardField>
 
@@ -505,21 +586,38 @@ export function EdocCreateDocumentPage() {
               >
                 <label
                   htmlFor="edoc-pdf-file"
-                  className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-muted)] px-4 py-8 text-center transition-[border-color,background-color] hover:border-[color-mix(in_srgb,var(--teal)_45%,var(--border))] hover:bg-[color-mix(in_srgb,var(--teal)_6%,var(--surface))] focus-within:border-[var(--teal)] focus-within:ring-2 focus-within:ring-[var(--glow-ring)]"
+                  onDragEnter={handlePdfDragEnter}
+                  onDragOver={handlePdfDragOver}
+                  onDragLeave={handlePdfDragLeave}
+                  onDrop={handlePdfDrop}
+                  aria-describedby="edoc-pdf-drop-hint"
+                  className={[
+                    'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-4 py-8 text-center transition-[border-color,background-color,box-shadow]',
+                    pdfDropActive
+                      ? 'border-[var(--teal)] bg-[color-mix(in_srgb,var(--teal)_10%,var(--surface))] shadow-[0_0_0_3px_color-mix(in_srgb,var(--teal)_22%,transparent)]'
+                      : 'border-[var(--border)] bg-[var(--surface-muted)] hover:border-[color-mix(in_srgb,var(--teal)_45%,var(--border))] hover:bg-[color-mix(in_srgb,var(--teal)_6%,var(--surface))] focus-within:border-[var(--teal)] focus-within:ring-2 focus-within:ring-[var(--glow-ring)]',
+                  ].join(' ')}
                 >
                   <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--teal)_14%,var(--surface))] text-[var(--teal)]">
                     <Upload size={iconSize.md} strokeWidth={iconStroke} aria-hidden />
                   </span>
                   <span className="text-sm font-semibold text-[var(--navy)]">
-                    {selectedFileName || 'Choose a PDF to upload'}
+                    {pdfDropActive
+                      ? 'Drop PDF to upload'
+                      : selectedFileName || 'Drag and drop a PDF here'}
                   </span>
-                  <span className="text-xs text-[var(--muted)]">Click to browse · PDF only</span>
+                  <span id="edoc-pdf-drop-hint" className="text-xs text-[var(--muted)]">
+                    {pdfDropActive ? 'Release to validate the file' : 'or click to browse · PDF only'}
+                  </span>
                   <input
                     id="edoc-pdf-file"
                     className="sr-only"
                     type="file"
                     accept="application/pdf,.pdf"
-                    onChange={(event) => void handlePdfSelected(event.target.files?.[0] ?? null)}
+                    onChange={(event) => {
+                      void handlePdfSelected(event.target.files?.[0] ?? null)
+                      event.target.value = ''
+                    }}
                   />
                 </label>
               </WizardField>
@@ -706,7 +804,7 @@ export function EdocCreateDocumentPage() {
             ) : null}
             <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="Document review summary">
               {[
-                { label: 'Document', value: metadata.documentNumber || '—', icon: FileDigit },
+                { label: 'Document', value: resolveDocumentNumber(metadata.documentNumber), icon: FileDigit },
                 { label: 'Title', value: metadata.title || '—', icon: Type },
                 { label: 'Version', value: 'v1', icon: Hash },
                 {

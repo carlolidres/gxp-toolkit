@@ -36,6 +36,7 @@ Workflow app status: `workflow-app/` uses its own local SQLite store for approva
 | `supabase/migrations/20260728140000_profile_avatar.sql` | `profiles.avatar_data_url` for Account Settings / chrome avatars | Applied remote 2026-07-28 |
 | `supabase/migrations/20260728150000_edoc_external_auth_gate.sql` | `edoc_route_steps.step_kind`; external-auth gate in `edoc_create_and_start_route`; notify/list/warnings RPCs | Applied remote 2026-07-28 |
 | `supabase/migrations/20260728151000_edoc_external_auth_advance.sql` | Inbox `step_kind`; `edoc_advance_route` external auth; DC nomination audit/self-assign | Applied remote 2026-07-28 |
+| `supabase/migrations/20260801120000_edoc_signed_pdf_manifestation.sql` | Route `transaction_id`; signature event snapshots; certificate uniqueness + final hash/page count | Applied remote 2026-08-01 |
 | `supabase/migrations/20260725140000_fix_edoc_profile_id_ambiguity.sql` | Rename PL/pgSQL `profile_id` → `v_profile_id` in `edoc_create_and_start_route` (Postgres 42702) | Applied remote 2026-07-25 |
 | `supabase/migrations/20260727100000_edoc_send_inbox_pdf_access.sql` | Send returns file keys + active assignment; assignees become org members; owner storage upload policies | Applied remote 2026-07-27 |
 | `supabase/migrations/20260727110000_fix_edoc_route_id_ambiguity.sql` | Rename PL/pgSQL vars (`v_route_id`, …) in `edoc_create_and_start_route` (Postgres ambiguous `route_id`) | Applied remote 2026-07-27 |
@@ -115,6 +116,13 @@ Payload type: `EdocCreateDraftInput` in `src/features/edoc/types.ts`.
 Related tables (via RPC): `edoc_documents`, `edoc_document_versions`, `edoc_document_files`, `edoc_document_routes`, `edoc_route_steps`, `edoc_route_step_assignees`, `edoc_signature_fields`, `edoc_audit_events`, `edoc_notifications`.
 
 Signatory profile completeness (client): first name, last name, `job_title`, and `signature_data_url` must be set in Account Settings before eDoc signing (`src/lib/signatoryProfileCompleteness.ts`).
+
+### Visible signature stamp + completion history
+
+- Sign: Edge Function `edoc-sign-document` stamps eSig-style blocks onto the cumulative PDF at `edoc_signature_fields` (signature/initial), using server-loaded profile PNG/email/name and preset meaning as Reason.
+- Finalize: Edge Function `edoc-finalize-document` (idempotent on `edoc_completion_certificates.route_id`) appends audit-derived history page(s) when the route is `completed`; stores Final Signed PDF (`file_role=certificate` + signed copy); sets `edoc_document_versions.final_sha256`.
+- Preview/download preference: certificate → latest signed → original (`edocService.getPreferredDocumentFile`).
+- Shared stamp/history code: `supabase/functions/_shared/edocPdfStamp.ts`; client geometry tests: `src/features/edoc/pdfStampGeometry.ts`.
 
 ## Core Relationships
 

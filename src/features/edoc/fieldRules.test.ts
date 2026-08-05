@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { denormalizePdfRect, fieldTypesForAction, normalizePdfRect } from './fieldRules'
 
 describe('eDoc field rules', () => {
-  it('gives every signatory action the same signature-element palette', () => {
-    const expected = ['signature', 'initial', 'date_signed', 'name', 'job_title', 'text']
+  it('offers only the signature stamp in the placement palette', () => {
+    const expected = ['signature']
     expect(fieldTypesForAction('sign')).toEqual(expected)
     expect(fieldTypesForAction('approve')).toEqual(expected)
     expect(fieldTypesForAction('review')).toEqual(expected)

@@ -1,5 +1,6 @@
 import { type DragEvent, type ReactElement } from 'react'
 import { NavLink } from 'react-router-dom'
+import { Badge } from 'antd'
 import { ChevronDown } from 'lucide-react'
 
 import type { SidebarSubmenuItem } from '../../config/sidebarMenus'
@@ -13,6 +14,7 @@ export function SidebarNavGroup({
   tooltip,
   icon: Icon,
   items,
+  itemBadges,
   isOpen,
   onToggle,
   onNavigate,
@@ -27,6 +29,7 @@ export function SidebarNavGroup({
   tooltip?: string
   icon: GroupIcon
   items: SidebarSubmenuItem[]
+  itemBadges?: Record<string, number>
   isOpen: boolean
   onToggle: () => void
   onNavigate?: () => void
@@ -71,6 +74,7 @@ export function SidebarNavGroup({
         <div className="sidebar-nav-group-items">
           {items.map((item) => {
             const href = submenuHref(item)
+            const badgeCount = itemBadges?.[item.id] ?? 0
             return (
               <NavLink
                 key={item.id}
@@ -80,8 +84,21 @@ export function SidebarNavGroup({
                   isActive ? 'sidebar-nav-subitem active' : 'sidebar-nav-subitem'
                 }
                 onClick={onNavigate}
+                aria-label={
+                  badgeCount > 0
+                    ? `${item.label} (${badgeCount} awaiting action)`
+                    : undefined
+                }
               >
                 <span>{item.label}</span>
+                {badgeCount > 0 ? (
+                  <Badge
+                    className="sidebar-nav-subitem-badge"
+                    count={badgeCount}
+                    size="small"
+                    overflowCount={99}
+                  />
+                ) : null}
               </NavLink>
             )
           })}

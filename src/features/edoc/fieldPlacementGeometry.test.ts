@@ -18,8 +18,8 @@ function field(partial: Partial<EdocFieldDraft> & Pick<EdocFieldDraft, 'id'>): E
     pageNumber: 1,
     x: 0.1,
     y: 0.1,
-    width: 0.2,
-    height: 0.08,
+    width: 0.25,
+    height: 0.09,
     rotation: 0,
     required: true,
     ...partial,
@@ -54,5 +54,14 @@ describe('eDoc field placement geometry', () => {
     expect(undone).toEqual({ past: [1], present: 2, future: [3] })
     const redone = redoHistory(undone!.past, undone!.present, undone!.future)
     expect(redone).toEqual({ past: [1, 2], present: 3, future: [] })
+  })
+
+  it('uses aspect-aware mins for slim vs banner signatures', () => {
+    const slim = clampFieldToPage({ fieldType: 'signature', x: 0.8, y: 0.1, width: 0.1, height: 0.2 })
+    expect(slim.width).toBeGreaterThanOrEqual(0.12)
+    expect(slim.height).toBeGreaterThanOrEqual(0.12)
+    const banner = clampFieldToPage({ fieldType: 'signature', x: 0.1, y: 0.9, width: 0.35, height: 0.03 })
+    expect(banner.height).toBeGreaterThanOrEqual(0.043)
+    expect(banner.width).toBeGreaterThanOrEqual(0.25)
   })
 })

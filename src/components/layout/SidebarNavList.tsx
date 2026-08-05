@@ -12,10 +12,12 @@ type GroupIcon = (props: { className?: string }) => ReactElement
 export function SidebarNavList({
   groups,
   groupIcons,
+  itemBadges,
   onNavigate,
 }: {
   groups: NavGroupDefinition[]
   groupIcons: Record<string, GroupIcon>
+  itemBadges?: Record<string, number>
   onNavigate?: () => void
 }) {
   const { orderedGroups, moveGroup } = useSidebarMenuOrder(groups)
@@ -82,6 +84,7 @@ export function SidebarNavList({
             tooltip={group.tooltip}
             icon={Icon}
             items={toSidebarItems(group.items)}
+            itemBadges={itemBadges}
             isOpen={openGroupId === group.id}
             onToggle={() => handleToggle(group.id)}
             onNavigate={onNavigate}

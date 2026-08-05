@@ -158,10 +158,14 @@ export function compileSignatoryLevelsToRouteSteps(input: {
   mode: EdocRoutingMode
   levels: readonly EdocSignatoryLevelDraft[]
   noSignatories: boolean
+  /** Document-level due date (YYYY-MM-DD or ISO); applied to each step when set. */
+  dueAt?: string | null
 }): { mode: EdocRoutingMode; steps: EdocRouteStepDraft[] } {
   if (input.noSignatories || input.levels.length === 0) {
     return { mode: 'sequential', steps: [] }
   }
+
+  const stepDueAt = input.dueAt?.trim() || ''
 
   const ordered = [...input.levels].sort(
     (a, b) => SIGNATORY_LEVEL_ORDER.indexOf(a.kind) - SIGNATORY_LEVEL_ORDER.indexOf(b.kind),
@@ -177,6 +181,7 @@ export function compileSignatoryLevelsToRouteSteps(input: {
           groupId: level.kind,
           action: SIGNATORY_LEVEL_ACTIONS[level.kind],
           assigneeIds: [assigneeId],
+          dueAt: stepDueAt,
         }))
         sequence += 1
       }
@@ -193,6 +198,7 @@ export function compileSignatoryLevelsToRouteSteps(input: {
           groupId: level.kind,
           action: SIGNATORY_LEVEL_ACTIONS[level.kind],
           assigneeIds: uniqueIds(level.assigneeIds),
+          dueAt: stepDueAt,
         }),
       ),
     }
@@ -207,6 +213,7 @@ export function compileSignatoryLevelsToRouteSteps(input: {
         groupId: level.kind,
         action: SIGNATORY_LEVEL_ACTIONS[level.kind],
         assigneeIds: uniqueIds(level.assigneeIds),
+        dueAt: stepDueAt,
       }),
     ),
   }
@@ -217,6 +224,7 @@ function makeStep(input: {
   groupId: string
   action: EdocAssignableAction
   assigneeIds: string[]
+  dueAt?: string
 }): EdocRouteStepDraft {
   return {
     id: crypto.randomUUID(),
@@ -226,7 +234,7 @@ function makeStep(input: {
     assigneeIds: input.assigneeIds,
     completionRule: 'all',
     minimumCount: null,
-    dueAt: '',
+    dueAt: input.dueAt?.trim() || '',
     allowDelegation: false,
   }
 }

@@ -2,7 +2,7 @@
   "meta": {
     "project": "gxp-toolkit",
     "source": "database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql",
-    "generatedAt": "2026-07-28T13:25:06.179Z",
+    "generatedAt": "2026-08-01T07:43:41.168Z",
     "schemaVersion": null,
     "tableCount": 32,
     "edgeCount": 76,
@@ -2094,11 +2094,13 @@
     {
       "id": "edoc_document_routes",
       "type": "table",
-      "columnCount": 10,
+      "columnCount": 11,
       "primaryKeys": [
         "id"
       ],
-      "uniqueColumns": [],
+      "uniqueColumns": [
+        "transaction_id"
+      ],
       "columns": [
         {
           "name": "id",
@@ -2188,6 +2190,16 @@
           "unique": false,
           "default": "'draft'",
           "check": "status IN ('draft', 'active', 'completed', 'rejected', 'returned', 'cancelled', 'expired')",
+          "references": null
+        },
+        {
+          "name": "transaction_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
           "references": null
         },
         {
@@ -2748,7 +2760,7 @@
     {
       "id": "edoc_signature_fields",
       "type": "table",
-      "columnCount": 13,
+      "columnCount": 14,
       "primaryKeys": [
         "id"
       ],
@@ -2885,6 +2897,16 @@
           "references": null
         },
         {
+          "name": "rotation",
+          "type": "REAL",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
           "name": "required",
           "type": "INTEGER",
           "notNull": true,
@@ -2944,7 +2966,7 @@
     {
       "id": "edoc_signature_events",
       "type": "table",
-      "columnCount": 20,
+      "columnCount": 25,
       "primaryKeys": [
         "id"
       ],
@@ -3076,9 +3098,59 @@
           "references": null
         },
         {
+          "name": "signer_email",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "signer_organization",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
           "name": "signature_meaning",
           "type": "TEXT",
           "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "signature_appearance_type",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "display_timezone",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "field_ids",
+          "type": "TEXT",
+          "notNull": false,
           "primaryKey": false,
           "unique": false,
           "default": null,
@@ -3192,11 +3264,12 @@
     {
       "id": "edoc_completion_certificates",
       "type": "table",
-      "columnCount": 9,
+      "columnCount": 12,
       "primaryKeys": [
         "id"
       ],
       "uniqueColumns": [
+        "route_id",
         "object_key",
         "verification_code"
       ],
@@ -3261,7 +3334,7 @@
           "type": "TEXT",
           "notNull": true,
           "primaryKey": false,
-          "unique": false,
+          "unique": true,
           "default": null,
           "check": null,
           "references": {
@@ -3298,6 +3371,36 @@
           "primaryKey": false,
           "unique": true,
           "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "final_pdf_sha256",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "page_count",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'generated'",
           "check": null,
           "references": null
         },

@@ -1,10 +1,10 @@
-# SQLite Schema Report — GxP Toolkit (2026-07-28)
+# SQLite Schema Report — GxP Toolkit (2026-08-01)
 
 ## Summary
 - Source: `database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql`
 - Schema version: **unknown**
 - Tables: **32** · Foreign keys: **76** · Indexes: **27**
-- Generated: 2026-07-28T13:25:06.179Z
+- Generated: 2026-08-01T07:43:41.168Z
 
 ## Agent Usage
 
@@ -309,6 +309,7 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `template_id` | TEXT | YES |  |  |  |  | `edoc_routing_templates.id` |
 | `mode` | TEXT | NO |  |  |  | `mode IN ('sequential', 'parallel', 'mixe…` |  |
 | `status` | TEXT | NO |  |  | 'draft' | `status IN ('draft', 'active', 'completed…` |  |
+| `transaction_id` | TEXT | NO |  | YES |  |  |  |
 | `started_at` | TEXT | YES |  |  |  |  |  |
 | `completed_at` | TEXT | YES |  |  |  |  |  |
 | `created_at` | TEXT | NO |  |  |  |  |  |
@@ -401,6 +402,7 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `y` | REAL | NO |  |  |  | `y >= 0 AND y <= 1` |  |
 | `width` | REAL | NO |  |  |  | `width > 0 AND width <= 1` |  |
 | `height` | REAL | NO |  |  |  | `height > 0 AND height <= 1` |  |
+| `rotation` | REAL | NO |  |  | 0 |  |  |
 | `required` | INTEGER | NO |  |  | 1 |  |  |
 | `created_at` | TEXT | NO |  |  |  |  |  |
 
@@ -426,7 +428,12 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `assignment_id` | TEXT | NO |  |  |  |  | `edoc_route_step_assignees.id` |
 | `signer_id` | TEXT | NO |  |  |  |  | `profiles.id` |
 | `signer_display_name` | TEXT | NO |  |  |  |  |  |
+| `signer_email` | TEXT | YES |  |  |  |  |  |
+| `signer_organization` | TEXT | YES |  |  |  |  |  |
 | `signature_meaning` | TEXT | NO |  |  |  |  |  |
+| `signature_appearance_type` | TEXT | YES |  |  |  |  |  |
+| `display_timezone` | TEXT | YES |  |  |  |  |  |
+| `field_ids` | TEXT | YES |  |  |  |  |  |
 | `auth_method` | TEXT | NO |  |  |  |  |  |
 | `auth_timestamp` | TEXT | NO |  |  |  |  |  |
 | `signing_timestamp` | TEXT | NO |  |  |  |  |  |
@@ -446,10 +453,13 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `organization_id` | TEXT | NO |  |  |  |  | `edoc_organizations.id` |
 | `document_id` | TEXT | NO |  |  |  |  | `edoc_documents.id` |
 | `version_id` | TEXT | NO |  |  |  |  | `edoc_document_versions.id` |
-| `route_id` | TEXT | NO |  |  |  |  | `edoc_document_routes.id` |
+| `route_id` | TEXT | NO |  | YES |  |  | `edoc_document_routes.id` |
 | `bucket_id` | TEXT | NO |  |  | 'edoc-certificates' |  |  |
 | `object_key` | TEXT | NO |  | YES |  |  |  |
 | `verification_code` | TEXT | NO |  | YES |  |  |  |
+| `final_pdf_sha256` | TEXT | YES |  |  |  |  |  |
+| `page_count` | INTEGER | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  | 'generated' |  |  |
 | `issued_at` | TEXT | NO |  |  |  |  |  |
 
 ### `edoc_comments`
@@ -1073,6 +1083,7 @@ erDiagram
     text template_id FK
     text mode
     text status
+    text transaction_id UK
     text started_at
     text completed_at
     text created_at
@@ -1128,6 +1139,7 @@ erDiagram
     real y
     real width
     real height
+    real rotation
     integer required
     text created_at
   }
@@ -1141,7 +1153,12 @@ erDiagram
     text assignment_id FK
     text signer_id FK
     text signer_display_name
+    text signer_email
+    text signer_organization
     text signature_meaning
+    text signature_appearance_type
+    text display_timezone
+    text field_ids
     text auth_method
     text auth_timestamp
     text signing_timestamp
@@ -1158,10 +1175,13 @@ erDiagram
     text organization_id FK
     text document_id FK
     text version_id FK
-    text route_id FK
+    text route_id UK FK
     text bucket_id
     text object_key UK
     text verification_code UK
+    text final_pdf_sha256
+    integer page_count
+    text status
     text issued_at
   }
   edoc_comments {

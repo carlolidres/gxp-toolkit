@@ -32,6 +32,7 @@ import { GxpLogo } from '../brand/GxpLogo'
 import { useFeedbackMessages } from '../../hooks/useFeedbackMessages'
 import { useApqrNotifications } from '../../hooks/useApqrNotifications'
 import { useMissingDocumentControllerWarnings } from '../../hooks/useMissingDocumentControllerWarnings'
+import { useEdocInbox } from '../../features/edoc/useEdocData'
 import { SidebarHoverChrome } from './SidebarHoverChrome'
 import { SidebarNavList } from './SidebarNavList'
 import { iconSize, iconStroke } from '../../theme/iconSizes'
@@ -69,6 +70,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { messages, loading, unreadCount, isAdmin, refresh, acknowledgeUnread } = useFeedbackMessages()
   const { accessibleNavigationGroups, permissionsReady, canViewMenu } = usePermissions()
   const showApqrNotifications = canViewMenu('apqr-dashboard') || canViewMenu('apqr-scheduler')
+  const showEdocInboxBadge = permissionsReady && canViewMenu('edoc-inbox')
+  const edocInbox = useEdocInbox(showEdocInboxBadge)
+  const edocInboxCount = showEdocInboxBadge
+    ? (edocInbox.data ?? []).filter((task) => task.status === 'active').length
+    : 0
+  const sidebarItemBadges = edocInboxCount > 0 ? { 'edoc-inbox': edocInboxCount } : undefined
   const { summary: apqrNotifications, loading: apqrNotificationsLoading, pendingCount: apqrPendingCount, refresh: refreshApqrNotifications } =
     useApqrNotifications(showApqrNotifications)
   const {
@@ -82,6 +89,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { isDark, toggleTheme } = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
+
+  // Keep sidebar inbox badge current after sign/complete (AppShell stays mounted across routes).
+  useEffect(() => {
+    if (!showEdocInboxBadge) return
+    if (!location.pathname.startsWith('/edoc')) return
+    void edocInbox.refresh()
+  }, [location.pathname, showEdocInboxBadge, edocInbox.refresh])
 
   const layoutCollapsed = isCollapsed && isDesktop
   const showHoverChrome = layoutCollapsed || expandExiting
@@ -147,6 +161,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <SidebarNavList
               groups={accessibleNavigationGroups}
               groupIcons={groupIcons}
+              itemBadges={sidebarItemBadges}
               onNavigate={closeMobileNav}
             />
           ) : (

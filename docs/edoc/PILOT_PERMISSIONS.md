@@ -56,3 +56,12 @@ External detection compares normalized Account Settings `profiles.organization` 
 Client preflight: Create Document warns on external recipients and blocks when creator org is missing or no DC is listed (`edoc_list_org_document_controllers`). Workspace shows an “External document authorization” banner for `external_auth` tasks.
 
 Audit event types (append-only `edoc_audit_events`): `external_auth_required`, `external_auth_blocked_no_controller`, `external_auth_requested`, `external_auth_approved` / `external_auth_rejected`, `external_auth_siblings_notified`, `external_auth_transmitted`, `document_controller_assigned` / `document_controller_removed`.
+
+## Visible signature stamp + Final Signed PDF (pilot)
+
+1. Place **Signature** fields on Create → Field placement (coordinates stored on the assignment).
+2. Complete Account Settings: organization + PNG e-signature.
+3. In Signing Workspace, choose a preset **Signature meaning** (Prepared by / Reviewed by / Checked by / Approved by / QA Approved / Acknowledged by), consent, re-enter password, Sign.
+4. The server stamps an eSig-style block onto a cumulative signed PDF (profile PNG + name/reason/date/email). Originals are preserved.
+5. When the route reaches **Completed**, `edoc-finalize-document` appends a GxP Toolkit history page from the audit trail and stores the **Final Signed PDF**.
+6. Document view download prefers Final Signed PDF → Signed PDF → Original.

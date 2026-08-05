@@ -9,6 +9,7 @@ describe('permissions', () => {
     expect(canViewMenu(permissions, 'routing')).toBe(true)
     expect(hasPermission(permissions, 'routing', 'approve')).toBe(true)
     expect(hasPermission(permissions, 'user-management', 'delete')).toBe(true)
+    expect(hasPermission(permissions, 'edoc-all-documents', 'delete')).toBe(true)
   })
 
   it('limits viewers to view actions', () => {
@@ -69,6 +70,7 @@ describe('permissions', () => {
     const nominated = applyDocumentControllerPermissions(viewer)
     expect(hasDocumentControllerEdocAccess(nominated)).toBe(true)
     expect(hasPermission(nominated, 'edoc-all-documents', 'view')).toBe(true)
+    expect(hasPermission(nominated, 'edoc-all-documents', 'delete')).toBe(false)
     expect(hasPermission(nominated, 'edoc-admin', 'edit')).toBe(true)
     expect(hasPermission(nominated, 'routing', 'view')).toBe(true)
     const cleared = clearDocumentControllerPermissions(nominated, 'Viewer')

@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Button, Card, Input, Select } from 'antd'
-import { Download, FilePlus } from 'lucide-react'
+import { App, Button, Card, Input, Modal, Select, Space } from 'antd'
+import {
+  CalendarClock,
+  Download,
+  FilePlus,
+  Files,
+  Filter,
+  Search,
+  Trash2,
+  UserRound,
+} from 'lucide-react'
 
 import {
   EdocEmpty,
@@ -16,9 +25,12 @@ import {
 } from '../../components/edoc/EdocComponents'
 import { EdocProfileCompletionGate } from '../../components/edoc/EdocProfileCompletionGate'
 import { DataTable } from '../../components/data-display/DataTable'
+import { useAuth } from '../../hooks/useAuth'
 import { useMenuPermission } from '../../hooks/useMenuPermission'
+import { edocService } from '../../features/edoc/edocService'
 import { useEdocDocuments } from '../../features/edoc/useEdocData'
 import type { EdocDocumentListItem, EdocDocumentStatus } from '../../features/edoc/types'
+import { iconSize, iconStroke } from '../../theme/iconSizes'
 
 type DocumentStatusFilter =
   | 'all'
@@ -105,14 +117,20 @@ export function EdocDocumentsPage({
   title?: string
 }) {
   const navigate = useNavigate()
+  const { message } = App.useApp()
   const [searchParams] = useSearchParams()
-  const { canExport } = useMenuPermission(menuIdForScope(scope))
-  const { data, loading, error } = useEdocDocuments(ownershipScope(scope))
+  const { hasRole } = useAuth()
+  const { canExport, canDelete } = useMenuPermission(menuIdForScope(scope))
+  const { data, loading, error, refresh } = useEdocDocuments(ownershipScope(scope))
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<DocumentStatusFilter>(() =>
     parseStatusParam(searchParams.get('status'), initialStatusFilter(scope)),
   )
   const [dueFilter, setDueFilter] = useState<DocumentDueFilter>(() => parseDueParam(searchParams.get('due')))
+  const [pendingDelete, setPendingDelete] = useState<EdocDocumentListItem | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const allowAdminDelete = scope === 'all' && hasRole(['Admin']) && canDelete
 
   useEffect(() => {
     setStatusFilter(parseStatusParam(searchParams.get('status'), initialStatusFilter(scope)))
@@ -141,43 +159,80 @@ export function EdocDocumentsPage({
     })
   }, [data, search, statusFilter, dueFilter])
 
+  async function confirmDelete() {
+    if (!pendingDelete) return
+    setDeleting(true)
+    try {
+      const result = await edocService.adminDeleteDocument(pendingDelete.id)
+      message.success(result.message ?? 'Document permanently deleted.')
+      setPendingDelete(null)
+      await refresh()
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Could not delete the document.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <EdocProfileCompletionGate mode="banner">
     <EdocPage
+      icon={Files}
       title={title}
       description="Authorized eDoc records with version, status, owner, department, and due-date context."
       action={
         <Link to="/edoc/create">
-          <Button type="primary" icon={<FilePlus size={15} />}>
+          <Button type="primary" icon={<FilePlus size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}>
             Create Document
           </Button>
         </Link>
       }
     >
       {error ? <EdocError message={error} /> : null}
-      <Card className="panel">
-        <div className="vrms-toolbar">
+      <Card className="panel edoc-list-panel" bordered={false}>
+        <header className="edoc-list-panel-header">
           <div>
-            <label htmlFor="edoc-documents-search">Search</label>
+            <p className="edoc-list-kicker">Registry</p>
+            <h2 className="edoc-list-title">Document library</h2>
+          </div>
+          <span className="edoc-list-count" aria-live="polite">
+            {loading ? '…' : `${filtered.length} shown`}
+          </span>
+        </header>
+
+        <div className="edoc-toolbar" role="search">
+          <label className="edoc-toolbar-field edoc-toolbar-field--grow" htmlFor="edoc-documents-search">
+            <span className="edoc-toolbar-label">
+              <Search size={14} strokeWidth={iconStroke} aria-hidden />
+              Search
+            </span>
             <Input
               id="edoc-documents-search"
+              allowClear
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Number, title, owner, status..."
+              placeholder="Number, title, owner, status…"
+              prefix={<Search size={14} strokeWidth={iconStroke} aria-hidden />}
             />
-          </div>
-          <div>
-            <label htmlFor="edoc-documents-status">Status</label>
+          </label>
+          <label className="edoc-toolbar-field" htmlFor="edoc-documents-status">
+            <span className="edoc-toolbar-label">
+              <Filter size={14} strokeWidth={iconStroke} aria-hidden />
+              Status
+            </span>
             <Select
               id="edoc-documents-status"
               value={statusFilter}
               onChange={(value) => setStatusFilter(value)}
               options={STATUS_FILTER_OPTIONS}
-              style={{ minWidth: 160 }}
+              className="edoc-toolbar-select"
             />
-          </div>
-          <div>
-            <label htmlFor="edoc-documents-due">Due</label>
+          </label>
+          <label className="edoc-toolbar-field" htmlFor="edoc-documents-due">
+            <span className="edoc-toolbar-label">
+              <CalendarClock size={14} strokeWidth={iconStroke} aria-hidden />
+              Due
+            </span>
             <Select
               id="edoc-documents-due"
               value={dueFilter}
@@ -187,35 +242,136 @@ export function EdocDocumentsPage({
                 { value: 'overdue', label: 'Overdue' },
                 { value: 'soon', label: 'Due soon (7d)' },
               ]}
-              style={{ minWidth: 160 }}
+              className="edoc-toolbar-select"
             />
-          </div>
+          </label>
           {canExport ? (
-            <Button icon={<Download size={15} />} onClick={() => exportCsv(filtered)}>
-              Export CSV
-            </Button>
+            <div className="edoc-toolbar-actions">
+              <Button
+                icon={<Download size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}
+                onClick={() => exportCsv(filtered)}
+              >
+                Export CSV
+              </Button>
+            </div>
           ) : null}
         </div>
+
         {loading ? <EdocLoading /> : null}
         {!loading && filtered.length === 0 ? (
-          <EdocEmpty title="No documents found" description="Create or route a document to populate this view." />
-        ) : (
+          <EdocEmpty
+            title="No documents found"
+            description="Adjust filters or create a document to populate this view."
+            action={
+              <Link to="/edoc/create">
+                <Button type="primary" icon={<FilePlus size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />}>
+                  Create Document
+                </Button>
+              </Link>
+            }
+          />
+        ) : null}
+        {!loading && filtered.length > 0 ? (
           <DataTable
             rows={filtered}
             onRowClick={(row) => navigate(`/edoc/view/${row.id}`)}
             columns={[
-              { key: 'documentNumber', label: 'Document No.' },
-              { key: 'title', label: 'Title' },
+              {
+                key: 'documentNumber',
+                label: 'Document',
+                render: (row) => (
+                  <div className="edoc-doc-cell">
+                    <strong className="edoc-doc-cell-number">{row.documentNumber}</strong>
+                    <span className="edoc-doc-cell-title">{row.title}</span>
+                  </div>
+                ),
+              },
               { key: 'status', label: 'Status', render: (row) => <EdocStatusBadge status={row.status} /> },
-              { key: 'versionNumber', label: 'Version', render: (row) => `v${row.versionNumber}` },
+              {
+                key: 'versionNumber',
+                label: 'Version',
+                render: (row) => <span className="edoc-version-chip">v{row.versionNumber}</span>,
+              },
               { key: 'priority', label: 'Priority', render: (row) => <EdocPriorityBadge priority={row.priority} /> },
-              { key: 'ownerName', label: 'Owner' },
-              { key: 'department', label: 'Department' },
-              { key: 'dueAt', label: 'Due', render: (row) => formatEdocDate(row.dueAt) },
+              {
+                key: 'ownerName',
+                label: 'Owner',
+                render: (row) => (
+                  <span className="edoc-cell-meta">
+                    <UserRound size={14} strokeWidth={iconStroke} aria-hidden />
+                    {row.ownerName}
+                  </span>
+                ),
+              },
+              {
+                key: 'department',
+                label: 'Department',
+                render: (row) => row.department?.trim() || '—',
+              },
+              {
+                key: 'dueAt',
+                label: 'Due',
+                render: (row) => (
+                  <span className="edoc-cell-meta">
+                    <CalendarClock size={14} strokeWidth={iconStroke} aria-hidden />
+                    {formatEdocDate(row.dueAt)}
+                  </span>
+                ),
+              },
+              ...(allowAdminDelete
+                ? [
+                    {
+                      key: 'actions',
+                      label: 'Actions',
+                      render: (row: EdocDocumentListItem) => (
+                        <Button
+                          danger
+                          size="small"
+                          icon={<Trash2 size={14} aria-hidden />}
+                          aria-label={`Delete ${row.documentNumber}`}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            setPendingDelete(row)
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      ),
+                    },
+                  ]
+                : []),
             ]}
           />
-        )}
+        ) : null}
       </Card>
+
+      <Modal
+        open={Boolean(pendingDelete)}
+        title="Permanently delete document?"
+        onCancel={() => (deleting ? undefined : setPendingDelete(null))}
+        destroyOnHidden
+        footer={
+          <Space>
+            <Button onClick={() => setPendingDelete(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button danger type="primary" loading={deleting} onClick={() => void confirmDelete()}>
+              Delete permanently
+            </Button>
+          </Space>
+        }
+      >
+        <p>
+          This permanently removes <strong>{pendingDelete?.documentNumber}</strong>
+          {pendingDelete?.title ? (
+            <>
+              {' '}
+              (<strong>{pendingDelete.title}</strong>)
+            </>
+          ) : null}{' '}
+          including PDF files, routing, signatures, and audit history for this document. This cannot be undone.
+        </p>
+      </Modal>
     </EdocPage>
     </EdocProfileCompletionGate>
   )

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useId, useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Button, Card, Spin } from 'antd'
 import {
@@ -12,7 +12,8 @@ import {
 } from 'lucide-react'
 
 import { PasswordInput, SelectInput, TextInput } from '../components/forms/FormControls'
-import { GxpLogo } from '../components/brand/GxpLogo'
+import { AuthLegalLinks } from '../components/auth/AuthLegalLinks'
+import { AuthStoryCarousel } from '../components/auth/AuthStoryCarousel'
 import { APP_NAME } from '../config/appNavigation'
 import { useAuth } from '../hooks/useAuth'
 import { consumeLoginFlash } from '../lib/authSessionStore'
@@ -39,6 +40,10 @@ function readEmailFromState(state: unknown): string {
 
 export function LoginPage() {
   const location = useLocation()
+  const emailId = useId()
+  const passwordId = useId()
+  const roleId = useId()
+  const errorId = useId()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(() => consumeLoginFlash())
   const [email, setEmail] = useState(() => readEmailFromState(location.state))
@@ -89,37 +94,42 @@ export function LoginPage() {
     }
   }
 
+  const inputStatus = error ? 'error' : undefined
+
   return (
     <div className="login-page">
-      <section className="login-story">
-        <GxpLogo variant="lockup" showTagline tone="light" className="login-story-brand" />
-        <div>
-          <span className="eyebrow">Validation Routing Monitoring System</span>
-          <h1>Quality operations, composed for reuse.</h1>
-          <p>A polished shell for routing documents, signatories, registry values, and audit trail.</p>
-        </div>
-        <div className="login-proof">
-          <strong>{usesSupabase ? 'Supabase backend' : '100% mock data'}</strong>
-          <span>{usesSupabase ? 'Email and password sign-in' : 'Backend-agnostic by design'}</span>
-        </div>
-      </section>
+      <div className="login-story">
+        <AuthStoryCarousel />
+      </div>
 
       <section className="login-panel">
+        <div className="login-panel-stack">
         <Card className={AUTH_CARD_CLASS} bordered>
-          <form onSubmit={handleSubmit} autoComplete="off" aria-labelledby="login-title">
-            <header className="mb-6 space-y-2">
+          <form
+            onSubmit={handleSubmit}
+            autoComplete="off"
+            aria-labelledby="login-title"
+            aria-describedby={error ? errorId : undefined}
+            noValidate
+          >
+            <header className="gxp-auth-header">
               <span className="eyebrow">Welcome back</span>
-              <h2 id="login-title" className="text-2xl font-bold tracking-tight text-[var(--navy)] sm:text-[1.65rem]">
-                Sign in to {APP_NAME}
-              </h2>
-              <p className="text-sm leading-relaxed text-[var(--muted)]">
-                {usesSupabase ? 'Use your email and password.' : 'Any password works in this mock environment.'}
+              <h2 id="login-title">Sign in to {APP_NAME}</h2>
+              <p>
+                {usesSupabase
+                  ? 'Enter your work email and password to continue.'
+                  : 'Any password works in this mock environment.'}
               </p>
             </header>
 
-            <div className="flex flex-col gap-4">
-              <AuthField label="Email" icon={<Mail size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+            <div className="gxp-auth-fields">
+              <AuthField
+                label="Email"
+                htmlFor={emailId}
+                icon={<Mail size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}
+              >
                 <TextInput
+                  id={emailId}
                   name="email"
                   type="email"
                   className={AUTH_INPUT_CLASS}
@@ -127,12 +137,30 @@ export function LoginPage() {
                   onChange={(event) => setEmail(event.target.value)}
                   required
                   autoComplete="email"
+                  inputMode="email"
                   placeholder="you@company.com"
+                  status={inputStatus}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? errorId : undefined}
                 />
               </AuthField>
 
-              <AuthField label="Password" icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+              <AuthField
+                label="Password"
+                htmlFor={passwordId}
+                icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}
+                hint={
+                  <button
+                    type="button"
+                    className="gxp-auth-text-link"
+                    onClick={() => navigate('/forgot-password', { state: { email } })}
+                  >
+                    Forgot password?
+                  </button>
+                }
+              >
                 <PasswordInput
+                  id={passwordId}
                   name="password"
                   className={AUTH_INPUT_CLASS}
                   value={password}
@@ -140,12 +168,19 @@ export function LoginPage() {
                   required
                   autoComplete="current-password"
                   placeholder="Enter your password"
+                  status={inputStatus}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? errorId : undefined}
                 />
               </AuthField>
 
               {!usesSupabase ? (
-                <AuthField label="Example role" icon={<Shield size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
-                  <SelectInput name="role" defaultValue="Admin" className={AUTH_INPUT_CLASS}>
+                <AuthField
+                  label="Example role"
+                  htmlFor={roleId}
+                  icon={<Shield size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}
+                >
+                  <SelectInput id={roleId} name="role" defaultValue="Admin" className={AUTH_INPUT_CLASS}>
                     <option>Admin</option>
                     <option>Manager</option>
                     <option>Editor</option>
@@ -155,7 +190,11 @@ export function LoginPage() {
               ) : null}
             </div>
 
-            {error ? <AuthAlert tone="error">{error}</AuthAlert> : null}
+            {error ? (
+              <div id={errorId}>
+                <AuthAlert tone="error">{error}</AuthAlert>
+              </div>
+            ) : null}
 
             <Button
               type="primary"
@@ -170,9 +209,7 @@ export function LoginPage() {
             </Button>
 
             {!usesSupabase ? (
-              <p className="mt-3 text-center text-xs text-[var(--muted)]">
-                Use role selection to test protected UI patterns.
-              </p>
+              <p className="gxp-auth-footnote">Use role selection to test protected UI patterns.</p>
             ) : null}
 
             <AuthDivider />
@@ -190,11 +227,13 @@ export function LoginPage() {
                 icon={<UserPlus size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}
                 onClick={() => navigate('/signup')}
               >
-                Sign up
+                Create an Account
               </Button>
             </div>
           </form>
         </Card>
+        <AuthLegalLinks />
+        </div>
       </section>
     </div>
   )

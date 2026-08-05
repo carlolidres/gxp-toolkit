@@ -6,10 +6,20 @@ export type AppVersionEntry = {
 
 export const APP_DEVELOPER = 'Carlo M. Lidres'
 
-export const APP_CURRENT_VERSION = 'v41'
+export const APP_CURRENT_VERSION = 'v42'
 
 /** Curated release notes — newest first. */
 export const APP_VERSION_HISTORY: AppVersionEntry[] = [
+  {
+    version: 'v42',
+    releaseDate: '2026-08-05',
+    changes: [
+      'eDoc Phase 1 integrity — per-page footers, Page Integrity Codes, final SHA-256 in DB, signature verify links/QR, public /#/verify/:code',
+      'Final Signed PDF auto-generates after routing completes; download binds to certificate hash',
+      'Finalize hardened — claim-before-upload, orphan cleanup, assignee-only signing, admin delete clears verification lookups',
+      'eDoc UX — disposition reasons, PDF zoom, inbox due-date fallback, assignable profiles RPC, document view polish',
+    ],
+  },
   {
     version: 'v41',
     releaseDate: '2026-07-28',

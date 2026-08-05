@@ -164,6 +164,11 @@ export function getDocumentControllerEdocPermissions(): UserPermissions {
     if (!menu) continue
     result[menuId] = {}
     for (const action of menu.actions) {
+      // Permanent document purge remains Admin-only (server-enforced).
+      if (menuId === 'edoc-all-documents' && action === 'delete') {
+        result[menuId][action] = false
+        continue
+      }
       result[menuId][action] = true
     }
   }

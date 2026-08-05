@@ -1,45 +1,34 @@
 # Current Handoff
 
-Last Updated: `2026-07-28`
-Version: `v41`
-Branch: `main` (+ `master` for Pages deploy)
-Commit: `283be0c` (docs after `7018acb` feature)
-Deployment: [GitHub Pages success](https://github.com/carlolidres/gxp-toolkit/actions/runs/30364041144)
+Last Updated: `2026-08-05`
+Version: `v42`
+Branch: `main` (+ `master` for GitHub Pages)
+Commit: `(pending commit)`
+Deployment: staging `ydndeoacgfnxjqwwnswh` + GitHub Pages (pending push)
 
 ## Current Status
 
-**v41 deployed** — External Document Controller authorization, User Management picker, eDoc profile gate, profile avatars, lean dashboards.
+**v42 release** — eDoc integrity Phase 1 + Final Signed PDF automation + critical/high audit fixes.
 
-## Key implementation notes
+### Included
 
-### External Document Controller authorization
-- Detection: normalized `profiles.organization` creator vs assignees (Option A).
-- Send RPC `edoc_create_and_start_route`: blocks if external + no active DC; else prepends `step_kind=external_auth` approve/`any` step; defers member bootstrap for external assignees.
-- Advance RPC `edoc_advance_route`: first-action-wins lock, sibling/creator notify via `edoc_notify_profiles` → `edoc_notifications`, bootstrap on approve, race message “already completed.”
-- Helpers: `edoc_list_org_document_controllers`, `edoc_admin_missing_controller_warnings`.
-- Client: `src/lib/edocExternalAuth.ts`; Create preflight + warning; Workspace banner; Admin AppShell + User Management missing-DC alerts; self-assign confirm on DC nomination.
-- Migrations applied to staging `ydndeoacgfnxjqwwnswh`:
-  - `20260728150000_edoc_external_auth_gate.sql`
-  - `20260728151000_edoc_external_auth_advance.sql`
-  - (also) `20260728120000_admin_nominate_edoc_document_controller.sql`, `20260728140000_profile_avatar.sql`
+- Per-page integrity footers, Page Integrity Codes, final SHA-256, verify links/QR, public verify page
+- Auto Final Signed PDF after route complete; download bound to certificate hash
+- Finalize claim-before-upload, orphan purge, assignee-only sign, admin delete verification-lookup purge
+- Related eDoc UX (disposition, zoom, due-date inbox, assignable profiles)
 
-### Also in v41
-- Profile avatar (`avatar_data_url`); User Management authorization picker; eDoc profile-completion gate; Document Controller nomination; lean eDoc/APQR dashboards.
+Plan: `plans/edoc-integrity-verification/plan.md`
 
 ## Verification
 
-| Check | Status | Result |
-|---|---|---|
-| Staging RPCs + `step_kind` | `PASSED` | external-auth create/advance/notify/list/warnings |
-| `src/lib/edocExternalAuth.test.ts` | `PASSED` | 2 tests |
-| `npm run type-check` | `PASSED` | `tsc -b` |
-| `npm run db:map` | `PASSED` | 32 tables |
-| GitHub Pages deploy | `PASSED` | [30364041144](https://github.com/carlolidres/gxp-toolkit/actions/runs/30364041144) |
+| Check | Result |
+|---|---|
+| `npm run type-check` | PASS (pre-release) |
+| `vitest` pageIntegrity | PASS |
+| Staging migration + edge finalize/sign | PASS (prior session) |
+| GitHub Pages deploy | PENDING push to `master` |
 
 ## Next Action
 
-1. Browser-smoke external auth flows on Pages/staging when convenient.
-
-## Prior stable release
-
-- Previous: `v40` — eDoc Send → inbox/workspace PDF — GitHub Pages run [30271079381](https://github.com/carlolidres/gxp-toolkit/actions/runs/30271079381).
+1. Push `main` + `master`; confirm Pages workflow success.
+2. Owner smoke-test Final Signed PDF + verify page on production URL.

@@ -1,5 +1,6 @@
 import type { EdocAssignableAction, EdocFieldDraft, EdocFieldType } from './types'
 import { clampNormalized, normalizeRotation } from './fieldPlacementGeometry'
+import { DEFAULT_SIGNATURE_FIELD_NORM, MIN_SIGNATURE_FIELD_NORM } from './pdfStampGeometry'
 
 export { clampNormalized, normalizeRotation } from './fieldPlacementGeometry'
 
@@ -16,23 +17,16 @@ export const edocFieldTypeLabels: Record<EdocFieldType, string> = {
   checkbox: 'Checkbox',
 }
 
-/** Signature-element palette shared by every signatory action (sign / review / approve / acknowledge). */
-const SIGNATORY_FIELD_TYPES: EdocFieldType[] = [
-  'signature',
-  'initial',
-  'date_signed',
-  'name',
-  'job_title',
-  'text',
-]
+/** Placement palette — e-signature stamp only (name/role/date come from the stamp). */
+const SIGNATORY_FIELD_TYPES: EdocFieldType[] = ['signature']
 
 export function fieldTypesForAction(_action: EdocAssignableAction): EdocFieldType[] {
-  // Route action still identifies the assignee's role; placement fields are the same signature elements.
   return SIGNATORY_FIELD_TYPES
 }
 
 export function defaultFieldSize(fieldType: EdocFieldType): { width: number; height: number } {
-  if (fieldType === 'signature') return { width: 0.22, height: 0.08 }
+  // Comfortable default; adaptive stamp renderer accepts smaller user-drawn fields.
+  if (fieldType === 'signature') return { ...DEFAULT_SIGNATURE_FIELD_NORM }
   if (fieldType === 'initial') return { width: 0.1, height: 0.06 }
   if (fieldType === 'checkbox') return { width: 0.04, height: 0.04 }
   if (fieldType === 'date_signed') return { width: 0.16, height: 0.045 }
@@ -50,8 +44,11 @@ export function createEdocFieldDraft(input: {
   rotation?: number
 }): EdocFieldDraft {
   const size = defaultFieldSize(input.fieldType)
-  const width = clampNormalized(input.width ?? size.width, 0.03, 0.95)
-  const height = clampNormalized(input.height ?? size.height, 0.03, 0.95)
+  const isSignature = input.fieldType === 'signature'
+  const minW = isSignature ? MIN_SIGNATURE_FIELD_NORM.width : 0.03
+  const minH = isSignature ? MIN_SIGNATURE_FIELD_NORM.height : 0.03
+  const width = clampNormalized(input.width ?? size.width, minW, 0.95)
+  const height = clampNormalized(input.height ?? size.height, minH, 0.95)
   const x = clampNormalized(input.x ?? 0.12, 0, 1 - width)
   const y = clampNormalized(input.y ?? 0.72, 0, 1 - height)
   return {

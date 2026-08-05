@@ -91,24 +91,20 @@ export function ResetPasswordPage() {
       <section className="login-panel">
         <Card className={AUTH_CARD_CLASS} bordered>
           <form onSubmit={handleSubmit} aria-labelledby="reset-title">
-            <header className="mb-6 space-y-2">
+            <header className="gxp-auth-header">
               <span className="eyebrow">Password reset</span>
-              <h2 id="reset-title" className="text-2xl font-bold tracking-tight text-[var(--navy)] sm:text-[1.65rem]">
+              <h2 id="reset-title">
                 {mandatoryChange ? 'Create your new password' : 'Choose a new password'}
               </h2>
               {mandatoryChange ? (
-                <p className="text-sm leading-relaxed text-[var(--muted)]">
-                  Your password was reset. Choose a new password before continuing.
-                </p>
+                <p>Your password was reset. Choose a new password before continuing.</p>
               ) : (
-                <p className="text-sm leading-relaxed text-[var(--muted)]">
-                  Enter and confirm your new password.
-                </p>
+                <p>Enter and confirm your new password.</p>
               )}
             </header>
 
-            <div className="flex flex-col gap-4">
-              <AuthField label="New password" icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+            <div className="gxp-auth-fields">
+              <AuthField label="New password" icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}>
                 <PasswordInput
                   name="password"
                   className={AUTH_INPUT_CLASS}
@@ -119,7 +115,7 @@ export function ResetPasswordPage() {
                   placeholder="At least 8 characters"
                 />
               </AuthField>
-              <AuthField label="Confirm password" icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+              <AuthField label="Confirm password" icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}>
                 <PasswordInput
                   name="confirmPassword"
                   className={AUTH_INPUT_CLASS}

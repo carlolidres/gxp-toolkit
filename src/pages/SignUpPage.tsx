@@ -11,7 +11,8 @@ import {
 } from 'lucide-react'
 
 import { PasswordInput, TextInput } from '../components/forms/FormControls'
-import { GxpLogo } from '../components/brand/GxpLogo'
+import { AuthLegalLinks } from '../components/auth/AuthLegalLinks'
+import { AuthStoryCarousel } from '../components/auth/AuthStoryCarousel'
 import { APP_NAME } from '../config/appNavigation'
 import { useAuth } from '../hooks/useAuth'
 import { getAuthErrorMessage } from '../lib/authMessages'
@@ -99,35 +100,25 @@ export function SignUpPage() {
 
   return (
     <div className="login-page">
-      <section className="login-story">
-        <GxpLogo variant="lockup" showTagline tone="light" className="login-story-brand" />
-        <div>
-          <span className="eyebrow">Join VRMS</span>
-          <h1>Create a validated routing workspace account.</h1>
-          <p>Start with a reusable GxP shell for routing, audit trail, and Supabase-backed permissions.</p>
-        </div>
-        <div className="login-proof">
-          <strong>{usesSupabase ? 'Supabase Auth' : 'Mock sign-up'}</strong>
-          <span>{usesSupabase ? 'Email and password registration' : 'Creates a local mock viewer session'}</span>
-        </div>
-      </section>
+      <div className="login-story">
+        <AuthStoryCarousel />
+      </div>
 
       <section className="login-panel">
+        <div className="login-panel-stack">
         <Card className={AUTH_CARD_CLASS} bordered>
           <form onSubmit={handleSubmit} aria-labelledby="signup-title">
-            <header className="mb-6 space-y-2">
+            <header className="gxp-auth-header">
               <span className="eyebrow">Create account</span>
-              <h2 id="signup-title" className="text-2xl font-bold tracking-tight text-[var(--navy)] sm:text-[1.65rem]">
-                Sign up for {APP_NAME}
-              </h2>
-              <p className="text-sm leading-relaxed text-[var(--muted)]">
+              <h2 id="signup-title">Sign up for {APP_NAME}</h2>
+              <p>
                 {usesSupabase ? 'Register with email and password.' : 'Mock mode creates a local viewer account for testing.'}
               </p>
             </header>
 
-            <div className="flex flex-col gap-4">
+            <div className="gxp-auth-fields">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <AuthField label="First name" icon={<User size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+                <AuthField label="First name" icon={<User size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}>
                   <TextInput
                     name="firstName"
                     className={AUTH_INPUT_CLASS}
@@ -138,7 +129,7 @@ export function SignUpPage() {
                     placeholder="First name"
                   />
                 </AuthField>
-                <AuthField label="Last name" icon={<User size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+                <AuthField label="Last name" icon={<User size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}>
                   <TextInput
                     name="lastName"
                     className={AUTH_INPUT_CLASS}
@@ -151,7 +142,7 @@ export function SignUpPage() {
                 </AuthField>
               </div>
 
-              <AuthField label="Email" icon={<Mail size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+              <AuthField label="Email" icon={<Mail size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}>
                 <TextInput
                   name="email"
                   type="email"
@@ -164,7 +155,7 @@ export function SignUpPage() {
                 />
               </AuthField>
 
-              <AuthField label="Password" icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+              <AuthField label="Password" icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}>
                 <PasswordInput
                   name="password"
                   className={AUTH_INPUT_CLASS}
@@ -176,7 +167,7 @@ export function SignUpPage() {
                 />
               </AuthField>
 
-              <AuthField label="Confirm password" icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+              <AuthField label="Confirm password" icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}>
                 <PasswordInput
                   name="confirmPassword"
                   className={AUTH_INPUT_CLASS}
@@ -212,7 +203,7 @@ export function SignUpPage() {
                 icon={<LogIn size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}
                 onClick={() => navigate('/login')}
               >
-                Sign in
+                Return to Login
               </Button>
               <Button
                 className={AUTH_GHOST_BTN_CLASS}
@@ -224,6 +215,8 @@ export function SignUpPage() {
             </div>
           </form>
         </Card>
+        <AuthLegalLinks />
+        </div>
       </section>
     </div>
   )

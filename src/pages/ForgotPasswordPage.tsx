@@ -96,19 +96,17 @@ export function ForgotPasswordPage() {
       <section className="login-panel">
         <Card className={AUTH_CARD_CLASS} bordered>
           <form onSubmit={handleSubmit} aria-labelledby="forgot-title">
-            <header className="mb-6 space-y-2">
+            <header className="gxp-auth-header">
               <span className="eyebrow">Forgot password</span>
-              <h2 id="forgot-title" className="text-2xl font-bold tracking-tight text-[var(--navy)] sm:text-[1.65rem]">
-                Reset your {APP_NAME} password
-              </h2>
-              <p className="text-sm leading-relaxed text-[var(--muted)]">
+              <h2 id="forgot-title">Reset your {APP_NAME} password</h2>
+              <p>
                 Enter the email for your account. An administrator will review the request and email you a temporary
                 password if approved.
               </p>
             </header>
 
-            <div className="flex flex-col gap-4">
-              <AuthField label="Email" icon={<Mail size={iconSize.xs} strokeWidth={iconStroke} className="text-[var(--teal)]" aria-hidden />}>
+            <div className="gxp-auth-fields">
+              <AuthField label="Email" icon={<Mail size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}>
                 <TextInput
                   name="email"
                   type="email"

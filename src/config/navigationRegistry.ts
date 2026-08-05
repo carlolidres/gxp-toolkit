@@ -55,7 +55,7 @@ const MENU_ACTIONS: Record<string, PermissionAction[]> = {
   'edoc-inbox': ['view', 'approve'],
   'edoc-create': ['view', 'create'],
   'edoc-my-documents': ['view', 'create', 'edit', 'export'],
-  'edoc-all-documents': ['view', 'export'],
+  'edoc-all-documents': ['view', 'delete', 'export'],
   'edoc-audit': ['view', 'export'],
   'edoc-returned': ['view', 'edit', 'export'],
   'edoc-completed': ['view', 'export'],
@@ -208,6 +208,8 @@ export const vrmsRouteLabels: Record<string, string> = {
   '/admin/users': 'User Management',
   '/login': 'Sign in',
   '/signup': 'Sign up',
+  '/privacy': 'Privacy Notice',
+  '/terms': 'Terms of Use',
 }
 
 export function isVrmsPath(pathname: string): boolean {
