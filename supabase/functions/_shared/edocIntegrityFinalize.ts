@@ -19,6 +19,7 @@ import {
   truncatePageIntegrityCode,
 } from './edocPageIntegrity.ts'
 import { cssNormalizedToPdfRect, sha256Hex } from './edocPdfStamp.ts'
+import { fieldIntegrityInsets } from './edocStampGeometry.ts'
 
 export type PageIntegrityRecord = {
   pageNumber: number
@@ -201,24 +202,29 @@ export async function applyContentIntegrityAndVerifyMarks(
       // Link annotation is best-effort; footer + QR still apply.
     }
 
-    if (qrImage) {
-      try {
-        const qrSize = Math.min(28, Math.max(16, pdfRect.width * 0.22), pdfRect.height * 0.55)
-        if (!(qrSize > 0)) continue
-        const qrX = pdfRect.x + pdfRect.width - qrSize - 2
-        const qrY = pdfRect.y + 2
-        page.drawImage(qrImage, { x: qrX, y: qrY, width: qrSize, height: qrSize })
-        page.drawText('Scan or click to verify document authenticity.', {
-          x: pdfRect.x + 2,
-          y: Math.max(pdfRect.y - 8, 16),
-          size: 5.5,
+    try {
+      const insets = fieldIntegrityInsets(pdfRect)
+      if (qrImage && insets.qrBox) {
+        page.drawImage(qrImage, {
+          x: insets.qrBox.x,
+          y: insets.qrBox.y,
+          width: insets.qrBox.width,
+          height: insets.qrBox.height,
+        })
+      }
+      if (insets.verifyRow && insets.verifyRow.height > 0) {
+        const captionSize = Math.min(5.5, Math.max(4.5, insets.verifyRow.height * 0.72))
+        page.drawText(insets.verifyRow.text, {
+          x: insets.verifyRow.x,
+          y: insets.verifyRow.y + Math.max(0.5, (insets.verifyRow.height - captionSize) / 2),
+          size: captionSize,
           font,
           color: rgb(0.05, 0.49, 0.51),
-          maxWidth: pdfRect.width,
+          maxWidth: insets.verifyRow.width,
         })
-      } catch {
-        // QR/caption best-effort.
       }
+    } catch {
+      // QR/caption best-effort; never fall back to field.y - 8 overlay.
     }
   }
 
