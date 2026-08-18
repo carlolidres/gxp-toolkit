@@ -38,6 +38,16 @@ export function TermsOfUsePage() {
           </p>
         </section>
         <section>
+          <h2>Subscriptions</h2>
+          <p>
+            Paid eDoc plans are billed in USD by Paddle. Access changes only after Paddle confirms the
+            subscription by webhook — not when a checkout success page loads. Cancellation is at period end.
+            See the{' '}
+            <Link to="/refunds">refunds and cancellation</Link> page. Electronic signature use is described in{' '}
+            <Link to="/esign-consent">e-sign consent</Link>.
+          </p>
+        </section>
+        <section>
           <h2>No regulatory claim</h2>
           <p>
             Availability of {APP_NAME} features does not by itself constitute compliance with GxP, 21 CFR Part 11,

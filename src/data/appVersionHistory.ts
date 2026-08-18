@@ -6,10 +6,20 @@ export type AppVersionEntry = {
 
 export const APP_DEVELOPER = 'Carlo M. Lidres'
 
-export const APP_CURRENT_VERSION = 'v42'
+export const APP_CURRENT_VERSION = 'v43'
 
 /** Curated release notes — newest first. */
 export const APP_VERSION_HISTORY: AppVersionEntry[] = [
+  {
+    version: 'v43',
+    releaseDate: '2026-08-18',
+    changes: [
+      'e-signature stamps — collision-free QR, caption, and timestamp on stacked Final Signed PDFs',
+      'eDoc billing foundation — Paddle checkout, webhook-only activation, portal, entitlements, and reconcile (flags default off)',
+      'Pricing, billing settings, past-due banners, and public terms / privacy / refunds / e-sign consent drafts',
+      'Live Paddle keys stay unset; Wise remains payout-only; existing users stay on Free until they subscribe',
+    ],
+  },
   {
     version: 'v42',
     releaseDate: '2026-08-05',

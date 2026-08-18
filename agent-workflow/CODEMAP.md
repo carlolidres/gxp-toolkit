@@ -1,6 +1,6 @@
 # Code Map
 
-Last Updated: `2026-06-27`
+Last Updated: `2026-08-18`
 
 ## Purpose
 
@@ -29,6 +29,8 @@ Do not duplicate database schema details here. Database work belongs in `DATA_MA
 | VRMS registry | `src/pages/vrms/VrmsRegistryPage.tsx` | Registry-maintenance views |
 | VMP module pages | `src/pages/vmp/VmpMasterlistFormPage.tsx`, `VmpDatabasePage.tsx`, `VmpModulePage.tsx` | Masterlist Form (data entry), Database (view/manage), placeholders for Risk/Timeline/Audit |
 | Admin users | `src/pages/admin/UserManagementPage.tsx` | User and menu-permission management |
+| eDoc | `src/pages/edoc/` + `src/features/edoc/billing/` | Documents, inbox, public verify, pricing, billing settings (`/settings/billing`), checkout, portal, entitlement helpers, billing health |
+| Legal | `src/pages/PrivacyNoticePage.tsx`, `TermsOfUsePage.tsx`, `RefundCancelPage.tsx`, `EsignConsentPage.tsx` | Public policy drafts (`/#/privacy`, `/#/terms`, `/#/refunds`, `/#/esign-consent`) |
 | Samples | `src/pages/ComponentsShowcasePage.tsx`, `src/pages/StatisticsDashboardPage.tsx` | Component/statistics reference routes |
 
 ## Shared Components
@@ -113,7 +115,7 @@ Do not duplicate database schema details here. Database work belongs in `DATA_MA
 | `src/lib/permissions.test.ts` | Permission rule tests |
 | `src/lib/permissionStorage.test.ts` | Permission storage mapping tests |
 | `src/utils/statistics.test.ts` | Statistics utility tests |
-| `src/utils/vrmsLogic.test.ts` | VRMS logic and mock service tests |
+| `src/features/edoc/billing/billingFoundation.test.ts` | eDoc billing helpers (checkout URLs, webhook apply, seats, reconcile drift) |
 
 ## Editing Guidance
 

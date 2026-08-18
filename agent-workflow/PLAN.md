@@ -1,31 +1,21 @@
 # Active Plan
 
-Last Updated: `2026-08-04`
+Last Updated: `2026-08-18`
 
 Plan Owner: `Cursor`
 
-Status: `IN PROGRESS` → Phase 1 software complete; validation package deferred
+Status: `READY` — v43 stamp + billing shipping; live keys not set
 
-Active visual/requirements plan: `plans/edoc-integrity-verification/plan.md`
+Active visual/requirements plan: `plans/edoc-international-subscription/plan.md`
 
 ## Objective
 
-Deliver Phase 1 eDoc integrity footers, page codes, signature verify links/QR, and public verification without claiming FDA certification. Add PDF zoom on document/workspace preview.
+International eDoc subscriptions via Paddle; Wise is payout only. Controls C1–C22 locked.
 
-## Done (Phase 1)
+## This slice
 
-1. Canonicalization helpers + unit tests  
-2. Finalize: footers, links, QR, page-code persistence, audit events  
-3. Migration + `edoc_public_verify_certificate` RPC  
-4. Public verify page + hash upload compare  
-5. Staging migrate + finalize deploy  
-6. PDF zoom in/out (document view + signing workspace)  
-7. URS §1–§9 mapped in plan (software vs deferred)
+Ship v43: collision-free e-signature stamps plus billing Phases 2–6 (flags off) to GitHub Pages via `master`.
 
-## Remaining / deferred
+## Next
 
-- PAdES / TSA  
-- Full URS / RTM / IQ-OQ-PQ / VSR  
-- MFA policy, WORM storage, CDN bot protection  
-- Live E2E finalize smoke by owner  
-- Exhaustive audit-event catalog gaps (separate backlog)  
+Owner: `plans/edoc-international-subscription/go-live-checklist.md`. Do not enable live Paddle keys.

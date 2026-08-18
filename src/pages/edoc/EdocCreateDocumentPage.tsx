@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type DragEvent, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Alert, Button, Steps, Tooltip } from 'antd'
+import { Alert, Button, Modal, Steps, Tooltip } from 'antd'
 import {
   AlignLeft,
   ArrowLeft,
@@ -27,6 +27,12 @@ import { EdocProfileCompletionGate } from '../../components/edoc/EdocProfileComp
 import { EdocSignatoryRoutingBuilder } from '../../components/edoc/EdocSignatoryRoutingBuilder'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { DateInput } from '../../components/forms/FormControls'
+import { isBillingEnabled } from '../../features/edoc/billing/billingFlags'
+import {
+  billingLimitUserMessage,
+  parseBillingLimitError,
+  type BillingLimitKind,
+} from '../../features/edoc/billing/entitlementService'
 import { edocService } from '../../features/edoc/edocService'
 import { hasPdfSignature, sha256Hex, validateEdocPdfFile } from '../../features/edoc/fileValidation'
 import {
@@ -131,6 +137,7 @@ export function EdocCreateDocumentPage() {
   const { notify } = useToast()
   const [activeStep, setActiveStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [limitKind, setLimitKind] = useState<BillingLimitKind | null>(null)
   const [created, setCreated] = useState<{
     documentId: string
     routeId: string
@@ -371,6 +378,7 @@ export function EdocCreateDocumentPage() {
     })
 
     setSubmitting(true)
+    setLimitKind(null)
     try {
       const resolvedMetadata = {
         ...metadata,
@@ -407,7 +415,14 @@ export function EdocCreateDocumentPage() {
       }
       navigate('/edoc/inbox')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send the eDoc route.')
+      const message = err instanceof Error ? err.message : 'Could not send the eDoc route.'
+      const kind = parseBillingLimitError(message)
+      if (kind) {
+        setLimitKind(kind)
+        setError(billingLimitUserMessage(kind))
+      } else {
+        setError(message)
+      }
     } finally {
       setSubmitting(false)
     }
@@ -882,6 +897,24 @@ export function EdocCreateDocumentPage() {
           </div>
         ) : null}
       </section>
+      <Modal
+        title={limitKind === 'seats' ? 'Seat limit reached' : 'Document allowance reached'}
+        open={limitKind != null}
+        onCancel={() => setLimitKind(null)}
+        okText={isBillingEnabled() ? 'Upgrade' : 'OK'}
+        cancelButtonProps={isBillingEnabled() ? undefined : { style: { display: 'none' } }}
+        onOk={() => {
+          if (isBillingEnabled()) {
+            navigate('/pricing')
+            return
+          }
+          setLimitKind(null)
+        }}
+      >
+        <p className="m-0 text-sm leading-relaxed text-[var(--app-text)]">
+          {limitKind ? billingLimitUserMessage(limitKind) : null}
+        </p>
+      </Modal>
     </EdocPage>
     </EdocProfileCompletionGate>
   )

@@ -35,3 +35,15 @@ enable_confirmations = false
 
 [functions.forgot-password]
 verify_jwt = false
+
+[functions.edoc-billing-checkout]
+verify_jwt = true
+
+[functions.edoc-billing-portal]
+verify_jwt = true
+
+[functions.edoc-paddle-webhook]
+verify_jwt = false
+
+[functions.edoc-billing-reconcile]
+verify_jwt = false

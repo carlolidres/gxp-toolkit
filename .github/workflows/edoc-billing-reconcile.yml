@@ -1,0 +1,35 @@
+name: eDoc billing reconcile
+
+# Daily Paddle drift check. Does not enable live keys.
+# Requires GitHub secrets:
+#   VITE_SUPABASE_ANON_KEY
+#   EDOC_BILLING_RECONCILE_SECRET  (must match Edge BILLING_RECONCILE_SECRET)
+# Edge also needs BILLING_ENABLED=true and BILLING_RECONCILE_ENABLED=true or the job records SKIPPED.
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call reconcile function
+        env:
+          ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          RECONCILE_SECRET: ${{ secrets.EDOC_BILLING_RECONCILE_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANON_KEY:-}" ] || [ -z "${RECONCILE_SECRET:-}" ]; then
+            echo "Reconcile secrets are not set; skipping."
+            exit 0
+          fi
+          curl --fail --show-error --silent \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "apikey: ${ANON_KEY}" \
+            -H "Authorization: Bearer ${ANON_KEY}" \
+            -H "x-edoc-reconcile-secret: ${RECONCILE_SECRET}" \
+            -d '{"action":"run"}' \
+            "https://ydndeoacgfnxjqwwnswh.supabase.co/functions/v1/edoc-billing-reconcile"

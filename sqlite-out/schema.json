@@ -2,11 +2,11 @@
   "meta": {
     "project": "gxp-toolkit",
     "source": "database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql",
-    "generatedAt": "2026-08-01T07:43:41.168Z",
+    "generatedAt": "2026-08-18T11:11:13.575Z",
     "schemaVersion": null,
-    "tableCount": 32,
-    "edgeCount": 76,
-    "indexCount": 27
+    "tableCount": 43,
+    "edgeCount": 88,
+    "indexCount": 30
   },
   "nodes": [
     {
@@ -1148,7 +1148,7 @@
     {
       "id": "edoc_organization_members",
       "type": "table",
-      "columnCount": 8,
+      "columnCount": 9,
       "primaryKeys": [
         "id"
       ],
@@ -1235,6 +1235,16 @@
           "references": null
         },
         {
+          "name": "counts_toward_seat",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": "counts_toward_seat IN (0, 1)",
+          "references": null
+        },
+        {
           "name": "created_at",
           "type": "TEXT",
           "notNull": true,
@@ -1258,6 +1268,13 @@
           "expression": "status IN ('active', 'invited', 'suspended')",
           "columns": [
             "status"
+          ]
+        },
+        {
+          "table": "edoc_organization_members",
+          "expression": "counts_toward_seat IN (0, 1)",
+          "columns": [
+            "counts_toward_seat"
           ]
         }
       ],
@@ -4108,6 +4125,1331 @@
       "indexes": []
     },
     {
+      "id": "edoc_page_integrity_codes",
+      "type": "table",
+      "columnCount": 12,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "document_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_documents",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "version_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_versions",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "route_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_routes",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "certificate_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_completion_certificates",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "page_number",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "page_number > 0",
+          "references": null
+        },
+        {
+          "name": "algorithm",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'edoc-page-integrity-v1'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "page_content_sha256",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "page_integrity_code",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "page_integrity_code_display",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_page_integrity_codes",
+          "expression": "page_number > 0",
+          "columns": []
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_verification_lookups",
+      "type": "table",
+      "columnCount": 9,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "verification_code",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "certificate_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_completion_certificates",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "result_status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "uploaded_sha256",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "matched",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "source_ip",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "user_agent",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    {
+      "id": "edoc_subscription_plans",
+      "type": "table",
+      "columnCount": 11,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "code"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "code",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "billing_interval",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "billing_interval IN ('none', 'month', 'year')",
+          "references": null
+        },
+        {
+          "name": "paddle_product_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "paddle_price_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "amount_minor",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "currency",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'USD'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "is_active",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": "is_active IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_subscription_plans",
+          "expression": "billing_interval IN ('none', 'month', 'year')",
+          "columns": [
+            "billing_interval"
+          ]
+        },
+        {
+          "table": "edoc_subscription_plans",
+          "expression": "is_active IN (0, 1)",
+          "columns": [
+            "is_active"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_plan_entitlements",
+      "type": "table",
+      "columnCount": 7,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "plan_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_subscription_plans",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "entitlement_key",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "value_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "value_type IN ('numeric', 'boolean', 'text')",
+          "references": null
+        },
+        {
+          "name": "numeric_value",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "boolean_value",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "boolean_value IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "text_value",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_plan_entitlements",
+          "expression": "value_type IN ('numeric', 'boolean', 'text')",
+          "columns": [
+            "value_type"
+          ]
+        },
+        {
+          "table": "edoc_plan_entitlements",
+          "expression": "boolean_value IN (0, 1)",
+          "columns": [
+            "boolean_value"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_billing_customers",
+      "type": "table",
+      "columnCount": 8,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "organization_id",
+        "provider_customer_id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "provider",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'paddle'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "provider_customer_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "email",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "country_code",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    {
+      "id": "edoc_subscriptions",
+      "type": "table",
+      "columnCount": 14,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "provider_subscription_id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "plan_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_subscription_plans",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "provider",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'paddle'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "provider_customer_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "provider_subscription_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "status IN (\n                               'FREE', 'TRIALING', 'ACTIVE', 'PAST_DUE', 'PAUSED', 'CANCELED', 'EXPIRED'\n                             )",
+          "references": null
+        },
+        {
+          "name": "current_period_start",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "current_period_end",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "scheduled_change_type",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "scheduled_change_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "cancel_at_period_end",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": "cancel_at_period_end IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_subscriptions",
+          "expression": "status IN (\n                               'FREE', 'TRIALING', 'ACTIVE', 'PAST_DUE', 'PAUSED', 'CANCELED', 'EXPIRED'\n                             )",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "table": "edoc_subscriptions",
+          "expression": "cancel_at_period_end IN (0, 1)",
+          "columns": [
+            "cancel_at_period_end"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_edoc_subscriptions_org",
+          "unique": true,
+          "table": "edoc_subscriptions",
+          "columns": [
+            "organization_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edoc_usage_counters",
+      "type": "table",
+      "columnCount": 6,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "metric_key",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "period_start",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "period_end",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "used_quantity",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_edoc_usage_org_metric",
+          "unique": false,
+          "table": "edoc_usage_counters",
+          "columns": [
+            "organization_id",
+            "metric_key"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edoc_billing_events",
+      "type": "table",
+      "columnCount": 8,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "provider",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'paddle'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "provider_event_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "event_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "received_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "processed_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "processing_status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "processing_status IN (\n                        'RECEIVED', 'PROCESSING', 'PROCESSED', 'FAILED', 'IGNORED'\n                      )",
+          "references": null
+        },
+        {
+          "name": "payload_json",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'{}'",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_billing_events",
+          "expression": "processing_status IN (\n                        'RECEIVED', 'PROCESSING', 'PROCESSED', 'FAILED', 'IGNORED'\n                      )",
+          "columns": [
+            "processing_status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_edoc_billing_events_status",
+          "unique": false,
+          "table": "edoc_billing_events",
+          "columns": [
+            "processing_status",
+            "received_at"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edoc_billing_transactions",
+      "type": "table",
+      "columnCount": 9,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "provider_transaction_id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "provider",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'paddle'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "provider_transaction_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "amount_minor",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "currency",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "occurred_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    {
+      "id": "edoc_billing_runtime",
+      "type": "table",
+      "columnCount": 5,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": "id = 'default'",
+          "references": null
+        },
+        {
+          "name": "billing_enabled",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": "billing_enabled IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "free_plan_limits_enabled",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": "free_plan_limits_enabled IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "paddle_checkout_enabled",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": "paddle_checkout_enabled IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_billing_runtime",
+          "expression": "id = 'default'",
+          "columns": []
+        },
+        {
+          "table": "edoc_billing_runtime",
+          "expression": "billing_enabled IN (0, 1)",
+          "columns": [
+            "billing_enabled"
+          ]
+        },
+        {
+          "table": "edoc_billing_runtime",
+          "expression": "free_plan_limits_enabled IN (0, 1)",
+          "columns": [
+            "free_plan_limits_enabled"
+          ]
+        },
+        {
+          "table": "edoc_billing_runtime",
+          "expression": "paddle_checkout_enabled IN (0, 1)",
+          "columns": [
+            "paddle_checkout_enabled"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_billing_reconcile_runs",
+      "type": "table",
+      "columnCount": 10,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "started_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "finished_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "status IN ('SKIPPED', 'OK', 'ERROR')",
+          "references": null
+        },
+        {
+          "name": "checked_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "mismatch_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "repaired_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "failed_event_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "past_due_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "summary_json",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'{}'",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_billing_reconcile_runs",
+          "expression": "status IN ('SKIPPED', 'OK', 'ERROR')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
       "id": "apqr_clients",
       "type": "table",
       "columnCount": 14,
@@ -6248,6 +7590,174 @@
       "onUpdate": null
     },
     {
+      "id": "edoc_page_integrity_codes.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_page_integrity_codes",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_page_integrity_codes.document_id->edoc_documents.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_page_integrity_codes",
+        "column": "document_id"
+      },
+      "to": {
+        "table": "edoc_documents",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_page_integrity_codes.version_id->edoc_document_versions.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_page_integrity_codes",
+        "column": "version_id"
+      },
+      "to": {
+        "table": "edoc_document_versions",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_page_integrity_codes.route_id->edoc_document_routes.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_page_integrity_codes",
+        "column": "route_id"
+      },
+      "to": {
+        "table": "edoc_document_routes",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_page_integrity_codes.certificate_id->edoc_completion_certificates.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_page_integrity_codes",
+        "column": "certificate_id"
+      },
+      "to": {
+        "table": "edoc_completion_certificates",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_verification_lookups.certificate_id->edoc_completion_certificates.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_verification_lookups",
+        "column": "certificate_id"
+      },
+      "to": {
+        "table": "edoc_completion_certificates",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_plan_entitlements.plan_id->edoc_subscription_plans.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_plan_entitlements",
+        "column": "plan_id"
+      },
+      "to": {
+        "table": "edoc_subscription_plans",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_billing_customers.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_billing_customers",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_subscriptions.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_subscriptions",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_subscriptions.plan_id->edoc_subscription_plans.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_subscriptions",
+        "column": "plan_id"
+      },
+      "to": {
+        "table": "edoc_subscription_plans",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_usage_counters.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_usage_counters",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_billing_transactions.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_billing_transactions",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
       "id": "apqr_scheduler_entries.client_id->apqr_clients.id",
       "type": "foreign_key",
       "from": {
@@ -6374,6 +7884,32 @@
       "table": "registry_values",
       "columns": [
         "registry_type"
+      ]
+    },
+    {
+      "name": "idx_edoc_subscriptions_org",
+      "unique": true,
+      "table": "edoc_subscriptions",
+      "columns": [
+        "organization_id"
+      ]
+    },
+    {
+      "name": "idx_edoc_billing_events_status",
+      "unique": false,
+      "table": "edoc_billing_events",
+      "columns": [
+        "processing_status",
+        "received_at"
+      ]
+    },
+    {
+      "name": "idx_edoc_usage_org_metric",
+      "unique": false,
+      "table": "edoc_usage_counters",
+      "columns": [
+        "organization_id",
+        "metric_key"
       ]
     },
     {

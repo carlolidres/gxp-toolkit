@@ -39,6 +39,15 @@ export function PrivacyNoticePage() {
           </p>
         </section>
         <section>
+          <h2>Payments</h2>
+          <p>
+            If your organization subscribes to eDoc paid plans, Paddle processes the payment as merchant of
+            record. {APP_NAME} does not store card numbers. Paddle may process billing name, email, tax, and
+            transaction details under its own privacy notice. Wise is used only as the seller payout destination,
+            not as a customer checkout method.
+          </p>
+        </section>
+        <section>
           <h2>Contact</h2>
           <p>
             For privacy questions about this deployment, contact your organization&apos;s administrator for {APP_NAME}.

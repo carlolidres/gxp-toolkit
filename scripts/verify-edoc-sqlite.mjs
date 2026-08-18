@@ -34,6 +34,17 @@ const SUPABASE_EDOC_TABLES = [
   'edoc_audit_events',
   'edoc_file_access_logs',
   'edoc_settings',
+  'edoc_page_integrity_codes',
+  'edoc_verification_lookups',
+  'edoc_subscription_plans',
+  'edoc_plan_entitlements',
+  'edoc_billing_customers',
+  'edoc_subscriptions',
+  'edoc_usage_counters',
+  'edoc_billing_events',
+  'edoc_billing_transactions',
+  'edoc_billing_runtime',
+  'edoc_billing_reconcile_runs',
 ]
 
 function readSql(name) {

@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS edoc_organization_members (
   membership_role     TEXT NOT NULL DEFAULT 'member'
                         CHECK (membership_role IN ('owner', 'admin', 'controller', 'auditor', 'member')),
   status              TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'invited', 'suspended')),
+  -- C7: assignees added for RLS must stay 0. Owner/admin/controller typically 1.
+  counts_toward_seat  INTEGER NOT NULL DEFAULT 0 CHECK (counts_toward_seat IN (0, 1)),
   created_at          TEXT NOT NULL,
   UNIQUE (organization_id, profile_id)
 );
@@ -328,6 +330,126 @@ CREATE TABLE IF NOT EXISTS edoc_verification_lookups (
   source_ip          TEXT,
   user_agent         TEXT,
   created_at         TEXT NOT NULL
+);
+
+-- Billing (Paddle) — SQLite-first; Supabase migration only after db:map + verify:edoc-sqlite.
+-- C1: these tables must never be used to delete signed-document evidence.
+
+CREATE TABLE IF NOT EXISTS edoc_subscription_plans (
+  id                 TEXT PRIMARY KEY,
+  code               TEXT NOT NULL UNIQUE,
+  name               TEXT NOT NULL,
+  billing_interval   TEXT NOT NULL CHECK (billing_interval IN ('none', 'month', 'year')),
+  paddle_product_id  TEXT,
+  paddle_price_id    TEXT,
+  amount_minor       INTEGER,
+  currency           TEXT NOT NULL DEFAULT 'USD',
+  is_active          INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
+  created_at         TEXT NOT NULL,
+  updated_at         TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS edoc_plan_entitlements (
+  id               TEXT PRIMARY KEY,
+  plan_id          TEXT NOT NULL REFERENCES edoc_subscription_plans(id) ON DELETE CASCADE,
+  entitlement_key  TEXT NOT NULL,
+  value_type       TEXT NOT NULL CHECK (value_type IN ('numeric', 'boolean', 'text')),
+  numeric_value    INTEGER,
+  boolean_value    INTEGER CHECK (boolean_value IN (0, 1)),
+  text_value       TEXT,
+  UNIQUE (plan_id, entitlement_key)
+);
+
+CREATE TABLE IF NOT EXISTS edoc_billing_customers (
+  id                    TEXT PRIMARY KEY,
+  organization_id       TEXT NOT NULL UNIQUE REFERENCES edoc_organizations(id) ON DELETE CASCADE,
+  provider              TEXT NOT NULL DEFAULT 'paddle',
+  provider_customer_id  TEXT NOT NULL UNIQUE,
+  email                 TEXT,
+  country_code          TEXT,
+  created_at            TEXT NOT NULL,
+  updated_at            TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS edoc_subscriptions (
+  id                         TEXT PRIMARY KEY,
+  organization_id            TEXT NOT NULL REFERENCES edoc_organizations(id) ON DELETE CASCADE,
+  plan_id                    TEXT NOT NULL REFERENCES edoc_subscription_plans(id),
+  provider                   TEXT NOT NULL DEFAULT 'paddle',
+  provider_customer_id       TEXT,
+  provider_subscription_id   TEXT UNIQUE,
+  status                     TEXT NOT NULL CHECK (status IN (
+                               'FREE', 'TRIALING', 'ACTIVE', 'PAST_DUE', 'PAUSED', 'CANCELED', 'EXPIRED'
+                             )),
+  current_period_start       TEXT,
+  current_period_end         TEXT,
+  scheduled_change_type      TEXT,
+  scheduled_change_at        TEXT,
+  cancel_at_period_end       INTEGER NOT NULL DEFAULT 0 CHECK (cancel_at_period_end IN (0, 1)),
+  created_at                 TEXT NOT NULL,
+  updated_at                 TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS edoc_usage_counters (
+  id               TEXT PRIMARY KEY,
+  organization_id  TEXT NOT NULL REFERENCES edoc_organizations(id) ON DELETE CASCADE,
+  metric_key       TEXT NOT NULL,
+  period_start     TEXT NOT NULL,
+  period_end       TEXT NOT NULL,
+  used_quantity    INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (organization_id, metric_key, period_start, period_end)
+);
+
+CREATE TABLE IF NOT EXISTS edoc_billing_events (
+  id                  TEXT PRIMARY KEY,
+  provider            TEXT NOT NULL DEFAULT 'paddle',
+  provider_event_id   TEXT NOT NULL,
+  event_type          TEXT NOT NULL,
+  received_at         TEXT NOT NULL,
+  processed_at        TEXT,
+  processing_status   TEXT NOT NULL CHECK (processing_status IN (
+                        'RECEIVED', 'PROCESSING', 'PROCESSED', 'FAILED', 'IGNORED'
+                      )),
+  payload_json        TEXT NOT NULL DEFAULT '{}',
+  UNIQUE (provider, provider_event_id)
+);
+
+CREATE TABLE IF NOT EXISTS edoc_billing_transactions (
+  id                       TEXT PRIMARY KEY,
+  organization_id          TEXT NOT NULL REFERENCES edoc_organizations(id),
+  provider                 TEXT NOT NULL DEFAULT 'paddle',
+  provider_transaction_id  TEXT NOT NULL UNIQUE,
+  amount_minor             INTEGER,
+  currency                 TEXT,
+  status                   TEXT,
+  occurred_at              TEXT NOT NULL,
+  created_at               TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_edoc_subscriptions_org ON edoc_subscriptions (organization_id);
+CREATE INDEX IF NOT EXISTS idx_edoc_billing_events_status ON edoc_billing_events (processing_status, received_at);
+CREATE INDEX IF NOT EXISTS idx_edoc_usage_org_metric ON edoc_usage_counters (organization_id, metric_key);
+
+-- Server-side limit switch (Postgres reads this; VITE_* flags are display-only).
+CREATE TABLE IF NOT EXISTS edoc_billing_runtime (
+  id                         TEXT PRIMARY KEY CHECK (id = 'default'),
+  billing_enabled            INTEGER NOT NULL DEFAULT 0 CHECK (billing_enabled IN (0, 1)),
+  free_plan_limits_enabled   INTEGER NOT NULL DEFAULT 0 CHECK (free_plan_limits_enabled IN (0, 1)),
+  paddle_checkout_enabled    INTEGER NOT NULL DEFAULT 0 CHECK (paddle_checkout_enabled IN (0, 1)),
+  updated_at                 TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS edoc_billing_reconcile_runs (
+  id                   TEXT PRIMARY KEY,
+  started_at           TEXT NOT NULL,
+  finished_at          TEXT,
+  status               TEXT NOT NULL CHECK (status IN ('SKIPPED', 'OK', 'ERROR')),
+  checked_count        INTEGER NOT NULL DEFAULT 0,
+  mismatch_count       INTEGER NOT NULL DEFAULT 0,
+  repaired_count       INTEGER NOT NULL DEFAULT 0,
+  failed_event_count   INTEGER NOT NULL DEFAULT 0,
+  past_due_count       INTEGER NOT NULL DEFAULT 0,
+  summary_json         TEXT NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX IF NOT EXISTS idx_edoc_documents_org_status ON edoc_documents (organization_id, status);

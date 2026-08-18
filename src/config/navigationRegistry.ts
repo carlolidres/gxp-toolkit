@@ -210,6 +210,8 @@ export const vrmsRouteLabels: Record<string, string> = {
   '/signup': 'Sign up',
   '/privacy': 'Privacy Notice',
   '/terms': 'Terms of Use',
+  '/refunds': 'Refunds and cancellation',
+  '/esign-consent': 'Electronic signature consent',
 }
 
 export function isVrmsPath(pathname: string): boolean {

@@ -1,6 +1,6 @@
 # Data Map
 
-Last Updated: `2026-07-28`
+Last Updated: `2026-08-18`
 
 ## Purpose
 
@@ -13,7 +13,7 @@ This is a concise human map. It does not replace executable SQL.
 | Path | Role | Editing rule |
 |---|---|---|
 | `database/sqlite/schema.sql` | Core SQLite schema (profiles incl. `signature_data_url`, `avatar_data_url`, `organization`, `job_title`, `profile_organization_options`, VMP, feedback) | Edit when core app models change |
-| `database/sqlite/edoc_schema.sql` | eDoc SQLite reference (19 `edoc_*` tables) | Edit before Supabase eDoc migration changes |
+| `database/sqlite/edoc_schema.sql` | eDoc SQLite reference (`edoc_*` tables including billing + reconcile runs) | Edit before Supabase eDoc migration changes |
 | `database/sqlite/edoc_seed.sql` | eDoc pilot fixtures (non-production) | Pilot data only |
 | `database/sqlite/seed.sql` | Placeholder SQLite seed template | Do not put regulated/production data here |
 | `sqlite-out/` | Generated schema map used for fast navigation | Never edit manually |
@@ -30,6 +30,9 @@ Workflow app status: `workflow-app/` uses its own local SQLite store for approva
 |---|---|---|
 | `supabase/migrations/20260616000000_initial_gxp_toolkit_schema.sql` through `20260627100000_app_feedback_messages.sql` | VRMS schema, auth profiles, grants, menu permissions, RLS fixes, feedback | Review before applying |
 | `supabase/migrations/20260704100000_edoc_supabase_module.sql` | eDoc module: `edoc_*` tables, RLS, RPCs, storage buckets, inbox view | Applied staging 2026-07-04 |
+| `supabase/migrations/20260818052757_edoc_billing.sql` | eDoc billing tables, RLS, sandbox plan seed (`paddle_price_id`) | Applied staging 2026-08-18 |
+| `supabase/migrations/20260818185000_edoc_billing_entitlements.sql` | Document quota + billable seat triggers; `counts_toward_seat`; `edoc_billing_runtime` | Applied staging 2026-08-18 |
+| `supabase/migrations/20260818191000_edoc_billing_reconcile.sql` | `edoc_billing_reconcile_runs` (counts only; service_role write) | Applied staging 2026-08-18 |
 | `supabase/migrations/20260724120000_profile_signature_png.sql` | `profiles.signature_data_url` for Account Settings PNG signature | Applied remote 2026-07-25 |
 | `supabase/migrations/20260725120000_profile_organization.sql` | `profiles.organization` + `profile_organization_options` catalog | Applied remote 2026-07-25 |
 | `supabase/migrations/20260725130000_profile_job_title.sql` | `profiles.job_title` for Account Settings Position/Title | Applied remote 2026-07-25 |
@@ -90,6 +93,11 @@ Audit import note: the source audit CSV has misleading headers for document-rela
 | eDoc document | `edoc_documents` | Controlled PDF document metadata and lifecycle status | `id`; unique `(organization_id, document_number)` | Same |
 | eDoc route assignment | `edoc_route_step_assignees` / `edoc_assignment_inbox` view | Inbox tasks for review/approve/sign/acknowledge | `id` | Same |
 | eDoc audit event | `edoc_audit_events` | Append-only eDoc workflow audit (trigger-protected on Supabase) | `id` | Same |
+| eDoc subscription plan | `edoc_subscription_plans` | FREE + Personal + Professional + Business; sandbox `paddle_price_id` filled 2026-08-18 | `id`; unique `code` | `database/sqlite/edoc_schema.sql`; `supabase/migrations/20260818052757_edoc_billing.sql` |
+| eDoc subscription | `edoc_subscriptions` | Org-level billing cache; webhook is source of paid status | `id`; unique `organization_id` | Same |
+| eDoc billing event | `edoc_billing_events` | Paddle webhook idempotency (`provider` + `provider_event_id`) | `id` | Same |
+| eDoc billing runtime | `edoc_billing_runtime` | Server flag row for quota enforcement (`billing_enabled`, free-limits, checkout). Default off (C9). | `id` = `default` | `database/sqlite/edoc_schema.sql`; `supabase/migrations/20260818185000_edoc_billing_entitlements.sql` |
+| eDoc billing reconcile run | `edoc_billing_reconcile_runs` | Daily Paddle drift job counts (no payloads) | `id` | `database/sqlite/edoc_schema.sql`; `supabase/migrations/20260818191000_edoc_billing_reconcile.sql` |
 
 ## eDoc Create-and-Send Draft Flow
 
@@ -103,7 +111,7 @@ Payload type: `EdocCreateDraftInput` in `src/features/edoc/types.ts`.
 | PDF upload | `file.name`, `sizeBytes`, `mimeType`, `sha256` | Client validates MIME/extension + PDF signature (`fileValidation`) before continue. In-memory `pdfBytes` drive placement preview via pdf.js (`usePdfDocument`); worker served from `public/pdf.worker.min.mjs` under Vite `base`. |
 | Routing | `routing.mode`, `steps[]` (action, assignees, completion rule, minimum count, due, delegation) | Every step needs ≥1 assignee before send (unless no-signatories). |
 | Field placement | `fields[]` (assignee draft id, type, page, normalized x/y/w/h, rotation, required) | One required field per assignee draft before send. Name / Position-Title / Signature overlays are filled from each assignee’s Account Settings profile at signing time. |
-| Review / send | Summary only | Calls RPC `edoc_create_and_start_route` (returns `document_id`, `route_id`, `version_id`, `file_id`, `bucket_id`, `object_key`, `active_assignment_id`, `needs_external_auth`); client uploads PDF bytes to `edoc-originals`; navigates to creator workspace when they have an active assignment, else My Inbox. Same-org assignees are added as org members immediately. |
+| Review / send | Summary only | Calls RPC `edoc_create_and_start_route`. Insert of `edoc_documents` with status `ready_for_routing` consumes `DOCUMENTS_SENT` when `edoc_billing_runtime.billing_enabled` is on (C11). Quota errors return `EDOC_DOCUMENT_QUOTA`. Signing is not gated (C2). Assignees inserted for RLS use `counts_toward_seat = false` (C7). |
 
 ### External Document Controller authorization
 

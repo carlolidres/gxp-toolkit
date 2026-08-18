@@ -1,10 +1,10 @@
-# SQLite Schema Report — GxP Toolkit (2026-08-01)
+# SQLite Schema Report — GxP Toolkit (2026-08-18)
 
 ## Summary
 - Source: `database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql`
 - Schema version: **unknown**
-- Tables: **32** · Foreign keys: **76** · Indexes: **27**
-- Generated: 2026-08-01T07:43:41.168Z
+- Tables: **43** · Foreign keys: **88** · Indexes: **30**
+- Generated: 2026-08-18T11:11:13.575Z
 
 ## Agent Usage
 
@@ -180,11 +180,13 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `business_unit_name` | TEXT | YES |  |  |  |  |  |
 | `membership_role` | TEXT | NO |  |  | 'member' | `membership_role IN ('owner', 'admin', 'c…` |  |
 | `status` | TEXT | NO |  |  | 'active' | `status IN ('active', 'invited', 'suspend…` |  |
+| `counts_toward_seat` | INTEGER | NO |  |  | 0 | `counts_toward_seat IN (0, 1)` |  |
 | `created_at` | TEXT | NO |  |  |  |  |  |
 
 **CHECK constraints:**
 - `membership_role IN ('owner', 'admin', 'controller', 'auditor', 'member')`
 - `status IN ('active', 'invited', 'suspended')`
+- `counts_toward_seat IN (0, 1)`
 
 ### `edoc_documents`
 
@@ -547,6 +549,200 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `setting_value` | TEXT | NO |  |  | '{}' |  |  |
 | `updated_at` | TEXT | NO |  |  |  |  |  |
 
+### `edoc_page_integrity_codes`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `organization_id` | TEXT | NO |  |  |  |  | `edoc_organizations.id` |
+| `document_id` | TEXT | NO |  |  |  |  | `edoc_documents.id` ON DELETE CASCADE |
+| `version_id` | TEXT | NO |  |  |  |  | `edoc_document_versions.id` ON DELETE CASCADE |
+| `route_id` | TEXT | NO |  |  |  |  | `edoc_document_routes.id` ON DELETE CASCADE |
+| `certificate_id` | TEXT | NO |  |  |  |  | `edoc_completion_certificates.id` ON DELETE CASCADE |
+| `page_number` | INTEGER | NO |  |  |  | `page_number > 0` |  |
+| `algorithm` | TEXT | NO |  |  | 'edoc-page-integrity-v1' |  |  |
+| `page_content_sha256` | TEXT | NO |  |  |  |  |  |
+| `page_integrity_code` | TEXT | NO |  |  |  |  |  |
+| `page_integrity_code_display` | TEXT | NO |  |  |  |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+
+**CHECK constraints:**
+- `page_number > 0`
+
+### `edoc_verification_lookups`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `verification_code` | TEXT | NO |  |  |  |  |  |
+| `certificate_id` | TEXT | YES |  |  |  |  | `edoc_completion_certificates.id` |
+| `result_status` | TEXT | NO |  |  |  |  |  |
+| `uploaded_sha256` | TEXT | YES |  |  |  |  |  |
+| `matched` | INTEGER | YES |  |  |  |  |  |
+| `source_ip` | TEXT | YES |  |  |  |  |  |
+| `user_agent` | TEXT | YES |  |  |  |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+
+### `edoc_subscription_plans`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `code` | TEXT | NO |  | YES |  |  |  |
+| `name` | TEXT | NO |  |  |  |  |  |
+| `billing_interval` | TEXT | NO |  |  |  | `billing_interval IN ('none', 'month', 'y…` |  |
+| `paddle_product_id` | TEXT | YES |  |  |  |  |  |
+| `paddle_price_id` | TEXT | YES |  |  |  |  |  |
+| `amount_minor` | INTEGER | YES |  |  |  |  |  |
+| `currency` | TEXT | NO |  |  | 'USD' |  |  |
+| `is_active` | INTEGER | NO |  |  | 1 | `is_active IN (0, 1)` |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+
+**CHECK constraints:**
+- `billing_interval IN ('none', 'month', 'year')`
+- `is_active IN (0, 1)`
+
+### `edoc_plan_entitlements`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `plan_id` | TEXT | NO |  |  |  |  | `edoc_subscription_plans.id` ON DELETE CASCADE |
+| `entitlement_key` | TEXT | NO |  |  |  |  |  |
+| `value_type` | TEXT | NO |  |  |  | `value_type IN ('numeric', 'boolean', 'te…` |  |
+| `numeric_value` | INTEGER | YES |  |  |  |  |  |
+| `boolean_value` | INTEGER | YES |  |  |  | `boolean_value IN (0, 1)` |  |
+| `text_value` | TEXT | YES |  |  |  |  |  |
+
+**CHECK constraints:**
+- `value_type IN ('numeric', 'boolean', 'text')`
+- `boolean_value IN (0, 1)`
+
+### `edoc_billing_customers`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `organization_id` | TEXT | NO |  | YES |  |  | `edoc_organizations.id` ON DELETE CASCADE |
+| `provider` | TEXT | NO |  |  | 'paddle' |  |  |
+| `provider_customer_id` | TEXT | NO |  | YES |  |  |  |
+| `email` | TEXT | YES |  |  |  |  |  |
+| `country_code` | TEXT | YES |  |  |  |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+
+### `edoc_subscriptions`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `organization_id` | TEXT | NO |  |  |  |  | `edoc_organizations.id` ON DELETE CASCADE |
+| `plan_id` | TEXT | NO |  |  |  |  | `edoc_subscription_plans.id` |
+| `provider` | TEXT | NO |  |  | 'paddle' |  |  |
+| `provider_customer_id` | TEXT | YES |  |  |  |  |  |
+| `provider_subscription_id` | TEXT | YES |  | YES |  |  |  |
+| `status` | TEXT | NO |  |  |  | `status IN (
+                            …` |  |
+| `current_period_start` | TEXT | YES |  |  |  |  |  |
+| `current_period_end` | TEXT | YES |  |  |  |  |  |
+| `scheduled_change_type` | TEXT | YES |  |  |  |  |  |
+| `scheduled_change_at` | TEXT | YES |  |  |  |  |  |
+| `cancel_at_period_end` | INTEGER | NO |  |  | 0 | `cancel_at_period_end IN (0, 1)` |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+
+**Indexes:**
+- `idx_edoc_subscriptions_org` (organization_id) UNIQUE
+
+**CHECK constraints:**
+- `status IN (
+                               'FREE', 'TRIALING', 'ACTIVE', 'PAST_D…`
+- `cancel_at_period_end IN (0, 1)`
+
+### `edoc_usage_counters`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `organization_id` | TEXT | NO |  |  |  |  | `edoc_organizations.id` ON DELETE CASCADE |
+| `metric_key` | TEXT | NO |  |  |  |  |  |
+| `period_start` | TEXT | NO |  |  |  |  |  |
+| `period_end` | TEXT | NO |  |  |  |  |  |
+| `used_quantity` | INTEGER | NO |  |  | 0 |  |  |
+
+**Indexes:**
+- `idx_edoc_usage_org_metric` (organization_id, metric_key)
+
+### `edoc_billing_events`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `provider` | TEXT | NO |  |  | 'paddle' |  |  |
+| `provider_event_id` | TEXT | NO |  |  |  |  |  |
+| `event_type` | TEXT | NO |  |  |  |  |  |
+| `received_at` | TEXT | NO |  |  |  |  |  |
+| `processed_at` | TEXT | YES |  |  |  |  |  |
+| `processing_status` | TEXT | NO |  |  |  | `processing_status IN (
+                 …` |  |
+| `payload_json` | TEXT | NO |  |  | '{}' |  |  |
+
+**Indexes:**
+- `idx_edoc_billing_events_status` (processing_status, received_at)
+
+**CHECK constraints:**
+- `processing_status IN (
+                        'RECEIVED', 'PROCESSING', 'PROCES…`
+
+### `edoc_billing_transactions`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `organization_id` | TEXT | NO |  |  |  |  | `edoc_organizations.id` |
+| `provider` | TEXT | NO |  |  | 'paddle' |  |  |
+| `provider_transaction_id` | TEXT | NO |  | YES |  |  |  |
+| `amount_minor` | INTEGER | YES |  |  |  |  |  |
+| `currency` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | YES |  |  |  |  |  |
+| `occurred_at` | TEXT | NO |  |  |  |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+
+### `edoc_billing_runtime`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  | `id = 'default'` |  |
+| `billing_enabled` | INTEGER | NO |  |  | 0 | `billing_enabled IN (0, 1)` |  |
+| `free_plan_limits_enabled` | INTEGER | NO |  |  | 0 | `free_plan_limits_enabled IN (0, 1)` |  |
+| `paddle_checkout_enabled` | INTEGER | NO |  |  | 0 | `paddle_checkout_enabled IN (0, 1)` |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+
+**CHECK constraints:**
+- `id = 'default'`
+- `billing_enabled IN (0, 1)`
+- `free_plan_limits_enabled IN (0, 1)`
+- `paddle_checkout_enabled IN (0, 1)`
+
+### `edoc_billing_reconcile_runs`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `started_at` | TEXT | NO |  |  |  |  |  |
+| `finished_at` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  |  | `status IN ('SKIPPED', 'OK', 'ERROR')` |  |
+| `checked_count` | INTEGER | NO |  |  | 0 |  |  |
+| `mismatch_count` | INTEGER | NO |  |  | 0 |  |  |
+| `repaired_count` | INTEGER | NO |  |  | 0 |  |  |
+| `failed_event_count` | INTEGER | NO |  |  | 0 |  |  |
+| `past_due_count` | INTEGER | NO |  |  | 0 |  |  |
+| `summary_json` | TEXT | NO |  |  | '{}' |  |  |
+
+**CHECK constraints:**
+- `status IN ('SKIPPED', 'OK', 'ERROR')`
+
 ### `apqr_clients`
 
 | Column | Type | Null | PK | Unique | Default | Check | References |
@@ -775,6 +971,18 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 - `edoc_file_access_logs.file_id` → `edoc_document_files.id`
 - `edoc_file_access_logs.profile_id` → `profiles.id`
 - `edoc_settings.organization_id` → `edoc_organizations.id`
+- `edoc_page_integrity_codes.organization_id` → `edoc_organizations.id`
+- `edoc_page_integrity_codes.document_id` → `edoc_documents.id` (ON DELETE CASCADE)
+- `edoc_page_integrity_codes.version_id` → `edoc_document_versions.id` (ON DELETE CASCADE)
+- `edoc_page_integrity_codes.route_id` → `edoc_document_routes.id` (ON DELETE CASCADE)
+- `edoc_page_integrity_codes.certificate_id` → `edoc_completion_certificates.id` (ON DELETE CASCADE)
+- `edoc_verification_lookups.certificate_id` → `edoc_completion_certificates.id`
+- `edoc_plan_entitlements.plan_id` → `edoc_subscription_plans.id` (ON DELETE CASCADE)
+- `edoc_billing_customers.organization_id` → `edoc_organizations.id` (ON DELETE CASCADE)
+- `edoc_subscriptions.organization_id` → `edoc_organizations.id` (ON DELETE CASCADE)
+- `edoc_subscriptions.plan_id` → `edoc_subscription_plans.id`
+- `edoc_usage_counters.organization_id` → `edoc_organizations.id` (ON DELETE CASCADE)
+- `edoc_billing_transactions.organization_id` → `edoc_organizations.id`
 - `apqr_scheduler_entries.client_id` → `apqr_clients.id`
 - `apqr_records.scheduler_entry_id` → `apqr_scheduler_entries.id` (ON DELETE CASCADE)
 - `apqr_follow_ups.record_id` → `apqr_records.id` (ON DELETE CASCADE)
@@ -793,6 +1001,9 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `idx_vmp_field_options_lookup` | `vmp_field_options` | field_type, validation_area, site_id, department_id, is_active |  |
 | `idx_vmp_qc_instruments_record` | `vmp_qc_instruments` | masterlist_record_id, is_active |  |
 | `idx_registry_values_type` | `registry_values` | registry_type |  |
+| `idx_edoc_subscriptions_org` | `edoc_subscriptions` | organization_id | YES |
+| `idx_edoc_billing_events_status` | `edoc_billing_events` | processing_status, received_at |  |
+| `idx_edoc_usage_org_metric` | `edoc_usage_counters` | organization_id, metric_key |  |
 | `idx_edoc_documents_org_status` | `edoc_documents` | organization_id, status |  |
 | `idx_edoc_documents_owner` | `edoc_documents` | owner_id, status |  |
 | `idx_edoc_versions_document` | `edoc_document_versions` | document_id, version_number |  |
@@ -888,6 +1099,18 @@ erDiagram
   edoc_document_files ||--o{ edoc_file_access_logs : "file_id"
   profiles ||--o{ edoc_file_access_logs : "profile_id"
   edoc_organizations ||--o{ edoc_settings : "organization_id"
+  edoc_organizations ||--o{ edoc_page_integrity_codes : "organization_id"
+  edoc_documents ||--o{ edoc_page_integrity_codes : "document_id"
+  edoc_document_versions ||--o{ edoc_page_integrity_codes : "version_id"
+  edoc_document_routes ||--o{ edoc_page_integrity_codes : "route_id"
+  edoc_completion_certificates ||--o{ edoc_page_integrity_codes : "certificate_id"
+  edoc_completion_certificates ||--o{ edoc_verification_lookups : "certificate_id"
+  edoc_subscription_plans ||--o{ edoc_plan_entitlements : "plan_id"
+  edoc_organizations ||--o{ edoc_billing_customers : "organization_id"
+  edoc_organizations ||--o{ edoc_subscriptions : "organization_id"
+  edoc_subscription_plans ||--o{ edoc_subscriptions : "plan_id"
+  edoc_organizations ||--o{ edoc_usage_counters : "organization_id"
+  edoc_organizations ||--o{ edoc_billing_transactions : "organization_id"
   apqr_clients ||--o{ apqr_scheduler_entries : "client_id"
   apqr_scheduler_entries ||--o{ apqr_records : "scheduler_entry_id"
   apqr_records ||--o{ apqr_follow_ups : "record_id"
@@ -1004,6 +1227,7 @@ erDiagram
     text business_unit_name
     text membership_role
     text status
+    integer counts_toward_seat
     text created_at
   }
   edoc_documents {
@@ -1244,6 +1468,127 @@ erDiagram
     text setting_key
     text setting_value
     text updated_at
+  }
+  edoc_page_integrity_codes {
+    text id PK
+    text organization_id FK
+    text document_id FK
+    text version_id FK
+    text route_id FK
+    text certificate_id FK
+    integer page_number
+    text algorithm
+    text page_content_sha256
+    text page_integrity_code
+    text page_integrity_code_display
+    text created_at
+  }
+  edoc_verification_lookups {
+    text id PK
+    text verification_code
+    text certificate_id FK
+    text result_status
+    text uploaded_sha256
+    integer matched
+    text source_ip
+    text user_agent
+    text created_at
+  }
+  edoc_subscription_plans {
+    text id PK
+    text code UK
+    text name
+    text billing_interval
+    text paddle_product_id
+    text paddle_price_id
+    integer amount_minor
+    text currency
+    integer is_active
+    text created_at
+    text updated_at
+  }
+  edoc_plan_entitlements {
+    text id PK
+    text plan_id FK
+    text entitlement_key
+    text value_type
+    integer numeric_value
+    integer boolean_value
+    text text_value
+  }
+  edoc_billing_customers {
+    text id PK
+    text organization_id UK FK
+    text provider
+    text provider_customer_id UK
+    text email
+    text country_code
+    text created_at
+    text updated_at
+  }
+  edoc_subscriptions {
+    text id PK
+    text organization_id FK
+    text plan_id FK
+    text provider
+    text provider_customer_id
+    text provider_subscription_id UK
+    text status
+    text current_period_start
+    text current_period_end
+    text scheduled_change_type
+    text scheduled_change_at
+    integer cancel_at_period_end
+    text created_at
+    text updated_at
+  }
+  edoc_usage_counters {
+    text id PK
+    text organization_id FK
+    text metric_key
+    text period_start
+    text period_end
+    integer used_quantity
+  }
+  edoc_billing_events {
+    text id PK
+    text provider
+    text provider_event_id
+    text event_type
+    text received_at
+    text processed_at
+    text processing_status
+    text payload_json
+  }
+  edoc_billing_transactions {
+    text id PK
+    text organization_id FK
+    text provider
+    text provider_transaction_id UK
+    integer amount_minor
+    text currency
+    text status
+    text occurred_at
+    text created_at
+  }
+  edoc_billing_runtime {
+    text id PK
+    integer billing_enabled
+    integer free_plan_limits_enabled
+    integer paddle_checkout_enabled
+    text updated_at
+  }
+  edoc_billing_reconcile_runs {
+    text id PK
+    text started_at
+    text finished_at
+    text status
+    integer checked_count
+    integer mismatch_count
+    integer repaired_count
+    integer failed_event_count
+    integer past_due_count
+    text summary_json
   }
   apqr_clients {
     text id PK

@@ -11,8 +11,13 @@ import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
 import { ResetPasswordPage } from '../pages/ResetPasswordPage'
 import { PrivacyNoticePage } from '../pages/PrivacyNoticePage'
 import { TermsOfUsePage } from '../pages/TermsOfUsePage'
+import { RefundCancelPage } from '../pages/RefundCancelPage'
+import { EsignConsentPage } from '../pages/EsignConsentPage'
 import { EdocPublicVerifyPage } from '../pages/edoc/EdocPublicVerifyPage'
 import { AccountSettingsPage } from '../pages/AccountSettingsPage'
+import { EdocPricingPage } from '../pages/edoc/EdocPricingPage'
+import { EdocBillingSettingsPage } from '../pages/edoc/EdocBillingSettingsPage'
+import { EdocBillingCancelledPage, EdocBillingSuccessPage } from '../pages/edoc/EdocBillingReturnPage'
 import { VrmsDashboardPage } from '../pages/vrms/VrmsDashboardPage'
 import { VrmsRoutingPage } from '../pages/vrms/VrmsRoutingPage'
 import { VrmsDatabasePage } from '../pages/vrms/VrmsDatabasePage'
@@ -50,6 +55,8 @@ export function AppRoutes() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/privacy" element={<PrivacyNoticePage />} />
       <Route path="/terms" element={<TermsOfUsePage />} />
+      <Route path="/refunds" element={<RefundCancelPage />} />
+      <Route path="/esign-consent" element={<EsignConsentPage />} />
       <Route path="/verify" element={<EdocPublicVerifyPage />} />
       <Route path="/verify/:code" element={<EdocPublicVerifyPage />} />
 
@@ -322,6 +329,10 @@ export function AppRoutes() {
           }
         />
         <Route path="account" element={<AccountSettingsPage />} />
+        <Route path="pricing" element={<EdocPricingPage />} />
+        <Route path="settings/billing" element={<EdocBillingSettingsPage />} />
+        <Route path="billing/success" element={<EdocBillingSuccessPage />} />
+        <Route path="billing/cancelled" element={<EdocBillingCancelledPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
