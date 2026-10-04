@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+coverage
+.next
+.cache
+tmp
+logs
+*.log
+.env
+.git

@@ -11,13 +11,19 @@ import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
 import { ResetPasswordPage } from '../pages/ResetPasswordPage'
 import { PrivacyNoticePage } from '../pages/PrivacyNoticePage'
 import { TermsOfUsePage } from '../pages/TermsOfUsePage'
+import { RefundCancelPage } from '../pages/RefundCancelPage'
+import { EsignConsentPage } from '../pages/EsignConsentPage'
 import { EdocPublicVerifyPage } from '../pages/edoc/EdocPublicVerifyPage'
 import { AccountSettingsPage } from '../pages/AccountSettingsPage'
+import { EdocPricingPage } from '../pages/edoc/EdocPricingPage'
+import { EdocBillingSettingsPage } from '../pages/edoc/EdocBillingSettingsPage'
+import { EdocBillingCancelledPage, EdocBillingSuccessPage } from '../pages/edoc/EdocBillingReturnPage'
 import { VrmsDashboardPage } from '../pages/vrms/VrmsDashboardPage'
 import { VrmsRoutingPage } from '../pages/vrms/VrmsRoutingPage'
 import { VrmsDatabasePage } from '../pages/vrms/VrmsDatabasePage'
 import { VrmsAuditPage } from '../pages/vrms/VrmsAuditPage'
 import { VrmsRegistryPage } from '../pages/vrms/VrmsRegistryPage'
+import { EquipmentProfilePage } from '../pages/vmp/EquipmentProfilePage'
 import { VmpModulePage } from '../pages/vmp/VmpModulePage'
 import { VmpMasterlistFormPage } from '../pages/vmp/VmpMasterlistFormPage'
 import { VmpDatabasePage } from '../pages/vmp/VmpDatabasePage'
@@ -38,6 +44,22 @@ import { ApqrSchedulerPage } from '../pages/apqr/ApqrSchedulerPage'
 import { ApqrDatabasePage } from '../pages/apqr/ApqrDatabasePage'
 import { ApqrFormPage } from '../pages/apqr/ApqrFormPage'
 import { ApqrAuditPage } from '../pages/apqr/ApqrAuditPage'
+import { CpvEnabledRoute } from '../components/cpv/CpvEnabledRoute'
+import { CpvAuditPage } from '../pages/cpv/CpvAuditPage'
+import { CpvBatchesPanel } from '../pages/cpv/CpvBatchesPanel'
+import { CpvProductDashboardPanel } from '../pages/cpv/CpvProductDashboardPanel'
+import { CpvProductProfilePage } from '../pages/cpv/CpvProductProfilePage'
+import { CpvProductWorkspacePage } from '../pages/cpv/CpvProductWorkspacePage'
+import { CpvProductsPage } from '../pages/cpv/CpvProductsPage'
+import { CpvProtocolsPage } from '../pages/cpv/CpvProtocolsPage'
+import { CpvReportsPage } from '../pages/cpv/CpvReportsPage'
+import { CpvEquipmentPanel } from '../pages/cpv/CpvEquipmentPanel'
+import { CpvEventPanel } from '../pages/cpv/CpvEventPanel'
+import { CpvHoldTimePanel } from '../pages/cpv/CpvHoldTimePanel'
+import { CpvImprovementPanel } from '../pages/cpv/CpvImprovementPanel'
+import { CpvMaterialsPanel } from '../pages/cpv/CpvMaterialsPanel'
+import { CpvStabilityPanel } from '../pages/cpv/CpvStabilityPanel'
+import { CpvTestPanel } from '../pages/cpv/CpvTestPanel'
 import { UserManagementPage } from '../pages/admin/UserManagementPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
@@ -50,6 +72,8 @@ export function AppRoutes() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/privacy" element={<PrivacyNoticePage />} />
       <Route path="/terms" element={<TermsOfUsePage />} />
+      <Route path="/refunds" element={<RefundCancelPage />} />
+      <Route path="/esign-consent" element={<EsignConsentPage />} />
       <Route path="/verify" element={<EdocPublicVerifyPage />} />
       <Route path="/verify/:code" element={<EdocPublicVerifyPage />} />
 
@@ -110,6 +134,14 @@ export function AppRoutes() {
           element={
             <MenuPermissionRoute menuId="vmp-masterlist">
               <VmpMasterlistFormPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="vmp/equipment-profile"
+          element={
+            <MenuPermissionRoute menuId="vmp-equipment-profile">
+              <EquipmentProfilePage />
             </MenuPermissionRoute>
           }
         />
@@ -314,6 +346,80 @@ export function AppRoutes() {
           }
         />
         <Route
+          path="cpv/products"
+          element={
+            <MenuPermissionRoute menuId="cpv-products">
+              <CpvEnabledRoute>
+                <CpvProductsPage />
+              </CpvEnabledRoute>
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="cpv/products/:productCode/profile/:section"
+          element={
+            <MenuPermissionRoute menuId="cpv-products">
+              <CpvEnabledRoute>
+                <CpvProductProfilePage />
+              </CpvEnabledRoute>
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="cpv/products/:productId"
+          element={
+            <MenuPermissionRoute menuId="cpv-products">
+              <CpvEnabledRoute>
+                <CpvProductWorkspacePage />
+              </CpvEnabledRoute>
+            </MenuPermissionRoute>
+          }
+        >
+          <Route index element={<CpvProductDashboardPanel />} />
+          <Route path="batches" element={<CpvBatchesPanel />} />
+          <Route path="raw-materials" element={<CpvMaterialsPanel kind="rm" />} />
+          <Route path="packaging-materials" element={<CpvMaterialsPanel kind="pm" />} />
+          <Route path="equipment" element={<CpvEquipmentPanel />} />
+          <Route path="ipc" element={<CpvTestPanel kind="ipc" />} />
+          <Route path="analytical" element={<CpvTestPanel kind="analytical" />} />
+          <Route path="stability" element={<CpvStabilityPanel />} />
+          <Route path="hold-time" element={<CpvHoldTimePanel />} />
+          <Route path="cnf" element={<CpvEventPanel kind="cnf" />} />
+          <Route path="complaints" element={<CpvEventPanel kind="complaint" />} />
+          <Route path="deviations" element={<CpvEventPanel kind="deviation" />} />
+          <Route path="improvements" element={<CpvImprovementPanel />} />
+        </Route>
+        <Route
+          path="cpv/reports"
+          element={
+            <MenuPermissionRoute menuId="cpv-reports">
+              <CpvEnabledRoute>
+                <CpvReportsPage />
+              </CpvEnabledRoute>
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="cpv/protocols"
+          element={
+            <MenuPermissionRoute menuId="cpv-protocols">
+              <CpvEnabledRoute>
+                <CpvProtocolsPage />
+              </CpvEnabledRoute>
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="cpv/audit"
+          element={
+            <MenuPermissionRoute menuId="cpv-audit">
+              <CpvEnabledRoute>
+                <CpvAuditPage />
+              </CpvEnabledRoute>
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
           path="admin/users"
           element={
             <MenuPermissionRoute menuId="user-management">
@@ -322,6 +428,10 @@ export function AppRoutes() {
           }
         />
         <Route path="account" element={<AccountSettingsPage />} />
+        <Route path="pricing" element={<EdocPricingPage />} />
+        <Route path="settings/billing" element={<EdocBillingSettingsPage />} />
+        <Route path="billing/success" element={<EdocBillingSuccessPage />} />
+        <Route path="billing/cancelled" element={<EdocBillingCancelledPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

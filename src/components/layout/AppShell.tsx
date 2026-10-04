@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Avatar, Badge, Button, Tooltip } from 'antd'
 import {
+  Activity,
   Bell,
   FileCheck2,
   FileText,
@@ -33,6 +34,8 @@ import { useFeedbackMessages } from '../../hooks/useFeedbackMessages'
 import { useApqrNotifications } from '../../hooks/useApqrNotifications'
 import { useMissingDocumentControllerWarnings } from '../../hooks/useMissingDocumentControllerWarnings'
 import { useEdocInbox } from '../../features/edoc/useEdocData'
+import { matchProductProfile } from '../../features/cpv/productProfile'
+import { ProductProfileNav, ProductProfileRail } from '../../pages/cpv/ProductProfileNav'
 import { SidebarHoverChrome } from './SidebarHoverChrome'
 import { SidebarNavList } from './SidebarNavList'
 import { iconSize, iconStroke } from '../../theme/iconSizes'
@@ -51,6 +54,9 @@ const groupIcons = {
   ),
   apqr: (props: { className?: string }) => (
     <LayoutDashboard size={iconSize.md} strokeWidth={iconStroke} aria-hidden {...props} />
+  ),
+  cpv: (props: { className?: string }) => (
+    <Activity size={iconSize.md} strokeWidth={iconStroke} aria-hidden {...props} />
   ),
   admin: (props: { className?: string }) => (
     <Users size={iconSize.md} strokeWidth={iconStroke} aria-hidden {...props} />
@@ -89,6 +95,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { isDark, toggleTheme } = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
+  const productProfile = matchProductProfile(location.pathname)
 
   // Keep sidebar inbox badge current after sign/complete (AppShell stays mounted across routes).
   useEffect(() => {
@@ -157,7 +164,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <div className="sidebar-scroll">
-          {permissionsReady ? (
+          {productProfile ? (
+            <ProductProfileNav productCode={productProfile.productCode} onNavigate={closeMobileNav} />
+          ) : permissionsReady ? (
             <SidebarNavList
               groups={accessibleNavigationGroups}
               groupIcons={groupIcons}
@@ -171,7 +180,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {showHoverChrome ? (
-        permissionsReady ? (
+        productProfile ? (
+          <ProductProfileRail productCode={productProfile.productCode} exiting={expandExiting} onExpand={expandSidebar} />
+        ) : permissionsReady ? (
           <SidebarHoverChrome
             groups={accessibleNavigationGroups}
             groupIcons={groupIcons}

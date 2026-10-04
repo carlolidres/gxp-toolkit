@@ -20,6 +20,12 @@ export function AuthLegalLinks({ className }: AuthLegalLinksProps) {
       <Link to="/terms" className="gxp-auth-legal-link">
         Terms of Use
       </Link>
+      <span className="gxp-auth-legal-sep" aria-hidden>
+        ·
+      </span>
+      <Link to="/refunds" className="gxp-auth-legal-link">
+        Refunds
+      </Link>
     </nav>
   )
 }

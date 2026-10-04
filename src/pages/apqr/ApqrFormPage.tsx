@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Button, Input } from 'antd'
+import { FileText, Search } from 'lucide-react'
 
 import { ApqrSearchableCombobox } from '../../components/apqr/ApqrSearchableCombobox'
 import { AppDateInput } from '../../components/forms/AppDateInput'
@@ -14,6 +15,8 @@ import {
 import { useToast } from '../../components/feedback/ToastProvider'
 import { useAuth } from '../../hooks/useAuth'
 import { useMenuPermission } from '../../hooks/useMenuPermission'
+import { defaultApqrCycleYear, schedulerCycleYearOptions } from '../../features/apqr/apqrDashboard'
+import { currentCycleProductRows, filterCycleProductRows } from '../../features/apqr/apqrFormLookup'
 import { expectedStabilityTabulationCompletionDate } from '../../features/apqr/scheduling'
 import { reviewCoverageNeedsReason } from '../../features/apqr/schedulerForm'
 import {
@@ -25,6 +28,7 @@ import {
   formatReviewCoverage,
   listDatabaseRows,
   listDepartmentSuggestions,
+  shareProductIdentity,
   listFollowUps,
   listReportStatusSuggestions,
   listSentBySuggestions,
@@ -32,12 +36,12 @@ import {
   saveRecord,
   updateFollowUp,
 } from '../../features/apqr/apqrService'
-import { rememberDepartment } from '../../features/apqr/departmentSuggestions'
-import { rememberReportStatus } from '../../features/apqr/reportStatusSuggestions'
-import { rememberSentBy } from '../../features/apqr/sentBySuggestions'
+import { forgetDepartment, rememberDepartment } from '../../features/apqr/departmentSuggestions'
+import { forgetReportStatus, rememberReportStatus } from '../../features/apqr/reportStatusSuggestions'
+import { forgetSentBy, isSentByHidden, rememberSentBy } from '../../features/apqr/sentBySuggestions'
 import { CONTACT_EMAIL_RE, parseContactSegments, parseContacts } from '../../features/apqr/apqrContacts'
 import { useApqrRecord } from '../../features/apqr/useApqrData'
-import type { ApqrDepartment, ApqrFollowUp, ApqrReportStatus, StabilityTabulationStatus } from '../../features/apqr/types'
+import type { ApqrDatabaseRow, ApqrDepartment, ApqrFollowUp, ApqrReportStatus, StabilityTabulationStatus } from '../../features/apqr/types'
 
 const DEPARTMENTS: ApqrDepartment[] = ['Dry', 'Liquids', 'Creams and Ointments', 'Topicals', 'Cosmetics']
 const STAB_STATUSES: StabilityTabulationStatus[] = ['No Ongoing Stability', 'Not Sent', 'Sent']
@@ -52,8 +56,13 @@ export function ApqrFormPage() {
   const { user } = useAuth()
   const { notify } = useToast()
   const followUpSectionRef = useRef<HTMLElement | null>(null)
+  const suggestRef = useRef<HTMLDivElement | null>(null)
 
-  const [lookup, setLookup] = useState(apqrId ?? '')
+  const [lookup, setLookup] = useState('')
+  const [catalog, setCatalog] = useState<ApqrDatabaseRow[]>([])
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [filtering, setFiltering] = useState(false)
+  const [highlight, setHighlight] = useState(0)
   const [busy, setBusy] = useState(false)
   const [followUps, setFollowUps] = useState<ApqrFollowUp[]>([])
   const [delayPanelOpen, setDelayPanelOpen] = useState(false)
@@ -82,6 +91,46 @@ export function ApqrFormPage() {
   const [savedSenders, setSavedSenders] = useState<string[]>([])
   const [savedDepartments, setSavedDepartments] = useState<string[]>([])
   const [savedReportStatuses, setSavedReportStatuses] = useState<string[]>([])
+
+  const [cycleYear, setCycleYear] = useState(() => defaultApqrCycleYear())
+  const yearOptions = useMemo(() => schedulerCycleYearOptions(catalog), [catalog])
+  const cycleRows = useMemo(() => currentCycleProductRows(catalog, cycleYear), [catalog, cycleYear])
+  const menuRows = useMemo(
+    () => (filtering ? filterCycleProductRows(cycleRows, lookup) : cycleRows),
+    [filtering, cycleRows, lookup],
+  )
+
+  useEffect(() => {
+    void listDatabaseRows().then(setCatalog).catch(() => notify('Product codes for this cycle could not be loaded.'))
+  }, [notify])
+
+  useEffect(() => {
+    if (!apqrId || !canEdit) return
+    let cancelled = false
+    void shareProductIdentity(apqrId).then(async (changed) => {
+      if (cancelled || !changed) return
+      const rows = await listDatabaseRows().catch(() => null)
+      if (cancelled) return
+      if (rows) setCatalog(rows)
+      await reload()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [apqrId, canEdit, reload])
+
+  useEffect(() => {
+    setHighlight(0)
+  }, [menuRows, menuOpen])
+
+  useEffect(() => {
+    if (!menuOpen) return
+    function onPointerDown(event: MouseEvent) {
+      if (!suggestRef.current?.contains(event.target as Node)) setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    return () => document.removeEventListener('mousedown', onPointerDown)
+  }, [menuOpen])
 
   const showDelayPrompt = useMemo(() => {
     if (!data?.sched || !finalDelivery) return false
@@ -123,11 +172,12 @@ export function ApqrFormPage() {
 
   const senderOptions = useMemo(() => {
     const names = new Set<string>()
-    if (user?.name) names.add(user.name)
+    if (user?.name && !isSentByHidden(user.name)) names.add(user.name)
     if (sentBy.trim()) names.add(sentBy.trim())
     savedSenders.forEach((name) => names.add(name))
     followUps.forEach((fu) => {
-      if (fu.recorded_by.trim()) names.add(fu.recorded_by.trim())
+      const name = fu.recorded_by.trim()
+      if (name && !isSentByHidden(name)) names.add(name)
     })
     return [...names].sort((a, b) => a.localeCompare(b))
   }, [user, sentBy, savedSenders, followUps])
@@ -144,8 +194,8 @@ export function ApqrFormPage() {
   }, [data])
 
   useEffect(() => {
-    setLookup(apqrId ?? '')
-  }, [apqrId])
+    if (data?.sched.product_code) setLookup(data.sched.product_code)
+  }, [data?.sched.product_code])
 
   useEffect(() => {
     if (!data?.record) return
@@ -171,10 +221,76 @@ export function ApqrFormPage() {
     void listFollowUps(r.id).then(setFollowUps)
   }, [data, user?.name])
 
-  function openLookup() {
-    const id = lookup.trim()
-    if (!id) return
-    setSearchParams({ apqr: id })
+  function onCycleYearChange(next: number) {
+    setCycleYear(next)
+    setMenuOpen(false)
+    const code = lookup.trim()
+    if (!code) return
+    const exact = currentCycleProductRows(catalog, next).filter(
+      (row) => row.product_code.trim().toUpperCase() === code.toUpperCase(),
+    )
+    if (exact.length === 1) {
+      chooseProduct(exact[0])
+      return
+    }
+    if (apqrId) setSearchParams({})
+    notify(exact.length > 1
+      ? `More than one ${next} record uses ${code}. Choose one from the list.`
+      : `No ${code} record in the ${next} cycle.`)
+  }
+  function chooseProduct(row: ApqrDatabaseRow) {
+    setLookup(row.product_code)
+    setFiltering(false)
+    setMenuOpen(false)
+    if (row.apqr_id !== apqrId) setSearchParams({ apqr: row.apqr_id })
+  }
+
+  async function openLookup() {
+    const code = lookup.trim()
+    if (!code) return
+    const rows = catalog.length ? catalog : await listDatabaseRows().catch(() => [])
+    const exact = currentCycleProductRows(rows, cycleYear).filter(
+      (row) => row.product_code.trim().toUpperCase() === code.toUpperCase(),
+    )
+    if (exact.length === 1) {
+      chooseProduct(exact[0])
+      return
+    }
+    setMenuOpen(true)
+    setFiltering(true)
+    if (exact.length > 1) {
+      notify(`More than one ${cycleYear} record uses ${code}. Choose one from the list.`)
+      return
+    }
+    notify(`No product code ${code} in the ${cycleYear} APQR cycle.`)
+  }
+
+  function onLookupKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setMenuOpen(true)
+      setHighlight((index) => Math.min(menuRows.length - 1, index + (menuOpen ? 1 : 0)))
+      return
+    }
+    if (!menuOpen) {
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        void openLookup()
+      }
+      return
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      setHighlight((index) => Math.max(0, index - 1))
+    } else if (event.key === 'Enter') {
+      event.preventDefault()
+      const chosen = menuRows[highlight]
+      if (chosen) chooseProduct(chosen)
+      else void openLookup()
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      setMenuOpen(false)
+    }
   }
 
   function scrollToFollowUps() {
@@ -236,8 +352,9 @@ export function ApqrFormPage() {
         setSavedReportStatuses(await listReportStatusSuggestions())
       }
       notify('Successfully Saved')
+      await shareProductIdentity(apqrId)
       await reload()
-      await listDatabaseRows()
+      setCatalog(await listDatabaseRows())
     } catch (err) {
       notify(err instanceof Error ? err.message : 'Failed to Save')
     } finally {
@@ -305,31 +422,90 @@ export function ApqrFormPage() {
     >
       <section className="panel apqr-form-lookup" aria-label="APQR record lookup">
         <div className="apqr-form-lookup-row">
-          <label className="apqr-search-field apqr-form-lookup-search" htmlFor="apqr-form-lookup-id">
-            <ApqrIcon name="search" />
-            <span className="sr-only">APQR ID</span>
-            <Input
-              id="apqr-form-lookup-id"
-              type="search"
-              placeholder="4 chars, e.g. aB12"
-              title="4-character APQR ID (mixed upper and lower case letters and numbers)"
-              inputMode="text"
-              autoComplete="off"
-              spellCheck={false}
-              maxLength={16}
-              value={lookup}
-              onChange={(e) => setLookup(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  openLookup()
-                }
-              }}
-              aria-label="APQR ID"
-            />
+          <label className="apqr-form-cycle-year" htmlFor="apqr-form-cycle-year">
+            <span>Cycle year</span>
+            <select
+              id="apqr-form-cycle-year"
+              className="apqr-form-cycle-year-control"
+              value={cycleYear}
+              aria-label="APR cycle year"
+              onChange={(event) => onCycleYearChange(Number(event.target.value))}
+            >
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
           </label>
-          <Button type="primary" className="button primary apqr-form-lookup-load" onClick={openLookup}>
-            <ApqrIcon name="document" />
+          <div className="apqr-form-lookup-suggest" ref={suggestRef}>
+            <label className="apqr-search-field apqr-form-lookup-search" htmlFor="apqr-form-lookup-product">
+              <Search size={16} strokeWidth={2} aria-hidden="true" />
+              <span className="sr-only">Product Code</span>
+              <Input
+                id="apqr-form-lookup-product"
+                type="search"
+                role="combobox"
+                placeholder="Product code"
+                title="Product code"
+                autoComplete="off"
+                spellCheck={false}
+                value={lookup}
+                aria-label="Product Code"
+                aria-expanded={menuOpen}
+                aria-controls="apqr-form-lookup-list"
+                aria-autocomplete="list"
+                aria-activedescendant={menuOpen && menuRows[highlight] ? `apqr-form-lookup-option-${menuRows[highlight].apqr_id}` : undefined}
+                onFocus={() => {
+                  setFiltering(false)
+                  setMenuOpen(true)
+                }}
+                onClick={() => setMenuOpen(true)}
+                onChange={(e) => {
+                  setLookup(e.target.value)
+                  setFiltering(true)
+                  setMenuOpen(true)
+                }}
+                onKeyDown={onLookupKeyDown}
+              />
+            </label>
+            {menuOpen ? (
+              <ul id="apqr-form-lookup-list" className="apqr-form-lookup-menu" role="listbox" aria-label={`${cycleYear} product codes`}>
+                <li className="apqr-form-lookup-menu-head">
+                  <span>{cycleYear} cycle</span>
+                  <span>{menuRows.length}</span>
+                </li>
+                {menuRows.length === 0 ? (
+                  <li className="apqr-form-lookup-empty">No product codes in the {cycleYear} cycle.</li>
+                ) : (
+                  menuRows.map((row, index) => (
+                    <li key={row.apqr_id}>
+                      <button
+                        type="button"
+                        role="option"
+                        id={`apqr-form-lookup-option-${row.apqr_id}`}
+                        aria-selected={index === highlight}
+                        className={index === highlight ? 'is-active' : undefined}
+                        onMouseEnter={() => setHighlight(index)}
+                        onMouseDown={(event) => {
+                          event.preventDefault()
+                          chooseProduct(row)
+                        }}
+                      >
+                        <span className="apqr-form-lookup-code">{row.product_code}</span>
+                        <span className="apqr-form-lookup-copy">
+                          <span className="apqr-form-lookup-name">{row.product_name}</span>
+                          {row.client_name ? <span className="apqr-form-lookup-client">{row.client_name}</span> : null}
+                        </span>
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            ) : null}
+          </div>
+          <Button type="primary" className="button primary apqr-form-lookup-load" onClick={() => void openLookup()}>
+            <FileText size={16} strokeWidth={2} aria-hidden="true" />
             Load
           </Button>
           {data?.record ? (
@@ -450,6 +626,14 @@ export function ApqrFormPage() {
                   placeholder="Type or select department…"
                   onChange={setDepartment}
                   onCommit={rememberDepartment}
+                  canRemove={(value) => !DEPARTMENTS.includes(value as ApqrDepartment)}
+                  onRemove={(value) => {
+                    forgetDepartment(value)
+                    const removed = value.trim().toLowerCase()
+                    if (department.trim().toLowerCase() === removed) setDepartment('')
+                    setSavedDepartments((current) => current.filter((name) => name.toLowerCase() !== removed))
+                    void listDepartmentSuggestions().then(setSavedDepartments)
+                  }}
                 />
               </Field>
               <Field label="Stability Tabulation Status" required>
@@ -491,6 +675,17 @@ export function ApqrFormPage() {
                     if (next !== 'Client Approved') setDateSigned('')
                   }}
                   onCommit={rememberReportStatus}
+                  canRemove={(value) => !REPORT_STATUSES.includes(value as ApqrReportStatus)}
+                  onRemove={(value) => {
+                    forgetReportStatus(value)
+                    const removed = value.trim().toLowerCase()
+                    if (reportStatus.trim().toLowerCase() === removed) {
+                      setReportStatus('')
+                      setDateSigned('')
+                    }
+                    setSavedReportStatuses((current) => current.filter((name) => name.toLowerCase() !== removed))
+                    void listReportStatusSuggestions().then(setSavedReportStatuses)
+                  }}
                 />
               </Field>
               <Field label="Sent By" required>
@@ -502,6 +697,14 @@ export function ApqrFormPage() {
                   placeholder="Type or select sender…"
                   onChange={setSentBy}
                   onCommit={rememberSentBy}
+                  canRemove={() => true}
+                  onRemove={(value) => {
+                    forgetSentBy(value)
+                    const removed = value.trim().toLowerCase()
+                    if (sentBy.trim().toLowerCase() === removed) setSentBy('')
+                    setSavedSenders((current) => current.filter((name) => name.toLowerCase() !== removed))
+                    void listSentBySuggestions().then(setSavedSenders)
+                  }}
                 />
               </Field>
               <Field label="Date Sent" required>
@@ -824,7 +1027,7 @@ export function ApqrFormPage() {
       ) : !loading && apqrId ? (
         <p className="messages-empty">No APQR record found for {apqrId}.</p>
       ) : (
-        <p className="messages-empty">Search for an APQR ID or open a record from the Dashboard, Scheduler, or Database.</p>
+        <p className="messages-empty">Search for a product code or open a record from the Dashboard, Scheduler, or Database.</p>
       )}
     </ApqrPage>
   )

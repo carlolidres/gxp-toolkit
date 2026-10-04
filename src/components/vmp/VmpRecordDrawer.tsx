@@ -47,17 +47,27 @@ function DrawerBody({
           value={record.group}
         />
         <DetailRow label="Item / System / Area Name" value={record.itemName} />
-        <DetailRow label={record.validationArea === 'Equipment' ? 'IL-tag No.' : 'Asset / Tag No.'} value={record.assetTagNo} />
-        {record.roomLine ? (
-          <DetailRow
-            label={
-              record.validationArea === 'Equipment' &&
-              record.department.toLowerCase().includes('equipment thermal mapping')
-                ? 'Section'
-                : 'Room / Line'
-            }
-            value={record.roomLine}
-          />
+        <DetailRow label={record.validationArea === 'Equipment' ? 'IL-Tag' : 'Asset / Tag No.'} value={record.assetTagNo} />
+        {record.validationArea === 'Equipment' ? (
+          <>
+            <DetailRow label="Section" value={record.roomLine} />
+            <DetailRow label="Capacity / Quantity" value={record.capacityQuantity} />
+            <DetailRow label="Unit Operation" value={record.unitOperation} />
+            <DetailRow label="Verified Speed Limits / Temp. Limits" value={record.verifiedOperatingLimits} />
+            <DetailRow label="Parts with direct contact on bulk" value={record.directContactParts} />
+            <DetailRow label="MOC" value={record.moc} />
+            <DetailRow label="Total Surface Area" value={record.totalSurfaceArea == null ? '' : String(record.totalSurfaceArea)} />
+            <DetailRow label="MOC Rating" value={record.mocRating == null ? '' : String(record.mocRating)} />
+            <DetailRow label="Surface Area Rating" value={record.surfaceAreaRating == null ? '' : String(record.surfaceAreaRating)} />
+            <DetailRow
+              label="Number of Hard-to-Reach Areas"
+              value={record.hardToReachAreaCount == null ? '' : String(record.hardToReachAreaCount)}
+            />
+            <DetailRow label="Date of Installation" value={formatAppDate(record.dateOfInstallation, '')} />
+          </>
+        ) : null}
+        {record.validationArea !== 'Equipment' && record.roomLine ? (
+          <DetailRow label="Room / Line" value={record.roomLine} />
         ) : null}
       </div>
     )

@@ -1,7 +1,7 @@
 /**
  * Professional adaptive e-signature stamp geometry (wide / compact / micro).
  * Visual hierarchy mirrors screenshot/professional-esignature-template.html.
- * Keep in sync with supabase/functions/_shared/edocStampGeometry.ts
+ * Keep in sync with src/features/edoc/pdfStampGeometry.ts
  */
 
 export type NormalizedFieldRect = {
@@ -60,6 +60,12 @@ export const BANNER_LAYOUT_MIN_WIDTH_PT = 135
 export const BANNER_LAYOUT_MIN_HEIGHT_PT = 27
 /** Soft boost so transparent ink has presence without leaving the image box. */
 export const STAMP_SIGNATURE_DRAW_BOOST = 1.05
+/**
+ * Control: QR + verify caption must fit inside the original signature field.
+ * Never call expandRectWithinPage to make room for integrity marks — that deforms
+ * stacked stamps onto each other.
+ */
+export const STAMP_INTEGRITY_FIT_POLICY = 'contain-within-field' as const
 
 export const DEFAULT_SIGNATURE_FIELD_NORM = { width: 0.42, height: 0.12 } as const
 /**
@@ -136,6 +142,125 @@ export function containRect(
   }
 }
 
+export type StampBox = { x: number; y: number; width: number; height: number }
+
+export function stampBoxesOverlap(a: StampBox, b: StampBox, gap = 0.25): boolean {
+  return a.x < b.x + b.width - gap
+    && a.x + a.width > b.x + gap
+    && a.y < b.y + b.height - gap
+    && a.y + a.height > b.y + gap
+}
+
+export function stampBoxContains(outer: StampBox, inner: StampBox, epsilon = 0.5): boolean {
+  return inner.x >= outer.x - epsilon
+    && inner.y >= outer.y - epsilon
+    && inner.x + inner.width <= outer.x + outer.width + epsilon
+    && inner.y + inner.height <= outer.y + outer.height + epsilon
+}
+
+/**
+ * Reserved QR + caption slots inside the field (PDF y = bottom of box).
+ * Execution must draw integrity marks here — never at `field.y - 8`.
+ */
+export function planIntegrityMarkSlots(
+  field: StampBox,
+  mode: StampLayoutMode,
+): { qrBox: StampBox; verifyRow: StampBox } {
+  const pad = mode === 'full' ? 3 : 2
+  const hideCaption = mode === 'narrow' || mode === 'slim' || mode === 'banner'
+  const verifyH = hideCaption ? 0 : Math.min(10, Math.max(7, field.height * 0.12))
+  const qrCap = mode === 'full' ? 28 : 22
+  const qrSize = Math.max(0, Math.min(field.width * 0.18, field.height - verifyH - pad * 2, qrCap))
+  return {
+    qrBox: {
+      x: field.x + field.width - pad - qrSize,
+      y: field.y + verifyH + pad,
+      width: qrSize,
+      height: qrSize,
+    },
+    verifyRow: {
+      x: field.x + pad,
+      y: field.y + Math.min(pad * 0.5, 2),
+      width: Math.max(8, field.width - pad * 2),
+      height: verifyH,
+    },
+  }
+}
+
+/** Execution gate: ink / timestamp regions must not occupy QR or caption slots. */
+export function assertDetailsAvoidIntegritySlots(
+  occupied: StampBox[],
+  slots: { qrBox: StampBox; verifyRow: StampBox },
+): void {
+  for (const box of occupied) {
+    if (slots.qrBox.width > 0 && stampBoxesOverlap(box, slots.qrBox)) {
+      throw new Error('Stamp content overlaps the QR slot.')
+    }
+    if (slots.verifyRow.height > 0 && stampBoxesOverlap(box, slots.verifyRow)) {
+      throw new Error('Stamp content overlaps the verify caption slot.')
+    }
+  }
+}
+
+/** Execution gate: integrity slots stay inside the original field and QR stays square. */
+export function assertIntegritySlotsFitField(
+  field: StampBox,
+  slots: { qrBox: StampBox; verifyRow: StampBox },
+): void {
+  if (slots.qrBox.width > 0 && !stampBoxContains(field, slots.qrBox)) {
+    throw new Error('QR slot escaped the signature field.')
+  }
+  if (slots.verifyRow.height > 0 && !stampBoxContains(field, slots.verifyRow)) {
+    throw new Error('Verify caption escaped the signature field.')
+  }
+  if (slots.qrBox.width > 0 && Math.abs(slots.qrBox.width - slots.qrBox.height) > 0.01) {
+    throw new Error('QR slot must remain square.')
+  }
+}
+
+export const VERIFY_CAPTION_FULL = 'Scan or click to verify document authenticity.'
+export const VERIFY_CAPTION_SHORT = 'Verify document authenticity.'
+
+export function stampLineBox(line: { text: string; x?: number; y: number; bold: boolean; size?: number }): StampBox {
+  const size = line.size ?? 8
+  return {
+    x: line.x ?? 0,
+    y: line.y,
+    width: approxTextWidth(line.text, size, line.bold),
+    height: size,
+  }
+}
+
+/**
+ * Size-only integrity insets so sign-time and finalize share the same QR/caption boxes.
+ * Uses pickPreferredMode(field) — not content fallback — so overlay coords stay stable.
+ */
+export function fieldIntegrityInsets(field: StampBox): {
+  mode: StampLayoutMode
+  qrBox: StampBox | null
+  verifyRow: (StampBox & { text: string }) | null
+  contentBottom: number
+  contentRight: number
+} {
+  const mode = pickPreferredMode(field.width, field.height)
+  const slots = planIntegrityMarkSlots(field, mode)
+  assertIntegritySlotsFitField(field, slots)
+  const qrLive = slots.qrBox.width >= 16
+  const captionLive = slots.verifyRow.height > 0
+  return {
+    mode,
+    qrBox: qrLive ? slots.qrBox : null,
+    verifyRow: captionLive
+      ? {
+          ...slots.verifyRow,
+          text: mode === 'full' ? VERIFY_CAPTION_FULL : VERIFY_CAPTION_SHORT,
+        }
+      : null,
+    contentBottom: captionLive ? slots.verifyRow.y + slots.verifyRow.height + 1 : field.y,
+    contentRight: qrLive ? slots.qrBox.x - 2 : field.x + field.width,
+  }
+}
+
 export function clampFontSizeForHeight(
   availableHeight: number,
   lineCount: number,
@@ -150,7 +275,8 @@ export function clampFontSizeForHeight(
 }
 
 export function approxTextWidth(text: string, fontSize: number, bold = false): number {
-  const factor = bold ? 0.55 : 0.5
+  // ponytail: Helvetica digits/caps are wider than 0.5em; 0.5 let "GMT+8" pass the planner and wrap out of the card at draw time.
+  const factor = bold ? 0.66 : 0.62
   return text.length * fontSize * factor
 }
 
@@ -286,6 +412,8 @@ export type SignatureStampLayout = {
   detailLines: StampTextLine[]
   emailLabel: { x: number; y: number; text: string } | null
   emailValue: { x: number; y: number; text: string; maxWidth: number }
+  qrBox: StampBox | null
+  verifyRow: (StampBox & { text: string }) | null
 }
 
 export function pickPreferredMode(width: number, height: number): StampLayoutMode {
@@ -376,6 +504,74 @@ function emptyLegacyExtras(detailX: number, detailMaxWidth: number) {
   }
 }
 
+function timestampMetaLines(
+  label: string,
+  x: number,
+  startY: number,
+  maxWidth: number,
+  size: number,
+  minY: number,
+): { lines: StampTextLine[]; nextY: number } {
+  const full = label.trim()
+  const makeLine = (text: string, y: number): StampTextLine => ({
+    text: ellipsize(text, maxWidth, size),
+    x,
+    y,
+    bold: false,
+    muted: true,
+    size,
+  })
+  if (!full) return { lines: [], nextY: startY }
+  const secondY = startY - size * 1.2
+  const canWrap = secondY >= minY
+  if (!canWrap || approxTextWidth(full, size) <= maxWidth) {
+    return { lines: [makeLine(full, startY)], nextY: secondY }
+  }
+  const { datePart, timePart } = splitSigningDateParts(full)
+  const parts = [datePart, timePart].filter(Boolean)
+  if (parts.length < 2) {
+    return { lines: [makeLine(full, startY)], nextY: secondY }
+  }
+  const lines: StampTextLine[] = [
+    makeLine(parts[0]!, startY),
+    makeLine(parts[1]!, secondY),
+  ]
+  return { lines, nextY: secondY - size * 1.2 }
+}
+
+function withIntegrityBoxes(
+  layout: Omit<SignatureStampLayout, 'qrBox' | 'verifyRow'>,
+  insets: ReturnType<typeof fieldIntegrityInsets>,
+): SignatureStampLayout | null {
+  const next: SignatureStampLayout = {
+    ...layout,
+    qrBox: insets.qrBox,
+    verifyRow: insets.verifyRow,
+  }
+  const occupied: StampBox[] = [next.imageBox]
+  for (const line of [...next.nameLines, ...next.roleLines, ...next.reasonLines, ...next.metaLines]) {
+    if (line.y < next.card.y - 0.5) return null
+    occupied.push(stampLineBox(line))
+  }
+  if (next.status) {
+    occupied.push({
+      x: next.status.x,
+      y: next.status.y,
+      width: approxTextWidth(next.status.text, next.status.size, true) + 10,
+      height: next.status.size,
+    })
+  }
+  try {
+    assertDetailsAvoidIntegritySlots(occupied, {
+      qrBox: insets.qrBox ?? { x: 0, y: 0, width: 0, height: 0 },
+      verifyRow: insets.verifyRow ?? { x: 0, y: 0, width: 0, height: 0 },
+    })
+  } catch {
+    return null
+  }
+  return next
+}
+
 function tryWideLayout(
   rect: { x: number; y: number; width: number; height: number },
   content: SignatureStampContent,
@@ -384,13 +580,14 @@ function tryWideLayout(
   originalCard: { x: number; y: number; width: number; height: number },
   adjusted: boolean,
 ): SignatureStampLayout | null {
+  const insets = fieldIntegrityInsets(rect)
   const pad = STAMP_PAD_FULL * fieldScale
   const accentWidth = clamp(3.2 * fieldScale, 2.2, 4.5)
   const innerLeft = rect.x + pad + accentWidth
-  const innerRight = rect.x + rect.width - pad
+  const innerRight = Math.min(rect.x + rect.width - pad, insets.contentRight)
   const innerWidth = innerRight - innerLeft
   const top = rect.y + rect.height - pad
-  const bottom = rect.y + pad
+  const bottom = Math.max(rect.y + pad, insets.contentBottom)
   if (innerWidth < 160 || top - bottom < 54) return null
 
   const leftWidth = innerWidth * STAMP_LEFT_RATIO
@@ -439,7 +636,9 @@ function tryWideLayout(
     reasonLines.push({ text: line, x: auditX, y: cursor, bold: true, size: reasonSize })
     cursor -= reasonSize * 1.25
   }
-  const metaLines: StampTextLine[] = []
+  const stamped = timestampMetaLines(content.signedAtLabel.trim(), auditX, cursor, auditW, metaSize, bottom)
+  const metaLines: StampTextLine[] = [...stamped.lines]
+  cursor = stamped.nextY
   const pushMeta = (text: string) => {
     if (!text) return
     metaLines.push({
@@ -452,12 +651,11 @@ function tryWideLayout(
     })
     cursor -= metaSize * 1.2
   }
-  pushMeta(content.signedAtLabel.trim())
   pushMeta(content.email.trim())
   if (content.recordId?.trim()) pushMeta(`Record ID: ${content.recordId.trim()}`)
   if (cursor < bottom - 1) return null
 
-  return {
+  return withIntegrityBoxes({
     mode: 'full',
     fontSize,
     fieldScale,
@@ -475,7 +673,7 @@ function tryWideLayout(
     verticalDivider: { x: dividerX, y1: bottom, y2: top },
     horizontalDivider: null,
     ...emptyLegacyExtras(auditX, auditW),
-  }
+  }, insets)
 }
 
 function tryCompactLayout(
@@ -486,13 +684,14 @@ function tryCompactLayout(
   originalCard: { x: number; y: number; width: number; height: number },
   adjusted: boolean,
 ): SignatureStampLayout | null {
+  const insets = fieldIntegrityInsets(rect)
   const pad = STAMP_PAD_COMPACT * fieldScale
   const accentWidth = clamp(2.8 * fieldScale, 2, 4)
   const innerLeft = rect.x + pad + accentWidth
-  const innerRight = rect.x + rect.width - pad
+  const innerRight = Math.min(rect.x + rect.width - pad, insets.contentRight)
   const innerWidth = innerRight - innerLeft
   const top = rect.y + rect.height - pad
-  const bottom = rect.y + pad
+  const bottom = Math.max(rect.y + pad, insets.contentBottom)
   if (innerWidth < 100 || top - bottom < 48) return null
 
   const nameSize = clamp(fontSize * 1.2, 7.5, 12)
@@ -543,30 +742,24 @@ function tryCompactLayout(
     size: reasonSize,
   }]
   cursor -= reasonSize * 1.25
-  const metaLines: StampTextLine[] = []
-  metaLines.push({
-    text: ellipsize(content.signedAtLabel.trim(), innerWidth * 0.55, metaSize),
-    x: innerLeft,
-    y: cursor,
-    bold: false,
-    muted: true,
-    size: metaSize,
-  })
-  if (content.recordId?.trim()) {
+  const stamped = timestampMetaLines(content.signedAtLabel.trim(), innerLeft, cursor, innerWidth, metaSize, bottom)
+  const metaLines: StampTextLine[] = [...stamped.lines]
+  cursor = stamped.nextY
+  const recordId = content.recordId?.trim()
+  if (recordId && cursor - metaSize * 1.2 >= bottom) {
     metaLines.push({
-      text: ellipsize(`ID: ${content.recordId.trim()}`, innerWidth * 0.42, metaSize),
-      x: innerLeft + innerWidth * 0.55,
+      text: ellipsize(`ID: ${recordId}`, innerWidth, metaSize),
+      x: innerLeft,
       y: cursor,
       bold: false,
       muted: true,
       size: metaSize,
-      indent: innerWidth * 0.55,
     })
+    cursor -= metaSize * 1.2
   }
-  // Email intentionally omitted in compact (template hides .email first).
   if (cursor < bottom) return null
 
-  return {
+  return withIntegrityBoxes({
     mode: 'compact',
     fontSize,
     fieldScale,
@@ -584,7 +777,7 @@ function tryCompactLayout(
     verticalDivider: null,
     horizontalDivider: { y: hDividerY, x1: innerLeft, x2: innerRight },
     ...emptyLegacyExtras(innerLeft, innerWidth),
-  }
+  }, insets)
 }
 
 function tryMicroLayout(
@@ -595,13 +788,14 @@ function tryMicroLayout(
   originalCard: { x: number; y: number; width: number; height: number },
   adjusted: boolean,
 ): SignatureStampLayout | null {
+  const insets = fieldIntegrityInsets(rect)
   const pad = STAMP_PAD_NARROW * fieldScale
   const accentWidth = clamp(2.4 * fieldScale, 1.8, 3.5)
   const innerLeft = rect.x + pad + accentWidth
-  const innerRight = rect.x + rect.width - pad
+  const innerRight = Math.min(rect.x + rect.width - pad, insets.contentRight)
   const innerWidth = innerRight - innerLeft
   const top = rect.y + rect.height - pad
-  const bottom = rect.y + pad
+  const bottom = Math.max(rect.y + pad, insets.contentBottom)
   if (innerWidth < 72 || top - bottom < 32) return null
 
   const nameSize = clamp(fontSize, 6.5, 10)
@@ -632,16 +826,17 @@ function tryMicroLayout(
     size: statusSize,
   }
   const { datePart, timePart } = splitSigningDateParts(content.signedAtLabel)
-  const metaLines: StampTextLine[] = [{
-    text: ellipsize(timePart ? `${datePart} ${timePart}` : datePart, rightW, metaSize),
-    x: rightX,
-    y: bottom + 2,
-    bold: false,
-    muted: true,
-    size: metaSize,
-  }]
+  const stamped = timestampMetaLines(
+    timePart ? `${datePart} ${timePart}` : datePart,
+    rightX,
+    bottom + 2,
+    rightW,
+    metaSize,
+    bottom,
+  )
+  const metaLines: StampTextLine[] = stamped.lines
 
-  return {
+  return withIntegrityBoxes({
     mode: 'narrow',
     fontSize,
     fieldScale,
@@ -659,7 +854,7 @@ function tryMicroLayout(
     verticalDivider: { x: innerLeft + leftW, y1: bottom, y2: top },
     horizontalDivider: null,
     ...emptyLegacyExtras(rightX, rightW),
-  }
+  }, insets)
 }
 
 /** Tall narrow margin: ink on top, name / status / date stacked below. */
@@ -671,13 +866,14 @@ function trySlimLayout(
   originalCard: { x: number; y: number; width: number; height: number },
   adjusted: boolean,
 ): SignatureStampLayout | null {
+  const insets = fieldIntegrityInsets(rect)
   const pad = STAMP_PAD_SLIM * fieldScale
   const accentWidth = clamp(2.2 * fieldScale, 1.6, 3.2)
   const innerLeft = rect.x + pad + accentWidth
-  const innerRight = rect.x + rect.width - pad
+  const innerRight = Math.min(rect.x + rect.width - pad, insets.contentRight)
   const innerWidth = innerRight - innerLeft
   const top = rect.y + rect.height - pad
-  const bottom = rect.y + pad
+  const bottom = Math.max(rect.y + pad, insets.contentBottom)
   if (innerWidth < 48 || top - bottom < 64) return null
 
   const nameSize = clamp(fontSize * 0.95, 6.5, 9)
@@ -722,7 +918,7 @@ function trySlimLayout(
 
   if (metaLines[0]!.y < bottom - 0.5) return null
 
-  return {
+  return withIntegrityBoxes({
     mode: 'slim',
     fontSize,
     fieldScale,
@@ -740,7 +936,7 @@ function trySlimLayout(
     verticalDivider: null,
     horizontalDivider: { y: top - inkH - 1, x1: innerLeft, x2: innerRight },
     ...emptyLegacyExtras(innerLeft, innerWidth),
-  }
+  }, insets)
 }
 
 /** Short horizontal band: ink left, name + status + date right. */
@@ -752,13 +948,14 @@ function tryBannerLayout(
   originalCard: { x: number; y: number; width: number; height: number },
   adjusted: boolean,
 ): SignatureStampLayout | null {
+  const insets = fieldIntegrityInsets(rect)
   const pad = STAMP_PAD_BANNER * fieldScale
   const accentWidth = clamp(2 * fieldScale, 1.4, 2.8)
   const innerLeft = rect.x + pad + accentWidth
-  const innerRight = rect.x + rect.width - pad
+  const innerRight = Math.min(rect.x + rect.width - pad, insets.contentRight)
   const innerWidth = innerRight - innerLeft
   const top = rect.y + rect.height - pad
-  const bottom = rect.y + pad
+  const bottom = Math.max(rect.y + pad, insets.contentBottom)
   const innerH = top - bottom
   if (innerWidth < 100 || innerH < 18) return null
 
@@ -804,7 +1001,7 @@ function tryBannerLayout(
     size: metaSize,
   }]
 
-  return {
+  return withIntegrityBoxes({
     mode: 'banner',
     fontSize,
     fieldScale,
@@ -822,7 +1019,7 @@ function tryBannerLayout(
     verticalDivider: { x: textX - 2.5, y1: bottom, y2: top },
     horizontalDivider: null,
     ...emptyLegacyExtras(textX, textW),
-  }
+  }, insets)
 }
 
 function tryLayoutAtRect(

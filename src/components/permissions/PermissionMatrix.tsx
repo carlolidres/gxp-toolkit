@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import {
+  Activity,
   BarChart3,
   CheckCircle2,
   ClipboardList,
@@ -45,6 +46,7 @@ const GROUP_ICONS: Record<string, LucideIcon> = {
   vmp: ClipboardList,
   edoc: FileSignature,
   apqr: BarChart3,
+  cpv: Activity,
   admin: Settings,
 }
 

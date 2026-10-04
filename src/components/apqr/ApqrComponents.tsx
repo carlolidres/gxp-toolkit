@@ -24,6 +24,7 @@ import {
   Filter,
   History,
   Info,
+  LayoutDashboard,
   LayoutGrid,
   List,
   Loader2,
@@ -186,6 +187,7 @@ export function ApqrPage({
   icon,
   action,
   headerClassName,
+  pageClassName,
   children,
 }: {
   eyebrow?: string
@@ -194,12 +196,13 @@ export function ApqrPage({
   icon?: string
   action?: ReactNode
   headerClassName?: string
+  pageClassName?: string
   children: ReactNode
 }) {
   useApqrActorSync()
   const headerClass = ['page-header', 'apqr-page-header', headerClassName].filter(Boolean).join(' ')
   return (
-    <div className="page apqr-page">
+    <div className={['page apqr-page', pageClassName].filter(Boolean).join(' ')}>
       <section className={headerClass} aria-labelledby="apqr-page-title">
         <div className="apqr-page-header-title-block">
           <Text className="eyebrow" type="secondary">
@@ -384,6 +387,7 @@ const apqrIconMap = {
   chartLine: TrendingUp,
   chartBar: BarChart3,
   clipboard: ClipboardList,
+  dashboard: LayoutDashboard,
   gauge: Gauge,
 } as const
 

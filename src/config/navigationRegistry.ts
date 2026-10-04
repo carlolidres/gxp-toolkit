@@ -6,6 +6,7 @@ export const VRMS_MENU_TOOLTIP = 'Validation Routing Monitoring System'
 export const VMP_MENU_TOOLTIP = 'Validation Master Plan'
 export const EDOC_MENU_TOOLTIP = 'Electronic document routing and signature'
 export const APQR_MENU_TOOLTIP = 'Annual Product Quality Review monitoring and scheduling'
+export const CPV_MENU_TOOLTIP = 'Continuous Process Verification'
 
 export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'approve' | 'export'
 
@@ -47,6 +48,7 @@ const MENU_ACTIONS: Record<string, PermissionAction[]> = {
   audit: ['view', 'export'],
   registry: ['view', 'create', 'edit', 'delete'],
   'vmp-masterlist': ['view', 'create', 'edit', 'delete', 'export'],
+  'vmp-equipment-profile': ['view', 'create', 'edit', 'delete', 'export'],
   'vmp-risk-assessment': ['view', 'create', 'edit', 'delete', 'approve', 'export'],
   'vmp-timeline': ['view', 'create', 'edit', 'delete', 'export'],
   'vmp-database': ['view', 'export'],
@@ -68,6 +70,10 @@ const MENU_ACTIONS: Record<string, PermissionAction[]> = {
   'apqr-database': ['view', 'export'],
   'apqr-form': ['view', 'create', 'edit'],
   'apqr-audit': ['view', 'export'],
+  'cpv-products': ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+  'cpv-reports': ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+  'cpv-protocols': ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+  'cpv-audit': ['view', 'export'],
   'user-management': ['view', 'create', 'edit', 'delete'],
 }
 
@@ -107,6 +113,7 @@ export const navigationRegistry: NavGroupDefinition[] = [
     tooltip: VMP_MENU_TOOLTIP,
     items: [
       menu('vmp-masterlist', 'Masterlist Form', '/vmp/masterlist'),
+      menu('vmp-equipment-profile', 'Equipment Profile', '/vmp/equipment-profile'),
       menu('vmp-risk-assessment', 'Risk Assessment', '/vmp/risk-assessment'),
       menu('vmp-timeline', 'Timeline', '/vmp/timeline'),
       menu('vmp-database', 'Database', '/vmp/database'),
@@ -147,6 +154,17 @@ export const navigationRegistry: NavGroupDefinition[] = [
     ],
   },
   {
+    id: 'cpv',
+    label: 'CPV',
+    tooltip: CPV_MENU_TOOLTIP,
+    items: [
+      menu('cpv-products', 'Product Profile', '/cpv/products'),
+      menu('cpv-reports', 'Report', '/cpv/reports', { sidebarVisible: false }),
+      menu('cpv-protocols', 'Protocol', '/cpv/protocols', { sidebarVisible: false }),
+      menu('cpv-audit', 'Audit Trail', '/cpv/audit'),
+    ],
+  },
+  {
     id: 'admin',
     label: 'Administration',
     items: [menu('user-management', 'User Management', '/admin/users')],
@@ -184,6 +202,7 @@ export const vrmsRouteLabels: Record<string, string> = {
   '/audit': 'Audit Trail',
   '/registry': 'Registry',
   '/vmp/masterlist': 'Masterlist Form',
+  '/vmp/equipment-profile': 'Equipment Profile',
   '/vmp/risk-assessment': 'Risk Assessment',
   '/vmp/timeline': 'Timeline',
   '/vmp/database': 'Database',
@@ -205,18 +224,26 @@ export const vrmsRouteLabels: Record<string, string> = {
   '/apqr/database': 'Records',
   '/apqr/form': 'APQR Form',
   '/apqr/audit': 'Audit Trail',
+  '/cpv/products': 'Product Profile',
+  '/cpv/reports': 'Report',
+  '/cpv/protocols': 'Protocol',
+  '/cpv/audit': 'Audit Trail',
   '/admin/users': 'User Management',
   '/login': 'Sign in',
   '/signup': 'Sign up',
   '/privacy': 'Privacy Notice',
   '/terms': 'Terms of Use',
+  '/refunds': 'Refunds and cancellation',
+  '/esign-consent': 'Electronic signature consent',
 }
 
 export function isVrmsPath(pathname: string): boolean {
-  return moduleSidebarMenus.some((item) => item.path === pathname)
+  if (moduleSidebarMenus.some((item) => item.path === pathname)) return true
+  return pathname.startsWith('/cpv/products/')
 }
 
 export function resolveWorkspaceTitle(pathname: string): string {
+  if (pathname.startsWith('/cpv/products/') && pathname !== '/cpv/products') return 'CPV / Product Workspace'
   const page = vrmsRouteLabels[pathname]
   if (!page) return APP_NAME
   const group = navigationRegistry.find((navGroup) =>

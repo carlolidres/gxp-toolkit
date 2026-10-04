@@ -22,7 +22,13 @@ export function getRoleDefaultPermissions(role: UserRole): UserPermissions {
 }
 
 function defaultGrantForRole(role: UserRole, menuId: string, action: PermissionAction): boolean {
-  if (role === 'Admin') return true
+  if (role === 'Admin') {
+    // C14: system Admin does not grant CPV protocol/report/posture approval.
+    if ((menuId === 'cpv-protocols' || menuId === 'cpv-reports' || menuId === 'cpv-products') && action === 'approve') {
+      return false
+    }
+    return true
+  }
 
   // Opt-in menus: admin enables in User Management.
   if (menuId === 'user-management' || menuId === 'edoc-all-documents') {
@@ -33,6 +39,7 @@ function defaultGrantForRole(role: UserRole, menuId: string, action: PermissionA
     if (action === 'view') return true
     if (menuId === 'routing') return true
     if (menuId === 'registry') return action !== 'approve'
+    if (menuId.startsWith('cpv-')) return true
     return action === 'export'
   }
 
@@ -41,6 +48,7 @@ function defaultGrantForRole(role: UserRole, menuId: string, action: PermissionA
     if (menuId === 'routing' && ['create', 'edit', 'approve'].includes(action)) return true
     if (menuId === 'registry' && ['create', 'edit'].includes(action)) return true
     if (menuId.startsWith('apqr-') && ['create', 'edit'].includes(action)) return true
+    if (menuId.startsWith('cpv-') && ['create', 'edit'].includes(action)) return true
     return false
   }
 

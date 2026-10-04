@@ -82,24 +82,39 @@ const STATUS = rgb(0.082, 0.42, 0.271) // #156b45
 const PANEL_BG = rgb(0.94, 0.95, 0.97)
 const TEAL = rgb(0.05, 0.45, 0.55)
 
+function fitLineToWidth(text: string, font: PDFFont, size: number, maxWidth: number): string {
+  const value = text.replace(/\u2026/g, '...')
+  if (!(maxWidth > 0) || !value) return ''
+  if (font.widthOfTextAtSize(value, size) <= maxWidth) return value
+  const ellipsis = '...'
+  if (font.widthOfTextAtSize(ellipsis, size) > maxWidth) return ''
+  let cut = value.length
+  while (cut > 1 && font.widthOfTextAtSize(`${value.slice(0, cut)}${ellipsis}`, size) > maxWidth) {
+    cut -= 1
+  }
+  return `${value.slice(0, Math.max(1, cut))}${ellipsis}`
+}
+
 function drawStampTextLines(
   page: PDFPage,
   lines: SignatureStampLayout['nameLines'],
   fonts: { regular: PDFFont; bold: PDFFont },
   fallbackX: number,
-  cardRight: number,
-  pad: number,
+  clipRight: number,
 ) {
   for (const line of lines) {
     const size = line.size ?? 8
     const x = line.x ?? fallbackX + (line.indent ?? 0)
-    page.drawText(line.text, {
+    const font = line.bold ? fonts.bold : fonts.regular
+    const text = fitLineToWidth(line.text, font, size, Math.max(8, clipRight - x))
+    if (!text) continue
+    // No maxWidth: pdf-lib wraps leftover glyphs onto the next line and out of the card.
+    page.drawText(text, {
       x,
       y: line.y,
       size,
-      font: line.bold ? fonts.bold : fonts.regular,
+      font,
       color: line.muted ? MUTED : NAVY,
-      maxWidth: Math.max(8, cardRight - pad - x),
     })
   }
 }
@@ -162,9 +177,11 @@ export async function drawSignatureBlock(
     })
   }
 
-  const cardRight = layout.card.x + layout.card.width
-  drawStampTextLines(page, layout.nameLines, fonts, layout.imageBox.x, cardRight, layout.pad)
-  drawStampTextLines(page, layout.roleLines, fonts, layout.imageBox.x, cardRight, layout.pad)
+  const clipRight = layout.qrBox
+    ? layout.qrBox.x - 2
+    : layout.card.x + layout.card.width - layout.pad
+  drawStampTextLines(page, layout.nameLines, fonts, layout.imageBox.x, clipRight)
+  drawStampTextLines(page, layout.roleLines, fonts, layout.imageBox.x, clipRight)
 
   if (layout.status) {
     const dot = Math.max(2.5, layout.status.size * 0.5)
@@ -174,18 +191,25 @@ export async function drawSignatureBlock(
       size: dot / 2,
       color: STATUS,
     })
-    page.drawText(layout.status.text, {
-      x: layout.status.x + dot + 3.5,
-      y: layout.status.y,
-      size: layout.status.size,
-      font: fonts.bold,
-      color: STATUS,
-      maxWidth: Math.max(8, cardRight - layout.pad - layout.status.x - dot - 3.5),
-    })
+    const statusText = fitLineToWidth(
+      layout.status.text,
+      fonts.bold,
+      layout.status.size,
+      Math.max(8, clipRight - layout.status.x - dot - 3.5),
+    )
+    if (statusText) {
+      page.drawText(statusText, {
+        x: layout.status.x + dot + 3.5,
+        y: layout.status.y,
+        size: layout.status.size,
+        font: fonts.bold,
+        color: STATUS,
+      })
+    }
   }
 
-  drawStampTextLines(page, layout.reasonLines, fonts, layout.status?.x ?? layout.imageBox.x, cardRight, layout.pad)
-  drawStampTextLines(page, layout.metaLines, fonts, layout.status?.x ?? layout.imageBox.x, cardRight, layout.pad)
+  drawStampTextLines(page, layout.reasonLines, fonts, layout.status?.x ?? layout.imageBox.x, clipRight)
+  drawStampTextLines(page, layout.metaLines, fonts, layout.status?.x ?? layout.imageBox.x, clipRight)
 
   let appearance: PDFImage | null = null
   try {
@@ -212,8 +236,10 @@ export async function drawSignatureBlock(
     )
     const rawY = layout.imageBox.y + (boxH - drawH) / 2
     const minX = layout.card.x + layout.accentWidth + 1
-    const maxX = layout.card.x + layout.card.width - 1.5 - drawW
-    const minY = layout.card.y + 1.5
+    const maxX = (layout.qrBox ? layout.qrBox.x - 1.5 : layout.card.x + layout.card.width - 1.5) - drawW
+    const minY = (layout.verifyRow
+      ? layout.verifyRow.y + layout.verifyRow.height
+      : layout.card.y) + 1.5
     const maxY = layout.card.y + layout.card.height - 1.5 - drawH
     page.drawImage(appearance, {
       x: Math.min(Math.max(rawX, minX), Math.max(minX, maxX)),

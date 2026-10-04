@@ -1,6 +1,7 @@
 -- SQLite schema — GxP Toolkit (navigation source; production uses Supabase migrations)
 -- eDoc tables: database/sqlite/edoc_schema.sql (included by npm run db:map and db:init)
 -- APQR tables: database/sqlite/apqr_schema.sql
+-- CPV tables: database/sqlite/cpv_schema.sql
 
 PRAGMA foreign_keys = ON;
 
@@ -78,6 +79,16 @@ CREATE TABLE IF NOT EXISTS vmp_masterlist_records (
   criticality           TEXT NOT NULL,
   responsible_owner     TEXT,
   remarks               TEXT,
+  capacity_quantity     TEXT,
+  unit_operation        TEXT,
+  verified_operating_limits TEXT,
+  direct_contact_parts  TEXT,
+  moc                   TEXT,
+  total_surface_area    REAL,
+  moc_rating            REAL,
+  surface_area_rating   REAL,
+  hard_to_reach_area_count INTEGER,
+  date_of_installation  TEXT,
   is_draft              INTEGER NOT NULL DEFAULT 0,
   is_archived           INTEGER NOT NULL DEFAULT 0,
   version               INTEGER NOT NULL DEFAULT 1,

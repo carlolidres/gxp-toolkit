@@ -1,12 +1,12 @@
 {
   "meta": {
     "project": "gxp-toolkit",
-    "source": "database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql",
-    "generatedAt": "2026-08-01T07:43:41.168Z",
+    "source": "database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql + database/sqlite/cpv_schema.sql",
+    "generatedAt": "2026-10-03T12:28:01.334Z",
     "schemaVersion": null,
-    "tableCount": 32,
-    "edgeCount": 76,
-    "indexCount": 27
+    "tableCount": 63,
+    "edgeCount": 116,
+    "indexCount": 60
   },
   "nodes": [
     {
@@ -393,7 +393,7 @@
     {
       "id": "vmp_masterlist_records",
       "type": "table",
-      "columnCount": 26,
+      "columnCount": 36,
       "primaryKeys": [
         "id"
       ],
@@ -583,6 +583,106 @@
         },
         {
           "name": "remarks",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "capacity_quantity",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "unit_operation",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "verified_operating_limits",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "direct_contact_parts",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "moc",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "total_surface_area",
+          "type": "REAL",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "moc_rating",
+          "type": "REAL",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "surface_area_rating",
+          "type": "REAL",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "hard_to_reach_area_count",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "date_of_installation",
           "type": "TEXT",
           "notNull": false,
           "primaryKey": false,
@@ -1148,7 +1248,7 @@
     {
       "id": "edoc_organization_members",
       "type": "table",
-      "columnCount": 8,
+      "columnCount": 9,
       "primaryKeys": [
         "id"
       ],
@@ -1235,6 +1335,16 @@
           "references": null
         },
         {
+          "name": "counts_toward_seat",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": "counts_toward_seat IN (0, 1)",
+          "references": null
+        },
+        {
           "name": "created_at",
           "type": "TEXT",
           "notNull": true,
@@ -1258,6 +1368,13 @@
           "expression": "status IN ('active', 'invited', 'suspended')",
           "columns": [
             "status"
+          ]
+        },
+        {
+          "table": "edoc_organization_members",
+          "expression": "counts_toward_seat IN (0, 1)",
+          "columns": [
+            "counts_toward_seat"
           ]
         }
       ],
@@ -4108,6 +4225,1368 @@
       "indexes": []
     },
     {
+      "id": "edoc_page_integrity_codes",
+      "type": "table",
+      "columnCount": 12,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "document_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_documents",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "version_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_versions",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "route_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_document_routes",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "certificate_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_completion_certificates",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "page_number",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "page_number > 0",
+          "references": null
+        },
+        {
+          "name": "algorithm",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'edoc-page-integrity-v1'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "page_content_sha256",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "page_integrity_code",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "page_integrity_code_display",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_page_integrity_codes",
+          "expression": "page_number > 0",
+          "columns": []
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_verification_lookups",
+      "type": "table",
+      "columnCount": 9,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "verification_code",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "certificate_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_completion_certificates",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "result_status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "uploaded_sha256",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "matched",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "source_ip",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "user_agent",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    {
+      "id": "edoc_subscription_plans",
+      "type": "table",
+      "columnCount": 13,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "code"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "code",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "billing_interval",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "billing_interval IN ('none', 'month', 'year')",
+          "references": null
+        },
+        {
+          "name": "paddle_product_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "paddle_price_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "paymongo_plan_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "amount_minor",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "php_amount_minor",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "currency",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'USD'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "is_active",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": "is_active IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_subscription_plans",
+          "expression": "billing_interval IN ('none', 'month', 'year')",
+          "columns": [
+            "billing_interval"
+          ]
+        },
+        {
+          "table": "edoc_subscription_plans",
+          "expression": "is_active IN (0, 1)",
+          "columns": [
+            "is_active"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_plan_entitlements",
+      "type": "table",
+      "columnCount": 7,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "plan_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_subscription_plans",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "entitlement_key",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "value_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "value_type IN ('numeric', 'boolean', 'text')",
+          "references": null
+        },
+        {
+          "name": "numeric_value",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "boolean_value",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "boolean_value IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "text_value",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_plan_entitlements",
+          "expression": "value_type IN ('numeric', 'boolean', 'text')",
+          "columns": [
+            "value_type"
+          ]
+        },
+        {
+          "table": "edoc_plan_entitlements",
+          "expression": "boolean_value IN (0, 1)",
+          "columns": [
+            "boolean_value"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_billing_customers",
+      "type": "table",
+      "columnCount": 8,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "organization_id",
+        "provider_customer_id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "provider",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'paddle'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "provider_customer_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "email",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "country_code",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    {
+      "id": "edoc_subscriptions",
+      "type": "table",
+      "columnCount": 14,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "provider_subscription_id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "plan_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_subscription_plans",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "provider",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'paddle'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "provider_customer_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "provider_subscription_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "status IN (\n                               'FREE', 'PENDING', 'TRIALING', 'ACTIVE', 'PAST_DUE', 'PAUSED', 'CANCELED', 'EXPIRED'\n                             )",
+          "references": null
+        },
+        {
+          "name": "current_period_start",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "current_period_end",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "scheduled_change_type",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "scheduled_change_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "cancel_at_period_end",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": "cancel_at_period_end IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_subscriptions",
+          "expression": "status IN (\n                               'FREE', 'PENDING', 'TRIALING', 'ACTIVE', 'PAST_DUE', 'PAUSED', 'CANCELED', 'EXPIRED'\n                             )",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "table": "edoc_subscriptions",
+          "expression": "cancel_at_period_end IN (0, 1)",
+          "columns": [
+            "cancel_at_period_end"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_edoc_subscriptions_org",
+          "unique": true,
+          "table": "edoc_subscriptions",
+          "columns": [
+            "organization_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edoc_usage_counters",
+      "type": "table",
+      "columnCount": 6,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": "CASCADE",
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "metric_key",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "period_start",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "period_end",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "used_quantity",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_edoc_usage_org_metric",
+          "unique": false,
+          "table": "edoc_usage_counters",
+          "columns": [
+            "organization_id",
+            "metric_key"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edoc_billing_events",
+      "type": "table",
+      "columnCount": 8,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "provider",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'paddle'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "provider_event_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "event_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "received_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "processed_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "processing_status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "processing_status IN (\n                        'RECEIVED', 'PROCESSING', 'PROCESSED', 'FAILED', 'IGNORED'\n                      )",
+          "references": null
+        },
+        {
+          "name": "payload_json",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'{}'",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_billing_events",
+          "expression": "processing_status IN (\n                        'RECEIVED', 'PROCESSING', 'PROCESSED', 'FAILED', 'IGNORED'\n                      )",
+          "columns": [
+            "processing_status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_edoc_billing_events_status",
+          "unique": false,
+          "table": "edoc_billing_events",
+          "columns": [
+            "processing_status",
+            "received_at"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edoc_billing_transactions",
+      "type": "table",
+      "columnCount": 9,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "provider_transaction_id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "organization_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "edoc_organizations",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "provider",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'paddle'",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "provider_transaction_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "amount_minor",
+          "type": "INTEGER",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "currency",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "occurred_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    {
+      "id": "edoc_billing_runtime",
+      "type": "table",
+      "columnCount": 6,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": "id = 'default'",
+          "references": null
+        },
+        {
+          "name": "billing_enabled",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": "billing_enabled IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "free_plan_limits_enabled",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": "free_plan_limits_enabled IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "paddle_checkout_enabled",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": "paddle_checkout_enabled IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "paymongo_checkout_enabled",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": "paymongo_checkout_enabled IN (0, 1)",
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_billing_runtime",
+          "expression": "id = 'default'",
+          "columns": []
+        },
+        {
+          "table": "edoc_billing_runtime",
+          "expression": "billing_enabled IN (0, 1)",
+          "columns": [
+            "billing_enabled"
+          ]
+        },
+        {
+          "table": "edoc_billing_runtime",
+          "expression": "free_plan_limits_enabled IN (0, 1)",
+          "columns": [
+            "free_plan_limits_enabled"
+          ]
+        },
+        {
+          "table": "edoc_billing_runtime",
+          "expression": "paddle_checkout_enabled IN (0, 1)",
+          "columns": [
+            "paddle_checkout_enabled"
+          ]
+        },
+        {
+          "table": "edoc_billing_runtime",
+          "expression": "paymongo_checkout_enabled IN (0, 1)",
+          "columns": [
+            "paymongo_checkout_enabled"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "edoc_billing_reconcile_runs",
+      "type": "table",
+      "columnCount": 10,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "started_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "finished_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "status IN ('SKIPPED', 'OK', 'ERROR')",
+          "references": null
+        },
+        {
+          "name": "checked_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "mismatch_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "repaired_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "failed_event_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "past_due_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "summary_json",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'{}'",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "edoc_billing_reconcile_runs",
+          "expression": "status IN ('SKIPPED', 'OK', 'ERROR')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
       "id": "apqr_clients",
       "type": "table",
       "columnCount": 14,
@@ -5222,6 +6701,3826 @@
       ],
       "checks": [],
       "indexes": []
+    },
+    {
+      "id": "cpv_products",
+      "type": "table",
+      "columnCount": 37,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [
+        "product_code"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_code",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": true,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "generic_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "dosage_form",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "strength",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "batch_size",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "batch_size_unit",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "alternate_batch_sizes",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "report_entries",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "hold_entries",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "cpp_monitoring",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "client_owner",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "manufacturing_site",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "packaging_site",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "markets",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "registration_number",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "review_frequency",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Annual'",
+          "check": "review_frequency IN ('Monthly', 'Quarterly', 'Semiannual', 'Annual')",
+          "references": null
+        },
+        {
+          "name": "pv_protocol_ref",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "pv_report_ref",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "effective_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Draft'",
+          "check": "status IN ('Draft', 'Active', 'Retired')",
+          "references": null
+        },
+        {
+          "name": "retire_reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "proposed_posture",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Not Assessed'",
+          "check": "proposed_posture IN ('Not Assessed', 'Insufficient Data', 'Not Valid', 'At Risk', 'Valid')",
+          "references": null
+        },
+        {
+          "name": "official_posture",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Not Assessed'",
+          "check": "official_posture IN ('Not Assessed', 'Insufficient Data', 'Not Valid', 'At Risk', 'Valid')",
+          "references": null
+        },
+        {
+          "name": "official_posture_rationale",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "official_posture_approved_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "official_posture_approved_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "review_period_start",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "review_period_end",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "next_review_due",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "last_assessment_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "row_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "cpv_products",
+          "expression": "review_frequency IN ('Monthly', 'Quarterly', 'Semiannual', 'Annual')",
+          "columns": [
+            "review_frequency"
+          ]
+        },
+        {
+          "table": "cpv_products",
+          "expression": "status IN ('Draft', 'Active', 'Retired')",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "table": "cpv_products",
+          "expression": "proposed_posture IN ('Not Assessed', 'Insufficient Data', 'Not Valid', 'At Risk', 'Valid')",
+          "columns": [
+            "proposed_posture"
+          ]
+        },
+        {
+          "table": "cpv_products",
+          "expression": "official_posture IN ('Not Assessed', 'Insufficient Data', 'Not Valid', 'At Risk', 'Valid')",
+          "columns": [
+            "official_posture"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_cpv_products_code",
+          "unique": false,
+          "table": "cpv_products",
+          "columns": [
+            "product_code"
+          ]
+        },
+        {
+          "name": "idx_cpv_products_status",
+          "unique": false,
+          "table": "cpv_products",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "idx_cpv_products_name",
+          "unique": false,
+          "table": "cpv_products",
+          "columns": [
+            "product_name"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_product_batches",
+      "type": "table",
+      "columnCount": 19,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_products",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "batch_number",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "mo_control_number",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "manufacturing_start_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "manufacturing_end_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "packaging_start_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "packaging_end_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "fg_release_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Planned'",
+          "check": "status IN ('Planned', 'In Process', 'Packaged', 'Released', 'Rejected', 'Cancelled')",
+          "references": null
+        },
+        {
+          "name": "comments",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "date_exception_reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "voided",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "void_reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "row_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "cpv_product_batches",
+          "expression": "status IN ('Planned', 'In Process', 'Packaged', 'Released', 'Rejected', 'Cancelled')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_cpv_batches_product",
+          "unique": false,
+          "table": "cpv_product_batches",
+          "columns": [
+            "product_id"
+          ]
+        },
+        {
+          "name": "idx_cpv_batches_fg",
+          "unique": false,
+          "table": "cpv_product_batches",
+          "columns": [
+            "fg_release_date"
+          ]
+        },
+        {
+          "name": "idx_cpv_batches_status",
+          "unique": false,
+          "table": "cpv_product_batches",
+          "columns": [
+            "status"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_packaging_orders",
+      "type": "table",
+      "columnCount": 6,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "batch_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_product_batches",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "po_control_number",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "comments",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_cpv_po_batch",
+          "unique": false,
+          "table": "cpv_packaging_orders",
+          "columns": [
+            "batch_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_protocols",
+      "type": "table",
+      "columnCount": 24,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "protocol_number",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "version",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_products",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "title",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "review_period_start",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "review_period_end",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "scope",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "batch_selection_rule",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Draft'",
+          "check": "status IN ('Draft', 'In Review', 'Pending Approval', 'Approved/Effective', 'Rejected', 'Superseded', 'Retired')",
+          "references": null
+        },
+        {
+          "name": "author_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "author_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "reviewer_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "approver_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "signoff_printed_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "signoff_meaning",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "effective_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "superseded_protocol_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_protocols",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "linked_report_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "objective",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "reject_comment",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "row_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "cpv_protocols",
+          "expression": "status IN ('Draft', 'In Review', 'Pending Approval', 'Approved/Effective', 'Rejected', 'Superseded', 'Retired')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_cpv_protocols_product",
+          "unique": false,
+          "table": "cpv_protocols",
+          "columns": [
+            "product_id"
+          ]
+        },
+        {
+          "name": "idx_cpv_protocols_status",
+          "unique": false,
+          "table": "cpv_protocols",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "idx_cpv_protocols_number",
+          "unique": false,
+          "table": "cpv_protocols",
+          "columns": [
+            "protocol_number"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_reports",
+      "type": "table",
+      "columnCount": 24,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "report_number",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "version",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_products",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "protocol_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_protocols",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "review_period_start",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "review_period_end",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "included_batch_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "excluded_batch_count",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "proposed_posture",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Not Assessed'",
+          "check": "proposed_posture IN ('Not Assessed', 'Insufficient Data', 'Not Valid', 'At Risk', 'Valid')",
+          "references": null
+        },
+        {
+          "name": "approved_posture",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "approved_posture IS NULL OR approved_posture IN ('Not Assessed', 'Insufficient Data', 'Not Valid', 'At Risk', 'Valid')",
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Draft'",
+          "check": "status IN ('Draft', 'In Review', 'Pending Approval', 'Approved/Effective', 'Rejected', 'Superseded')",
+          "references": null
+        },
+        {
+          "name": "snapshot_json",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "author_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "author_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "reviewer_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "approver_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "signoff_printed_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "signoff_meaning",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "effective_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "reject_comment",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "row_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "cpv_reports",
+          "expression": "proposed_posture IN ('Not Assessed', 'Insufficient Data', 'Not Valid', 'At Risk', 'Valid')",
+          "columns": [
+            "proposed_posture"
+          ]
+        },
+        {
+          "table": "cpv_reports",
+          "expression": "approved_posture IS NULL OR approved_posture IN ('Not Assessed', 'Insufficient Data', 'Not Valid', 'At Risk', 'Valid')",
+          "columns": [
+            "approved_posture"
+          ]
+        },
+        {
+          "table": "cpv_reports",
+          "expression": "status IN ('Draft', 'In Review', 'Pending Approval', 'Approved/Effective', 'Rejected', 'Superseded')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_cpv_reports_product",
+          "unique": false,
+          "table": "cpv_reports",
+          "columns": [
+            "product_id"
+          ]
+        },
+        {
+          "name": "idx_cpv_reports_protocol",
+          "unique": false,
+          "table": "cpv_reports",
+          "columns": [
+            "protocol_id"
+          ]
+        },
+        {
+          "name": "idx_cpv_reports_status",
+          "unique": false,
+          "table": "cpv_reports",
+          "columns": [
+            "status"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_audit_events",
+      "type": "table",
+      "columnCount": 18,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "occurred_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "actor_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "actor_name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "actor_role",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "action_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "batch_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "module",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "record_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "record_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "record_label",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "field_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "old_value",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "new_value",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "source_record_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "correlation_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_cpv_audit_occurred",
+          "unique": false,
+          "table": "cpv_audit_events",
+          "columns": [
+            "occurred_at"
+          ]
+        },
+        {
+          "name": "idx_cpv_audit_product",
+          "unique": false,
+          "table": "cpv_audit_events",
+          "columns": [
+            "product_id"
+          ]
+        },
+        {
+          "name": "idx_cpv_audit_record",
+          "unique": false,
+          "table": "cpv_audit_events",
+          "columns": [
+            "record_type",
+            "record_id"
+          ]
+        },
+        {
+          "name": "idx_cpv_audit_actor",
+          "unique": false,
+          "table": "cpv_audit_events",
+          "columns": [
+            "actor_name"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_material_definitions",
+      "type": "table",
+      "columnCount": 17,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_products",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "kind",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "kind IN ('rm', 'pm')",
+          "references": null
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "item_number",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "spec_number",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "amount",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "unit",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "function_in_formulation",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "packaging_level",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "packaging_level IS NULL OR packaging_level IN ('Primary', 'Secondary', 'Tertiary')",
+          "references": null
+        },
+        {
+          "name": "approved_suppliers",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "critical",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "effective_from",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "effective_to",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Active'",
+          "check": "status IN ('Active', 'Retired')",
+          "references": null
+        },
+        {
+          "name": "retire_reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "row_version",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "1",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "cpv_material_definitions",
+          "expression": "kind IN ('rm', 'pm')",
+          "columns": [
+            "kind"
+          ]
+        },
+        {
+          "table": "cpv_material_definitions",
+          "expression": "packaging_level IS NULL OR packaging_level IN ('Primary', 'Secondary', 'Tertiary')",
+          "columns": [
+            "packaging_level"
+          ]
+        },
+        {
+          "table": "cpv_material_definitions",
+          "expression": "status IN ('Active', 'Retired')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_cpv_mat_def_product",
+          "unique": false,
+          "table": "cpv_material_definitions",
+          "columns": [
+            "product_id",
+            "kind"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_material_usages",
+      "type": "table",
+      "columnCount": 8,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "material_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_material_definitions",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "batch_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_product_batches",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "po_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_packaging_orders",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "lot_number",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "supplier",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "quantity",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "comments",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_cpv_mat_use_batch",
+          "unique": false,
+          "table": "cpv_material_usages",
+          "columns": [
+            "batch_id"
+          ]
+        },
+        {
+          "name": "idx_cpv_mat_use_material",
+          "unique": false,
+          "table": "cpv_material_usages",
+          "columns": [
+            "material_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_assets",
+      "type": "table",
+      "columnCount": 25,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_products",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "asset_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "asset_type IN ('Equipment', 'Room', 'Line')",
+          "references": null
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "tag",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "room",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "line",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "stage",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "stage IN ('Manufacturing', 'Packaging')",
+          "references": null
+        },
+        {
+          "name": "parameter_name",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "lsl",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "usl",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "unit",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "trend_enabled",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "qual_report",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "qual_status",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "requal_due",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "cleaning_sop",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "cleaning_val_ref",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "cleaning_review_due",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "facility_qual_ref",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "facility_requal_due",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "effective_from",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "effective_to",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Active'",
+          "check": "status IN ('Active', 'Retired')",
+          "references": null
+        },
+        {
+          "name": "retire_reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "cpv_assets",
+          "expression": "asset_type IN ('Equipment', 'Room', 'Line')",
+          "columns": [
+            "asset_type"
+          ]
+        },
+        {
+          "table": "cpv_assets",
+          "expression": "stage IN ('Manufacturing', 'Packaging')",
+          "columns": [
+            "stage"
+          ]
+        },
+        {
+          "table": "cpv_assets",
+          "expression": "status IN ('Active', 'Retired')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_cpv_assets_product",
+          "unique": false,
+          "table": "cpv_assets",
+          "columns": [
+            "product_id",
+            "stage"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_asset_uses",
+      "type": "table",
+      "columnCount": 7,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "asset_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_assets",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "batch_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_product_batches",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "used_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "parameter_result",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "comments",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "window_status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_cpv_asset_use_batch",
+          "unique": false,
+          "table": "cpv_asset_uses",
+          "columns": [
+            "batch_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_test_definitions",
+      "type": "table",
+      "columnCount": 20,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_products",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "kind",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "kind IN ('ipc', 'analytical')",
+          "references": null
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "classification",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "classification IN ('Bulk', 'Finished Product')",
+          "references": null
+        },
+        {
+          "name": "data_type",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "data_type IN ('Numeric', 'Text', 'Categorical', 'Pass-Fail')",
+          "references": null
+        },
+        {
+          "name": "lsl",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "usl",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "target",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "warning_low",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "warning_high",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "unit",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "method_ref",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "method_version",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "criticality",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "instrument_type",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "effective_from",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "effective_to",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Active'",
+          "check": "status IN ('Active', 'Retired')",
+          "references": null
+        },
+        {
+          "name": "retire_reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "cpv_test_definitions",
+          "expression": "kind IN ('ipc', 'analytical')",
+          "columns": [
+            "kind"
+          ]
+        },
+        {
+          "table": "cpv_test_definitions",
+          "expression": "classification IN ('Bulk', 'Finished Product')",
+          "columns": [
+            "classification"
+          ]
+        },
+        {
+          "table": "cpv_test_definitions",
+          "expression": "data_type IN ('Numeric', 'Text', 'Categorical', 'Pass-Fail')",
+          "columns": [
+            "data_type"
+          ]
+        },
+        {
+          "table": "cpv_test_definitions",
+          "expression": "status IN ('Active', 'Retired')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_cpv_test_def_product",
+          "unique": false,
+          "table": "cpv_test_definitions",
+          "columns": [
+            "product_id",
+            "kind"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_test_results",
+      "type": "table",
+      "columnCount": 16,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "definition_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_test_definitions",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "batch_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_product_batches",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "result",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "test_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "sample_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "report_ref",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "instrument",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "csv_ref",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "investigation_link",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "official_event",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "official_event IS NULL OR official_event IN ('OOS', 'OOT')",
+          "references": null
+        },
+        {
+          "name": "not_applicable",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "0",
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "na_justification",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "comments",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "evaluation",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "spec_version_applied",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "cpv_test_results",
+          "expression": "official_event IS NULL OR official_event IN ('OOS', 'OOT')",
+          "columns": [
+            "official_event"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_cpv_test_res_batch",
+          "unique": false,
+          "table": "cpv_test_results",
+          "columns": [
+            "batch_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_stability_studies",
+      "type": "table",
+      "columnCount": 9,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_products",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "protocol_ref",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "stability_batch",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_batch_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_product_batches",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "packaging",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "market",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "start_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Open'",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_cpv_stab_product",
+          "unique": false,
+          "table": "cpv_stability_studies",
+          "columns": [
+            "product_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_stability_time_points",
+      "type": "table",
+      "columnCount": 14,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "study_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_stability_studies",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "condition_label",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "months",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "due_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "status IN ('Scheduled', 'Due', 'Completed', 'Missed', 'Cancelled')",
+          "references": null
+        },
+        {
+          "name": "parameter",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "lsl",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "usl",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "unit",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "result",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "pull_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "test_date",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "method_version",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "cpv_stability_time_points",
+          "expression": "status IN ('Scheduled', 'Due', 'Completed', 'Missed', 'Cancelled')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_cpv_stab_tp_study",
+          "unique": false,
+          "table": "cpv_stability_time_points",
+          "columns": [
+            "study_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_hold_time_requirements",
+      "type": "table",
+      "columnCount": 9,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_products",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "transition",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "min_duration",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "max_duration",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "unit",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "unit IN ('minutes', 'hours', 'days')",
+          "references": null
+        },
+        {
+          "name": "study_ref",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "effective_from",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Active'",
+          "check": "status IN ('Active', 'Retired')",
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "cpv_hold_time_requirements",
+          "expression": "unit IN ('minutes', 'hours', 'days')",
+          "columns": [
+            "unit"
+          ]
+        },
+        {
+          "table": "cpv_hold_time_requirements",
+          "expression": "status IN ('Active', 'Retired')",
+          "columns": [
+            "status"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_cpv_hold_req_product",
+          "unique": false,
+          "table": "cpv_hold_time_requirements",
+          "columns": [
+            "product_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_hold_time_records",
+      "type": "table",
+      "columnCount": 9,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_products",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "requirement_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_hold_time_requirements",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "batch_id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_product_batches",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "study_batch",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "start_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "end_at",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "duration_hours",
+          "type": "REAL",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "evaluation",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "evaluation IN ('Complies', 'Excursion', 'Not Evaluated')",
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "cpv_hold_time_records",
+          "expression": "evaluation IN ('Complies', 'Excursion', 'Not Evaluated')",
+          "columns": [
+            "evaluation"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_cpv_hold_rec_product",
+          "unique": false,
+          "table": "cpv_hold_time_records",
+          "columns": [
+            "product_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_linked_events",
+      "type": "table",
+      "columnCount": 16,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_products",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "kind",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": "kind IN ('cnf', 'complaint', 'deviation')",
+          "references": null
+        },
+        {
+          "name": "number",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "title",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "category",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "risk",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "initiated_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "target_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "closed_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "conclusion",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "cancel_or_nfa_reason",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "capa_ref",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "owner",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [
+        {
+          "table": "cpv_linked_events",
+          "expression": "kind IN ('cnf', 'complaint', 'deviation')",
+          "columns": [
+            "kind"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_cpv_events_product",
+          "unique": false,
+          "table": "cpv_linked_events",
+          "columns": [
+            "product_id",
+            "kind"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cpv_event_batch_links",
+      "type": "table",
+      "columnCount": 2,
+      "primaryKeys": [],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "event_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_linked_events",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "batch_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_product_batches",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    {
+      "id": "cpv_improvements",
+      "type": "table",
+      "columnCount": 8,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "product_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_products",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "number",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "source_ref",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "endorsed_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "summary",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "owner",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Open'",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": []
+    },
+    {
+      "id": "cpv_recommendations",
+      "type": "table",
+      "columnCount": 9,
+      "primaryKeys": [
+        "id"
+      ],
+      "uniqueColumns": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": true,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "improvement_id",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": {
+            "table": "cpv_improvements",
+            "column": "id",
+            "onDelete": null,
+            "onUpdate": null
+          }
+        },
+        {
+          "name": "sequence",
+          "type": "INTEGER",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "text",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "category",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "priority",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "owner",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "target_at",
+          "type": "TEXT",
+          "notNull": false,
+          "primaryKey": false,
+          "unique": false,
+          "default": null,
+          "check": null,
+          "references": null
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notNull": true,
+          "primaryKey": false,
+          "unique": false,
+          "default": "'Open'",
+          "check": null,
+          "references": null
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "idx_cpv_reco_improvement",
+          "unique": false,
+          "table": "cpv_recommendations",
+          "columns": [
+            "improvement_id"
+          ]
+        }
+      ]
     }
   ],
   "edges": [
@@ -6248,6 +11547,174 @@
       "onUpdate": null
     },
     {
+      "id": "edoc_page_integrity_codes.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_page_integrity_codes",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_page_integrity_codes.document_id->edoc_documents.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_page_integrity_codes",
+        "column": "document_id"
+      },
+      "to": {
+        "table": "edoc_documents",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_page_integrity_codes.version_id->edoc_document_versions.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_page_integrity_codes",
+        "column": "version_id"
+      },
+      "to": {
+        "table": "edoc_document_versions",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_page_integrity_codes.route_id->edoc_document_routes.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_page_integrity_codes",
+        "column": "route_id"
+      },
+      "to": {
+        "table": "edoc_document_routes",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_page_integrity_codes.certificate_id->edoc_completion_certificates.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_page_integrity_codes",
+        "column": "certificate_id"
+      },
+      "to": {
+        "table": "edoc_completion_certificates",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_verification_lookups.certificate_id->edoc_completion_certificates.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_verification_lookups",
+        "column": "certificate_id"
+      },
+      "to": {
+        "table": "edoc_completion_certificates",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_plan_entitlements.plan_id->edoc_subscription_plans.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_plan_entitlements",
+        "column": "plan_id"
+      },
+      "to": {
+        "table": "edoc_subscription_plans",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_billing_customers.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_billing_customers",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_subscriptions.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_subscriptions",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_subscriptions.plan_id->edoc_subscription_plans.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_subscriptions",
+        "column": "plan_id"
+      },
+      "to": {
+        "table": "edoc_subscription_plans",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_usage_counters.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_usage_counters",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "edoc_billing_transactions.organization_id->edoc_organizations.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "edoc_billing_transactions",
+        "column": "organization_id"
+      },
+      "to": {
+        "table": "edoc_organizations",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
       "id": "apqr_scheduler_entries.client_id->apqr_clients.id",
       "type": "foreign_key",
       "from": {
@@ -6287,6 +11754,398 @@
         "column": "id"
       },
       "onDelete": "CASCADE",
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_product_batches.product_id->cpv_products.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_product_batches",
+        "column": "product_id"
+      },
+      "to": {
+        "table": "cpv_products",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_packaging_orders.batch_id->cpv_product_batches.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_packaging_orders",
+        "column": "batch_id"
+      },
+      "to": {
+        "table": "cpv_product_batches",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_protocols.product_id->cpv_products.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_protocols",
+        "column": "product_id"
+      },
+      "to": {
+        "table": "cpv_products",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_protocols.superseded_protocol_id->cpv_protocols.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_protocols",
+        "column": "superseded_protocol_id"
+      },
+      "to": {
+        "table": "cpv_protocols",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_reports.product_id->cpv_products.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_reports",
+        "column": "product_id"
+      },
+      "to": {
+        "table": "cpv_products",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_reports.protocol_id->cpv_protocols.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_reports",
+        "column": "protocol_id"
+      },
+      "to": {
+        "table": "cpv_protocols",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_material_definitions.product_id->cpv_products.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_material_definitions",
+        "column": "product_id"
+      },
+      "to": {
+        "table": "cpv_products",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_material_usages.material_id->cpv_material_definitions.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_material_usages",
+        "column": "material_id"
+      },
+      "to": {
+        "table": "cpv_material_definitions",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_material_usages.batch_id->cpv_product_batches.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_material_usages",
+        "column": "batch_id"
+      },
+      "to": {
+        "table": "cpv_product_batches",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_material_usages.po_id->cpv_packaging_orders.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_material_usages",
+        "column": "po_id"
+      },
+      "to": {
+        "table": "cpv_packaging_orders",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_assets.product_id->cpv_products.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_assets",
+        "column": "product_id"
+      },
+      "to": {
+        "table": "cpv_products",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_asset_uses.asset_id->cpv_assets.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_asset_uses",
+        "column": "asset_id"
+      },
+      "to": {
+        "table": "cpv_assets",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_asset_uses.batch_id->cpv_product_batches.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_asset_uses",
+        "column": "batch_id"
+      },
+      "to": {
+        "table": "cpv_product_batches",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_test_definitions.product_id->cpv_products.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_test_definitions",
+        "column": "product_id"
+      },
+      "to": {
+        "table": "cpv_products",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_test_results.definition_id->cpv_test_definitions.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_test_results",
+        "column": "definition_id"
+      },
+      "to": {
+        "table": "cpv_test_definitions",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_test_results.batch_id->cpv_product_batches.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_test_results",
+        "column": "batch_id"
+      },
+      "to": {
+        "table": "cpv_product_batches",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_stability_studies.product_id->cpv_products.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_stability_studies",
+        "column": "product_id"
+      },
+      "to": {
+        "table": "cpv_products",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_stability_studies.product_batch_id->cpv_product_batches.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_stability_studies",
+        "column": "product_batch_id"
+      },
+      "to": {
+        "table": "cpv_product_batches",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_stability_time_points.study_id->cpv_stability_studies.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_stability_time_points",
+        "column": "study_id"
+      },
+      "to": {
+        "table": "cpv_stability_studies",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_hold_time_requirements.product_id->cpv_products.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_hold_time_requirements",
+        "column": "product_id"
+      },
+      "to": {
+        "table": "cpv_products",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_hold_time_records.product_id->cpv_products.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_hold_time_records",
+        "column": "product_id"
+      },
+      "to": {
+        "table": "cpv_products",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_hold_time_records.requirement_id->cpv_hold_time_requirements.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_hold_time_records",
+        "column": "requirement_id"
+      },
+      "to": {
+        "table": "cpv_hold_time_requirements",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_hold_time_records.batch_id->cpv_product_batches.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_hold_time_records",
+        "column": "batch_id"
+      },
+      "to": {
+        "table": "cpv_product_batches",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_linked_events.product_id->cpv_products.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_linked_events",
+        "column": "product_id"
+      },
+      "to": {
+        "table": "cpv_products",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_event_batch_links.event_id->cpv_linked_events.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_event_batch_links",
+        "column": "event_id"
+      },
+      "to": {
+        "table": "cpv_linked_events",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_event_batch_links.batch_id->cpv_product_batches.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_event_batch_links",
+        "column": "batch_id"
+      },
+      "to": {
+        "table": "cpv_product_batches",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_improvements.product_id->cpv_products.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_improvements",
+        "column": "product_id"
+      },
+      "to": {
+        "table": "cpv_products",
+        "column": "id"
+      },
+      "onDelete": null,
+      "onUpdate": null
+    },
+    {
+      "id": "cpv_recommendations.improvement_id->cpv_improvements.id",
+      "type": "foreign_key",
+      "from": {
+        "table": "cpv_recommendations",
+        "column": "improvement_id"
+      },
+      "to": {
+        "table": "cpv_improvements",
+        "column": "id"
+      },
+      "onDelete": null,
       "onUpdate": null
     }
   ],
@@ -6374,6 +12233,32 @@
       "table": "registry_values",
       "columns": [
         "registry_type"
+      ]
+    },
+    {
+      "name": "idx_edoc_subscriptions_org",
+      "unique": true,
+      "table": "edoc_subscriptions",
+      "columns": [
+        "organization_id"
+      ]
+    },
+    {
+      "name": "idx_edoc_billing_events_status",
+      "unique": false,
+      "table": "edoc_billing_events",
+      "columns": [
+        "processing_status",
+        "received_at"
+      ]
+    },
+    {
+      "name": "idx_edoc_usage_org_metric",
+      "unique": false,
+      "table": "edoc_usage_counters",
+      "columns": [
+        "organization_id",
+        "metric_key"
       ]
     },
     {
@@ -6517,6 +12402,251 @@
       "columns": [
         "entity_type",
         "entity_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_products_code",
+      "unique": false,
+      "table": "cpv_products",
+      "columns": [
+        "product_code"
+      ]
+    },
+    {
+      "name": "idx_cpv_products_status",
+      "unique": false,
+      "table": "cpv_products",
+      "columns": [
+        "status"
+      ]
+    },
+    {
+      "name": "idx_cpv_products_name",
+      "unique": false,
+      "table": "cpv_products",
+      "columns": [
+        "product_name"
+      ]
+    },
+    {
+      "name": "idx_cpv_batches_product",
+      "unique": false,
+      "table": "cpv_product_batches",
+      "columns": [
+        "product_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_batches_fg",
+      "unique": false,
+      "table": "cpv_product_batches",
+      "columns": [
+        "fg_release_date"
+      ]
+    },
+    {
+      "name": "idx_cpv_batches_status",
+      "unique": false,
+      "table": "cpv_product_batches",
+      "columns": [
+        "status"
+      ]
+    },
+    {
+      "name": "idx_cpv_po_batch",
+      "unique": false,
+      "table": "cpv_packaging_orders",
+      "columns": [
+        "batch_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_protocols_product",
+      "unique": false,
+      "table": "cpv_protocols",
+      "columns": [
+        "product_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_protocols_status",
+      "unique": false,
+      "table": "cpv_protocols",
+      "columns": [
+        "status"
+      ]
+    },
+    {
+      "name": "idx_cpv_protocols_number",
+      "unique": false,
+      "table": "cpv_protocols",
+      "columns": [
+        "protocol_number"
+      ]
+    },
+    {
+      "name": "idx_cpv_reports_product",
+      "unique": false,
+      "table": "cpv_reports",
+      "columns": [
+        "product_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_reports_protocol",
+      "unique": false,
+      "table": "cpv_reports",
+      "columns": [
+        "protocol_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_reports_status",
+      "unique": false,
+      "table": "cpv_reports",
+      "columns": [
+        "status"
+      ]
+    },
+    {
+      "name": "idx_cpv_audit_occurred",
+      "unique": false,
+      "table": "cpv_audit_events",
+      "columns": [
+        "occurred_at"
+      ]
+    },
+    {
+      "name": "idx_cpv_audit_product",
+      "unique": false,
+      "table": "cpv_audit_events",
+      "columns": [
+        "product_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_audit_record",
+      "unique": false,
+      "table": "cpv_audit_events",
+      "columns": [
+        "record_type",
+        "record_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_audit_actor",
+      "unique": false,
+      "table": "cpv_audit_events",
+      "columns": [
+        "actor_name"
+      ]
+    },
+    {
+      "name": "idx_cpv_mat_def_product",
+      "unique": false,
+      "table": "cpv_material_definitions",
+      "columns": [
+        "product_id",
+        "kind"
+      ]
+    },
+    {
+      "name": "idx_cpv_mat_use_batch",
+      "unique": false,
+      "table": "cpv_material_usages",
+      "columns": [
+        "batch_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_mat_use_material",
+      "unique": false,
+      "table": "cpv_material_usages",
+      "columns": [
+        "material_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_assets_product",
+      "unique": false,
+      "table": "cpv_assets",
+      "columns": [
+        "product_id",
+        "stage"
+      ]
+    },
+    {
+      "name": "idx_cpv_asset_use_batch",
+      "unique": false,
+      "table": "cpv_asset_uses",
+      "columns": [
+        "batch_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_test_def_product",
+      "unique": false,
+      "table": "cpv_test_definitions",
+      "columns": [
+        "product_id",
+        "kind"
+      ]
+    },
+    {
+      "name": "idx_cpv_test_res_batch",
+      "unique": false,
+      "table": "cpv_test_results",
+      "columns": [
+        "batch_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_stab_product",
+      "unique": false,
+      "table": "cpv_stability_studies",
+      "columns": [
+        "product_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_stab_tp_study",
+      "unique": false,
+      "table": "cpv_stability_time_points",
+      "columns": [
+        "study_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_hold_req_product",
+      "unique": false,
+      "table": "cpv_hold_time_requirements",
+      "columns": [
+        "product_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_hold_rec_product",
+      "unique": false,
+      "table": "cpv_hold_time_records",
+      "columns": [
+        "product_id"
+      ]
+    },
+    {
+      "name": "idx_cpv_events_product",
+      "unique": false,
+      "table": "cpv_linked_events",
+      "columns": [
+        "product_id",
+        "kind"
+      ]
+    },
+    {
+      "name": "idx_cpv_reco_improvement",
+      "unique": false,
+      "table": "cpv_recommendations",
+      "columns": [
+        "improvement_id"
       ]
     }
   ]

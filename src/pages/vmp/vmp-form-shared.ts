@@ -3,7 +3,7 @@ export const VMP_INPUT_CLASS =
 
 export const VMP_FIELD_CLASS = 'vmp-field flex flex-col gap-1.5'
 
-export const VMP_FIELD_WIDE_CLASS = `${VMP_FIELD_CLASS} md:col-span-2`
+export const VMP_FIELD_WIDE_CLASS = `${VMP_FIELD_CLASS} md:col-span-2 xl:col-span-3`
 
 export const VMP_FORM_GRID_CLASS = 'vmp-form-grid grid grid-cols-1 gap-4 px-5 py-5 sm:px-6 md:grid-cols-2'
 

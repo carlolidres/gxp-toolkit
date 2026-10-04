@@ -41,6 +41,7 @@ import {
   validationAreas,
   validationStatuses,
   VMP_OTHER_OPTION,
+  validateEquipmentProfileFields,
   type ValidationArea,
   type VmpMasterlistRecord,
 } from '../../lib/vmpMasterlist'
@@ -59,6 +60,15 @@ import {
 } from '../../lib/vmpResponsibleOwnerSuggestions'
 import { VMP_FORM_GRID_CLASS, VMP_SECTION_CARD_CLASS } from './vmp-form-shared'
 import './vmp-form-page.css'
+
+const EQUIPMENT_GRID_CLASS = `${VMP_FORM_GRID_CLASS} xl:grid-cols-3`
+
+function optionalNumber(value: string): number | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : null
+}
 
 function recordsEqual(a: VmpMasterlistRecord, b: VmpMasterlistRecord): boolean {
   return JSON.stringify(a) === JSON.stringify(b)
@@ -328,7 +338,9 @@ export function VmpMasterlistFormPage() {
 
   function validateRecord(record: VmpMasterlistRecord): string | null {
     if (!record.itemName.trim()) {
-      return 'Description is required before saving.'
+      return record.validationArea === 'Equipment'
+        ? 'Equipment is required before saving.'
+        : 'Description is required before saving.'
     }
     if (!record.recordId.trim()) {
       return 'Record ID could not be generated. Select a Validation Area and try again.'
@@ -363,6 +375,9 @@ export function VmpMasterlistFormPage() {
       const instrumentError = validateQcInstruments(record.qcInstruments ?? [])
       if (instrumentError) return instrumentError
     }
+
+    const equipmentError = validateEquipmentProfileFields(record)
+    if (equipmentError) return equipmentError
 
     const duplicate = records.some((row) => row.recordId === record.recordId && row.id !== record.id)
     if (duplicate) return 'Record ID must be unique across the masterlist.'
@@ -581,13 +596,15 @@ export function VmpMasterlistFormPage() {
             icon="clipboard-list"
           />
           <div className={VMP_FORM_GRID_CLASS}>
-            <FormInput
-              label="Description"
-              required
-              wide
-              value={formRecord.itemName}
-              onChange={(value) => setFormRecord((current) => current && { ...current, itemName: value })}
-            />
+            {isEquipment ? null : (
+              <FormInput
+                label="Description"
+                required
+                wide
+                value={formRecord.itemName}
+                onChange={(value) => setFormRecord((current) => current && { ...current, itemName: value })}
+              />
+            )}
             <FormSelect
               label="Validation Area"
               required
@@ -633,66 +650,7 @@ export function VmpMasterlistFormPage() {
               </>
             ) : null}
 
-            {isEquipment ? (
-              <>
-                <FormSelect
-                  label={departmentField.label}
-                  required
-                  value={departmentSelectValue}
-                  options={departmentField.options}
-                  searchable={departmentField.searchable}
-                  loading={optionsLoading}
-                  onChange={(value) => updateCascadeField('department', value)}
-                />
-                {departmentSelectValue === VMP_OTHER_OPTION ? (
-                  <FormInput
-                    label={otherSpecifyLabel(departmentField.label)}
-                    required
-                    value={departmentOtherValue}
-                    onChange={(value) => {
-                      setDepartmentOtherDraft(value)
-                      updateCascadeField('department', value || VMP_OTHER_OPTION)
-                    }}
-                  />
-                ) : null}
-                {renderGroupSubcategoryField(groupField.options.length > 0)}
-                <FormInput
-                  label="IL-tag No."
-                  value={formRecord.assetTagNo}
-                  onChange={(value) => setFormRecord((current) => current && { ...current, assetTagNo: value })}
-                />
-                {roomLineField.useDropdown ? (
-                  <>
-                    <FormSelect
-                      label={roomLineField.label}
-                      required
-                      value={roomLineSelectValue}
-                      options={roomLineField.options}
-                      searchable={roomLineField.searchable}
-                      loading={optionsLoading}
-                      onChange={(value) => updateCascadeField('roomLine', value)}
-                    />
-                    {roomLineSelectValue === VMP_OTHER_OPTION ? (
-                      <FormInput
-                        label={otherSpecifyLabel(roomLineField.label)}
-                        required
-                        value={roomLineOtherValue}
-                        onChange={(value) => {
-                          setRoomLineOtherDraft(value)
-                          updateCascadeField('roomLine', value || VMP_OTHER_OPTION)
-                        }}
-                      />
-                    ) : null}
-                  </>
-                ) : (
-                  <FormInput
-                    label={roomLineField.label}
-                    value={formRecord.roomLine}
-                    onChange={(value) => setFormRecord((current) => current && { ...current, roomLine: value })}
-                  />
-                )}
-              </>
-            ) : null}
+            {isEquipment ? renderGroupSubcategoryField(groupField.options.length > 0) : null}
 
             {!isFacilities && !isEquipment ? (
               <>
@@ -769,6 +727,191 @@ export function VmpMasterlistFormPage() {
             />
           </div>
         </section>
+
+        {isEquipment ? (
+          <>
+            <section className={VMP_SECTION_CARD_CLASS}>
+              <VmpFormSectionHeader
+                title="Equipment Identification"
+                description="Identity, location, and installation date for this equipment record."
+                icon="clipboard-list"
+              />
+              <div className={EQUIPMENT_GRID_CLASS}>
+                <FormInput
+                  label="Equipment"
+                  required
+                  value={formRecord.itemName}
+                  onChange={(value) => setFormRecord((current) => current && { ...current, itemName: value })}
+                />
+                <FormInput
+                  label="IL-Tag"
+                  required
+                  value={formRecord.assetTagNo}
+                  onChange={(value) => setFormRecord((current) => current && { ...current, assetTagNo: value })}
+                />
+                <FormSelect
+                  label="Department"
+                  required
+                  value={departmentSelectValue}
+                  options={departmentField.options}
+                  searchable={departmentField.searchable}
+                  loading={optionsLoading}
+                  onChange={(value) => updateCascadeField('department', value)}
+                />
+                {departmentSelectValue === VMP_OTHER_OPTION ? (
+                  <FormInput
+                    label={otherSpecifyLabel('Department')}
+                    required
+                    value={departmentOtherValue}
+                    onChange={(value) => {
+                      setDepartmentOtherDraft(value)
+                      updateCascadeField('department', value || VMP_OTHER_OPTION)
+                    }}
+                  />
+                ) : null}
+                {roomLineField.useDropdown ? (
+                  <>
+                    <FormSelect
+                      label="Section"
+                      required
+                      value={roomLineSelectValue}
+                      options={roomLineField.options}
+                      searchable={roomLineField.searchable}
+                      loading={optionsLoading}
+                      onChange={(value) => updateCascadeField('roomLine', value)}
+                    />
+                    {roomLineSelectValue === VMP_OTHER_OPTION ? (
+                      <FormInput
+                        label={otherSpecifyLabel('Section')}
+                        required
+                        value={roomLineOtherValue}
+                        onChange={(value) => {
+                          setRoomLineOtherDraft(value)
+                          updateCascadeField('roomLine', value || VMP_OTHER_OPTION)
+                        }}
+                      />
+                    ) : null}
+                  </>
+                ) : (
+                  <FormInput
+                    label="Section"
+                    value={formRecord.roomLine}
+                    onChange={(value) => setFormRecord((current) => current && { ...current, roomLine: value })}
+                  />
+                )}
+                <FormInput
+                  label="Date of Installation"
+                  type="date"
+                  value={formRecord.dateOfInstallation}
+                  onChange={(value) => setFormRecord((current) => current && { ...current, dateOfInstallation: value })}
+                />
+              </div>
+            </section>
+
+            <section className={VMP_SECTION_CARD_CLASS}>
+              <VmpFormSectionHeader
+                title="Equipment Capacity and Process"
+                description="Capacity, unit operation, and verified operating limits."
+                icon="document"
+              />
+              <div className={EQUIPMENT_GRID_CLASS}>
+                <FormInput
+                  label="Capacity / Quantity"
+                  value={formRecord.capacityQuantity}
+                  placeholder="e.g. 500 L"
+                  onChange={(value) => setFormRecord((current) => current && { ...current, capacityQuantity: value })}
+                />
+                <FormInput
+                  label="Unit Operation"
+                  value={formRecord.unitOperation}
+                  onChange={(value) => setFormRecord((current) => current && { ...current, unitOperation: value })}
+                />
+                <FormTextarea
+                  label="Verified Speed Limits / Temp. Limits"
+                  wide
+                  value={formRecord.verifiedOperatingLimits}
+                  onChange={(value) =>
+                    setFormRecord((current) => current && { ...current, verifiedOperatingLimits: value })
+                  }
+                />
+              </div>
+            </section>
+
+            <section className={VMP_SECTION_CARD_CLASS}>
+              <VmpFormSectionHeader
+                title="Product Contact Parts"
+                description="Parts that contact the bulk product, their material, and surface area."
+                icon="document"
+              />
+              <div className={EQUIPMENT_GRID_CLASS}>
+                <FormTextarea
+                  label="Parts with direct contact on bulk"
+                  wide
+                  value={formRecord.directContactParts}
+                  onChange={(value) => setFormRecord((current) => current && { ...current, directContactParts: value })}
+                />
+                <FormInput
+                  label="MOC"
+                  value={formRecord.moc}
+                  onChange={(value) => setFormRecord((current) => current && { ...current, moc: value })}
+                />
+                <FormInput
+                  label="Total Surface Area"
+                  type="number"
+                  min={0}
+                  step="any"
+                  helper="Non-negative number in the site area unit."
+                  value={formRecord.totalSurfaceArea == null ? '' : String(formRecord.totalSurfaceArea)}
+                  onChange={(value) =>
+                    setFormRecord((current) => current && { ...current, totalSurfaceArea: optionalNumber(value) })
+                  }
+                />
+              </div>
+            </section>
+
+            <section className={VMP_SECTION_CARD_CLASS}>
+              <VmpFormSectionHeader
+                title="Equipment Risk / Cleaning Characteristics"
+                description="Ratings used for cleaning and hard-to-reach assessment."
+                icon="info"
+              />
+              <div className={EQUIPMENT_GRID_CLASS}>
+                <FormInput
+                  label="MOC Rating"
+                  type="number"
+                  min={0}
+                  step="any"
+                  helper="Non-negative number."
+                  value={formRecord.mocRating == null ? '' : String(formRecord.mocRating)}
+                  onChange={(value) =>
+                    setFormRecord((current) => current && { ...current, mocRating: optionalNumber(value) })
+                  }
+                />
+                <FormInput
+                  label="Surface Area Rating"
+                  type="number"
+                  min={0}
+                  step="any"
+                  helper="Non-negative number."
+                  value={formRecord.surfaceAreaRating == null ? '' : String(formRecord.surfaceAreaRating)}
+                  onChange={(value) =>
+                    setFormRecord((current) => current && { ...current, surfaceAreaRating: optionalNumber(value) })
+                  }
+                />
+                <FormInput
+                  label="Number of Hard-to-Reach Areas"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={formRecord.hardToReachAreaCount == null ? '' : String(formRecord.hardToReachAreaCount)}
+                  onChange={(value) =>
+                    setFormRecord((current) => current && { ...current, hardToReachAreaCount: optionalNumber(value) })
+                  }
+                />
+              </div>
+            </section>
+          </>
+        ) : null}
 
         <section className={VMP_SECTION_CARD_CLASS}>
           <VmpFormSectionHeader

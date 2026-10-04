@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock3,
+  CreditCard,
   FilePlus,
   FileText,
   FolderOpen,
@@ -13,6 +14,7 @@ import {
 
 import { EdocError, EdocLoading, EdocPage, formatEdocDate } from '../../components/edoc/EdocComponents'
 import { EdocProfileCompletionGate } from '../../components/edoc/EdocProfileCompletionGate'
+import { isBillingEnabled } from '../../features/edoc/billing/billingFlags'
 import {
   buildNeedsMyActionQueue,
   EDOC_ACTION_FILTER_LABELS,
@@ -80,6 +82,18 @@ export function EdocDashboardPage() {
             <Link to="/edoc/my-documents" className="button secondary">
               <FileText size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />
               My Documents
+            </Link>
+          ) : null}
+          {isBillingEnabled() ? (
+            <Link to="/settings/billing" className="button secondary">
+              <CreditCard size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />
+              Billing
+            </Link>
+          ) : null}
+          {isBillingEnabled() ? (
+            <Link to="/pricing" className="button secondary">
+              <CreditCard size={iconSize.sm} strokeWidth={iconStroke} aria-hidden />
+              Pricing
             </Link>
           ) : null}
         </div>

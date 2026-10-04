@@ -1,31 +1,28 @@
 # Active Plan
 
-Last Updated: `2026-08-04`
+Last Updated: `2026-09-12`
 
 Plan Owner: `Cursor`
 
-Status: `IN PROGRESS` → Phase 1 software complete; validation package deferred
+Status: `IN_PROGRESS` — CPV Phase 3–4 encode screens are in the product workspace. PayMongo remains additive behind `ENABLE_PAYMONGO=false`.
 
-Active visual/requirements plan: `plans/edoc-integrity-verification/plan.md`
+Active visual/requirements plan: `plans/cpv-continuous-process-verification/plan.md`  
+Source blueprint: `reference/CPV_CURSOR_IMPLEMENTATION_SPEC.md`  
+PayMongo plan (unchanged): `plans/edoc-paymongo-gotyme/plan.md`
 
 ## Objective
 
-Deliver Phase 1 eDoc integrity footers, page codes, signature verify links/QR, and public verification without claiming FDA certification. Add PDF zoom on document/workspace preview.
+Make the CPV sidebar menus usable: Product Profile, Protocol, Report, and Audit Trail, with SQLite-first schema and in-memory persistence until Supabase migration is approved.
 
-## Done (Phase 1)
+## This slice
 
-1. Canonicalization helpers + unit tests  
-2. Finalize: footers, links, QR, page-code persistence, audit events  
-3. Migration + `edoc_public_verify_certificate` RPC  
-4. Public verify page + hash upload compare  
-5. Staging migrate + finalize deploy  
-6. PDF zoom in/out (document view + signing workspace)  
-7. URS §1–§9 mapped in plan (software vs deferred)
+- Product Profile lists unique APQR Database products. Clicking a code opens the workspace in this tab.
+- Phase 3: RM, PM, Equipment/Rooms/Lines, IPC, AR encode against `cpv_product_batches.id`.
+- Phase 4: Stability, Hold-Time, CNF, Complaints, Deviations, Process Improvements are independently created and may link batches.
+- Protocol and report draft → submit → approve with C13/C14 and frozen report snapshots.
+- Append-only CPV audit viewer (not APQR localStorage).
+- `VITE_ENABLE_CPV`: production default off; local `npm run dev` shows CPV unless set false.
 
-## Remaining / deferred
+## Next
 
-- PAdES / TSA  
-- Full URS / RTM / IQ-OQ-PQ / VSR  
-- MFA policy, WORM storage, CDN bot protection  
-- Live E2E finalize smoke by owner  
-- Exhaustive audit-event catalog gaps (separate backlog)  
+Phase 5 polish (alerts, capability method if owner later approves). Keep PayMongo flags off until staging secrets exist. No Supabase CPV migration (C16).

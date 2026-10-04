@@ -14,6 +14,8 @@ export function ApqrSearchableCombobox({
   createLabel = (next) => `Add “${next}”`,
   onChange,
   onCommit,
+  onRemove,
+  canRemove,
 }: {
   id?: string
   value: string
@@ -24,6 +26,8 @@ export function ApqrSearchableCombobox({
   createLabel?: (value: string) => string
   onChange: (value: string) => void
   onCommit?: (value: string) => void
+  onRemove?: (value: string) => void
+  canRemove?: (value: string) => boolean
 }) {
   const autoId = useId()
   const inputId = idProp ?? autoId
@@ -203,7 +207,23 @@ export function ApqrSearchableCombobox({
                   <span>{createLabel(item.value)}</span>
                 </>
               ) : (
-                item.value
+                <>
+                  <span className="apqr-combobox-option-label">{item.value}</span>
+                  {onRemove && canRemove?.(item.value) ? (
+                    <button
+                      type="button"
+                      className="apqr-combobox-remove"
+                      aria-label={`Remove ${item.value}`}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onRemove(item.value)
+                      }}
+                    >
+                      <ApqrIcon name="trash" />
+                    </button>
+                  ) : null}
+                </>
               )}
             </li>
           ))}

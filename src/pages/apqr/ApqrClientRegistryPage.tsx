@@ -10,6 +10,7 @@ import { useColumnResize } from '../../hooks/useColumnResize'
 import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { listAccountManagerSuggestions, saveClient } from '../../features/apqr/apqrService'
 import {
+  forgetAccountManager,
   mergeAccountManagerSuggestions,
   rememberAccountManager,
 } from '../../features/apqr/accountManagerSuggestions'
@@ -253,6 +254,14 @@ export function ApqrClientRegistryPage() {
                 onChange={(account_manager) => setForm({ ...form, account_manager })}
                 onCommit={(value) => {
                   rememberAccountManager(value)
+                  setSavedAccountManagers(mergeAccountManagerSuggestions())
+                }}
+                canRemove={() => true}
+                onRemove={(value) => {
+                  forgetAccountManager(value)
+                  if (form.account_manager.trim().toLowerCase() === value.trim().toLowerCase()) {
+                    setForm({ ...form, account_manager: '' })
+                  }
                   setSavedAccountManagers(mergeAccountManagerSuggestions())
                 }}
               />

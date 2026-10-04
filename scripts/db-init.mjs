@@ -24,6 +24,8 @@ function runInit() {
   const edocSeedPath = join(ROOT, 'database', 'sqlite', 'edoc_seed.sql')
   const apqrSchemaPath = join(ROOT, 'database', 'sqlite', 'apqr_schema.sql')
   const apqrSeedPath = join(ROOT, 'database', 'sqlite', 'apqr_seed.sql')
+  const cpvSchemaPath = join(ROOT, 'database', 'sqlite', 'cpv_schema.sql')
+  const cpvSeedPath = join(ROOT, 'database', 'sqlite', 'cpv_seed.sql')
 
   if (!existsSync(schemaPath)) {
     console.error('Missing database/sqlite/schema.sql')
@@ -36,9 +38,11 @@ function runInit() {
     `.read ${read(schemaPath)}`,
     `.read ${read(edocSchemaPath)}`,
     `.read ${read(apqrSchemaPath)}`,
+    `.read ${read(cpvSchemaPath)}`,
     `.read ${read(seedPath)}`,
     `.read ${read(edocSeedPath)}`,
     `.read ${read(apqrSeedPath)}`,
+    `.read ${read(cpvSeedPath)}`,
   ]
   const result = spawnSync('sqlite3', args, { encoding: 'utf8', cwd: ROOT, shell: true })
 

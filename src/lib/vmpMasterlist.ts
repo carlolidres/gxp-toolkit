@@ -62,7 +62,35 @@ export interface VmpHistoryEvent {
   reason: string
 }
 
-export interface VmpMasterlistRecord {
+export interface VmpEquipmentProfileFields {
+  capacityQuantity: string
+  unitOperation: string
+  verifiedOperatingLimits: string
+  directContactParts: string
+  moc: string
+  totalSurfaceArea: number | null
+  mocRating: number | null
+  surfaceAreaRating: number | null
+  hardToReachAreaCount: number | null
+  dateOfInstallation: string
+}
+
+export function emptyEquipmentProfileFields(): VmpEquipmentProfileFields {
+  return {
+    capacityQuantity: '',
+    unitOperation: '',
+    verifiedOperatingLimits: '',
+    directContactParts: '',
+    moc: '',
+    totalSurfaceArea: null,
+    mocRating: null,
+    surfaceAreaRating: null,
+    hardToReachAreaCount: null,
+    dateOfInstallation: '',
+  }
+}
+
+export interface VmpMasterlistRecord extends VmpEquipmentProfileFields {
   id: string
   recordId: string
   itemName: string
@@ -172,12 +200,14 @@ function auditToday(): string {
 /** Migrate legacy seed shape into flattened record. */
 function seedRecord(
   legacyId: string,
-  partial: Omit<VmpMasterlistRecord, 'id' | 'recordId' | 'qcInstruments'> & {
-    recordId?: string
-    qcInstruments?: VmpQcInstrument[]
-  },
+  partial: Omit<VmpMasterlistRecord, 'id' | 'recordId' | 'qcInstruments' | keyof VmpEquipmentProfileFields> &
+    Partial<VmpEquipmentProfileFields> & {
+      recordId?: string
+      qcInstruments?: VmpQcInstrument[]
+    },
 ): VmpMasterlistRecord {
   return {
+    ...emptyEquipmentProfileFields(),
     id: internalId(),
     recordId: partial.recordId ?? legacyId,
     ...partial,
@@ -371,7 +401,13 @@ export function buildSearchHaystack(record: VmpMasterlistRecord): string {
     record.reportTracer,
     record.department,
     record.group,
+    record.roomLine,
     record.responsibleOwner,
+    record.capacityQuantity,
+    record.unitOperation,
+    record.verifiedOperatingLimits,
+    record.directContactParts,
+    record.moc,
   ]
     .join(' ')
     .toLowerCase()
@@ -458,6 +494,7 @@ export function createDraftVmpRecord(records: VmpMasterlistRecord[], actor: stri
   )
 
   return {
+    ...emptyEquipmentProfileFields(),
     id: internalId(),
     recordId,
     itemName: '',
@@ -506,6 +543,39 @@ export function createHistoryEvent(
     currentValue,
     reason,
   }
+}
+
+export function validateEquipmentProfileFields(
+  record: Pick<
+    VmpMasterlistRecord,
+    | 'validationArea'
+    | 'assetTagNo'
+    | 'totalSurfaceArea'
+    | 'mocRating'
+    | 'surfaceAreaRating'
+    | 'hardToReachAreaCount'
+    | 'dateOfInstallation'
+  >,
+): string | null {
+  if (record.validationArea !== 'Equipment') return null
+  if (!record.assetTagNo.trim()) return 'IL-Tag is required.'
+  if (record.totalSurfaceArea != null && record.totalSurfaceArea < 0) {
+    return 'Total Surface Area cannot be negative.'
+  }
+  if (record.mocRating != null && record.mocRating < 0) return 'MOC Rating cannot be negative.'
+  if (record.surfaceAreaRating != null && record.surfaceAreaRating < 0) {
+    return 'Surface Area Rating cannot be negative.'
+  }
+  if (
+    record.hardToReachAreaCount != null &&
+    (!Number.isInteger(record.hardToReachAreaCount) || record.hardToReachAreaCount < 0)
+  ) {
+    return 'Number of Hard-to-Reach Areas must be a whole number of 0 or more.'
+  }
+  if (record.dateOfInstallation && Number.isNaN(Date.parse(`${record.dateOfInstallation}T00:00:00`))) {
+    return 'Date of Installation must be a valid date.'
+  }
+  return null
 }
 
 // ponytail: legacy helper kept for import migration only

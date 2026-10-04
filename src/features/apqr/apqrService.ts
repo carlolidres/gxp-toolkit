@@ -7,6 +7,7 @@ import {
   logApqrAudit,
 } from './apqrAudit'
 import { resolveApqrIdYear } from './apqrDashboard'
+import { clientUpdatesForProductCycles, departmentUpdatesForProductCycles, normalizeApqrProductIdentity } from './apqrFormLookup'
 import { generateUniqueApqrId } from './apqrId'
 import {
   deliveryFieldsFromInput,
@@ -597,7 +598,7 @@ export async function saveSchedulerRows(
     const createdRecord: ApqrRecord = {
       id: `apqr-rec-${String(seq).padStart(5, '0')}`,
       scheduler_entry_id: schedId,
-      department: null,
+      department: latestDepartmentForProduct(productCode),
       stability_tabulation_status: null,
       stability_tabulation_status_date: null,
       no_ongoing_stability_justification: null,
@@ -690,6 +691,144 @@ export async function getRecordByApqrId(apqrId: string) {
   const client = clientById(sched.client_id)
   const record = recordBySchedulerId(sched.id)
   return { sched, client, record }
+}
+
+function productCycles(productCode: string) {
+  const code = productCode.trim().toUpperCase()
+  if (!code) return []
+  return schedulerEntries
+    .filter((entry) => entry.is_active && entry.product_code.trim().toUpperCase() === code)
+    .map((entry) => {
+      const record = recordBySchedulerId(entry.id)
+      return {
+        entry,
+        record,
+        apqrId: entry.apqr_id,
+        department: record?.department ?? null,
+        updatedAt: record?.updated_at ?? entry.updated_at,
+        clientId: entry.client_id,
+      }
+    })
+}
+
+function latestDepartmentForProduct(productCode: string): string | null {
+  return (
+    productCycles(productCode)
+      .filter((cycle) => cycle.department?.trim())
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]
+      ?.department?.trim() || null
+  )
+}
+
+async function writeSharedDepartment(
+  cycles: ReturnType<typeof productCycles>,
+  updates: { apqrId: string; department: string | null }[],
+): Promise<boolean> {
+  if (!updates.length) return false
+  const ts = nowIso()
+  let wrote = false
+  for (const update of updates) {
+    const cycle = cycles.find((item) => item.apqrId === update.apqrId)
+    if (!cycle?.record) continue
+    const recordIdx = records.findIndex((item) => item.id === cycle.record!.id)
+    if (recordIdx === -1) continue
+    const previous = records[recordIdx]
+    const next = { ...previous, department: update.department, updated_at: ts }
+    records[recordIdx] = next
+    await auditFieldChanges('record', next.id, cycle.apqrId, previous, next, [
+      { key: 'department', label: 'Department' },
+    ])
+    try {
+      await persistRecord(next, 'update')
+    } catch (err) {
+      await resyncAfterPersistFailure()
+      throw err
+    }
+    wrote = true
+  }
+  return wrote
+}
+
+async function writeSharedClient(cycles: ReturnType<typeof productCycles>, apqrIds: string[]): Promise<boolean> {
+  const clientId = cycles.find((cycle) => !apqrIds.includes(cycle.apqrId))?.clientId
+  if (!apqrIds.length || !clientId) return false
+  const ts = nowIso()
+  for (const apqrId of apqrIds) {
+    const cycle = cycles.find((item) => item.apqrId === apqrId)
+    if (!cycle) continue
+    const idx = schedulerEntries.findIndex((item) => item.id === cycle.entry.id)
+    if (idx === -1) continue
+    const previous = schedulerEntries[idx]
+    const next = { ...previous, client_id: clientId, updated_at: ts }
+    schedulerEntries[idx] = next
+    const previousName = clientById(previous.client_id)?.client_name ?? previous.client_id
+    const nextName = clientById(clientId)?.client_name ?? clientId
+    await logApqrAudit({
+      entity_type: 'scheduler',
+      entity_id: next.id,
+      entity_label: next.apqr_id,
+      field_name: 'client_id',
+      old_value: previousName,
+      new_value: nextName,
+      action_type: 'updated',
+      description: buildFieldDescription('updated', next.apqr_id, 'Client', previousName, nextName),
+    })
+    try {
+      await persistSchedulerEntry(next, 'update')
+    } catch (err) {
+      await resyncAfterPersistFailure()
+      throw err
+    }
+  }
+  return true
+}
+
+/** Writes one product name and code onto every active cycle of that product. */
+export async function saveApqrProductIdentity(
+  currentCode: string,
+  input: { product_name: string; product_code: string },
+): Promise<void> {
+  await ensureApqrDataLoaded()
+  const cycles = productCycles(currentCode)
+  if (!cycles.length) throw new Error('APQR product not found.')
+  const next = normalizeApqrProductIdentity(
+    currentCode,
+    input.product_name,
+    input.product_code,
+    schedulerEntries.filter((entry) => entry.is_active).map((entry) => entry.product_code),
+  )
+  const ts = nowIso()
+  for (const cycle of cycles) {
+    const idx = schedulerEntries.findIndex((item) => item.id === cycle.entry.id)
+    if (idx === -1) continue
+    const previous = schedulerEntries[idx]
+    if (previous.product_name === next.product_name && previous.product_code === next.product_code) continue
+    const updated = { ...previous, product_name: next.product_name, product_code: next.product_code, updated_at: ts }
+    schedulerEntries[idx] = updated
+    await auditFieldChanges('scheduler', previous.id, previous.apqr_id, previous, updated, [
+      { key: 'product_name', label: 'Product Name' },
+      { key: 'product_code', label: 'Product Code' },
+    ])
+    try {
+      await persistSchedulerEntry(updated, 'update')
+    } catch (err) {
+      await resyncAfterPersistFailure()
+      throw err
+    }
+  }
+}
+
+/** Copies this cycle's client, and any known department, onto the product's other cycles. */
+export async function shareProductIdentity(apqrId: string): Promise<boolean> {
+  const match = await getRecordByApqrId(apqrId)
+  if (!match?.sched) return false
+  const cycles = productCycles(match.sched.product_code)
+  const departmentChanged = await writeSharedDepartment(
+    cycles,
+    departmentUpdatesForProductCycles(cycles, apqrId),
+  )
+  const clientChanged = await writeSharedClient(cycles, clientUpdatesForProductCycles(cycles, apqrId))
+  return departmentChanged || clientChanged
 }
 
 export async function saveRecord(apqrId: string, input: ApqrRecordInput): Promise<void> {
@@ -789,6 +928,10 @@ export async function saveRecord(apqrId: string, input: ApqrRecordInput): Promis
   } catch (err) {
     await resyncAfterPersistFailure()
     throw err
+  }
+  if (Object.prototype.hasOwnProperty.call(input, 'department')) {
+    const cycles = productCycles(match.sched.product_code)
+    await writeSharedDepartment(cycles, departmentUpdatesForProductCycles(cycles, apqrId, updated.department))
   }
 }
 

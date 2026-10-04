@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import type { PermissionAction } from '../config/navigationRegistry'
 import { filterNavigationGroups } from '../lib/permissions'
+import { isCpvEnabled } from '../features/cpv/cpvFlags'
 import { isSupabaseTableAuthError } from '../lib/supabaseAuth'
 import { authService } from '../services/authService'
 import { userManagementService } from '../services/userManagementService'
@@ -89,7 +90,9 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       permissionsReady: authReady && ready,
       can: (action, menuId) => hasPermission(permissions, menuId, action),
       canViewMenu: (menuId) => canViewMenuFor(permissions, menuId),
-      accessibleNavigationGroups: filterNavigationGroups(permissions),
+      accessibleNavigationGroups: filterNavigationGroups(permissions).filter(
+        (group) => group.id !== 'cpv' || isCpvEnabled(),
+      ),
       refreshPermissions,
     }),
     [authReady, ready, permissions, refreshPermissions],

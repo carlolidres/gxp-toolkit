@@ -1,10 +1,10 @@
-# SQLite Schema Report — GxP Toolkit (2026-08-01)
+# SQLite Schema Report — GxP Toolkit (2026-10-03)
 
 ## Summary
-- Source: `database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql`
+- Source: `database/sqlite/schema.sql + database/sqlite/edoc_schema.sql + database/sqlite/apqr_schema.sql + database/sqlite/cpv_schema.sql`
 - Schema version: **unknown**
-- Tables: **32** · Foreign keys: **76** · Indexes: **27**
-- Generated: 2026-08-01T07:43:41.168Z
+- Tables: **63** · Foreign keys: **116** · Indexes: **60**
+- Generated: 2026-10-03T12:28:01.334Z
 
 ## Agent Usage
 
@@ -88,6 +88,16 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `criticality` | TEXT | NO |  |  |  |  |  |
 | `responsible_owner` | TEXT | YES |  |  |  |  |  |
 | `remarks` | TEXT | YES |  |  |  |  |  |
+| `capacity_quantity` | TEXT | YES |  |  |  |  |  |
+| `unit_operation` | TEXT | YES |  |  |  |  |  |
+| `verified_operating_limits` | TEXT | YES |  |  |  |  |  |
+| `direct_contact_parts` | TEXT | YES |  |  |  |  |  |
+| `moc` | TEXT | YES |  |  |  |  |  |
+| `total_surface_area` | REAL | YES |  |  |  |  |  |
+| `moc_rating` | REAL | YES |  |  |  |  |  |
+| `surface_area_rating` | REAL | YES |  |  |  |  |  |
+| `hard_to_reach_area_count` | INTEGER | YES |  |  |  |  |  |
+| `date_of_installation` | TEXT | YES |  |  |  |  |  |
 | `is_draft` | INTEGER | NO |  |  | 0 |  |  |
 | `is_archived` | INTEGER | NO |  |  | 0 |  |  |
 | `version` | INTEGER | NO |  |  | 1 |  |  |
@@ -180,11 +190,13 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `business_unit_name` | TEXT | YES |  |  |  |  |  |
 | `membership_role` | TEXT | NO |  |  | 'member' | `membership_role IN ('owner', 'admin', 'c…` |  |
 | `status` | TEXT | NO |  |  | 'active' | `status IN ('active', 'invited', 'suspend…` |  |
+| `counts_toward_seat` | INTEGER | NO |  |  | 0 | `counts_toward_seat IN (0, 1)` |  |
 | `created_at` | TEXT | NO |  |  |  |  |  |
 
 **CHECK constraints:**
 - `membership_role IN ('owner', 'admin', 'controller', 'auditor', 'member')`
 - `status IN ('active', 'invited', 'suspended')`
+- `counts_toward_seat IN (0, 1)`
 
 ### `edoc_documents`
 
@@ -547,6 +559,204 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `setting_value` | TEXT | NO |  |  | '{}' |  |  |
 | `updated_at` | TEXT | NO |  |  |  |  |  |
 
+### `edoc_page_integrity_codes`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `organization_id` | TEXT | NO |  |  |  |  | `edoc_organizations.id` |
+| `document_id` | TEXT | NO |  |  |  |  | `edoc_documents.id` ON DELETE CASCADE |
+| `version_id` | TEXT | NO |  |  |  |  | `edoc_document_versions.id` ON DELETE CASCADE |
+| `route_id` | TEXT | NO |  |  |  |  | `edoc_document_routes.id` ON DELETE CASCADE |
+| `certificate_id` | TEXT | NO |  |  |  |  | `edoc_completion_certificates.id` ON DELETE CASCADE |
+| `page_number` | INTEGER | NO |  |  |  | `page_number > 0` |  |
+| `algorithm` | TEXT | NO |  |  | 'edoc-page-integrity-v1' |  |  |
+| `page_content_sha256` | TEXT | NO |  |  |  |  |  |
+| `page_integrity_code` | TEXT | NO |  |  |  |  |  |
+| `page_integrity_code_display` | TEXT | NO |  |  |  |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+
+**CHECK constraints:**
+- `page_number > 0`
+
+### `edoc_verification_lookups`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `verification_code` | TEXT | NO |  |  |  |  |  |
+| `certificate_id` | TEXT | YES |  |  |  |  | `edoc_completion_certificates.id` |
+| `result_status` | TEXT | NO |  |  |  |  |  |
+| `uploaded_sha256` | TEXT | YES |  |  |  |  |  |
+| `matched` | INTEGER | YES |  |  |  |  |  |
+| `source_ip` | TEXT | YES |  |  |  |  |  |
+| `user_agent` | TEXT | YES |  |  |  |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+
+### `edoc_subscription_plans`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `code` | TEXT | NO |  | YES |  |  |  |
+| `name` | TEXT | NO |  |  |  |  |  |
+| `billing_interval` | TEXT | NO |  |  |  | `billing_interval IN ('none', 'month', 'y…` |  |
+| `paddle_product_id` | TEXT | YES |  |  |  |  |  |
+| `paddle_price_id` | TEXT | YES |  |  |  |  |  |
+| `paymongo_plan_id` | TEXT | YES |  |  |  |  |  |
+| `amount_minor` | INTEGER | YES |  |  |  |  |  |
+| `php_amount_minor` | INTEGER | YES |  |  |  |  |  |
+| `currency` | TEXT | NO |  |  | 'USD' |  |  |
+| `is_active` | INTEGER | NO |  |  | 1 | `is_active IN (0, 1)` |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+
+**CHECK constraints:**
+- `billing_interval IN ('none', 'month', 'year')`
+- `is_active IN (0, 1)`
+
+### `edoc_plan_entitlements`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `plan_id` | TEXT | NO |  |  |  |  | `edoc_subscription_plans.id` ON DELETE CASCADE |
+| `entitlement_key` | TEXT | NO |  |  |  |  |  |
+| `value_type` | TEXT | NO |  |  |  | `value_type IN ('numeric', 'boolean', 'te…` |  |
+| `numeric_value` | INTEGER | YES |  |  |  |  |  |
+| `boolean_value` | INTEGER | YES |  |  |  | `boolean_value IN (0, 1)` |  |
+| `text_value` | TEXT | YES |  |  |  |  |  |
+
+**CHECK constraints:**
+- `value_type IN ('numeric', 'boolean', 'text')`
+- `boolean_value IN (0, 1)`
+
+### `edoc_billing_customers`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `organization_id` | TEXT | NO |  | YES |  |  | `edoc_organizations.id` ON DELETE CASCADE |
+| `provider` | TEXT | NO |  |  | 'paddle' |  |  |
+| `provider_customer_id` | TEXT | NO |  | YES |  |  |  |
+| `email` | TEXT | YES |  |  |  |  |  |
+| `country_code` | TEXT | YES |  |  |  |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+
+### `edoc_subscriptions`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `organization_id` | TEXT | NO |  |  |  |  | `edoc_organizations.id` ON DELETE CASCADE |
+| `plan_id` | TEXT | NO |  |  |  |  | `edoc_subscription_plans.id` |
+| `provider` | TEXT | NO |  |  | 'paddle' |  |  |
+| `provider_customer_id` | TEXT | YES |  |  |  |  |  |
+| `provider_subscription_id` | TEXT | YES |  | YES |  |  |  |
+| `status` | TEXT | NO |  |  |  | `status IN (
+                            …` |  |
+| `current_period_start` | TEXT | YES |  |  |  |  |  |
+| `current_period_end` | TEXT | YES |  |  |  |  |  |
+| `scheduled_change_type` | TEXT | YES |  |  |  |  |  |
+| `scheduled_change_at` | TEXT | YES |  |  |  |  |  |
+| `cancel_at_period_end` | INTEGER | NO |  |  | 0 | `cancel_at_period_end IN (0, 1)` |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+
+**Indexes:**
+- `idx_edoc_subscriptions_org` (organization_id) UNIQUE
+
+**CHECK constraints:**
+- `status IN (
+                               'FREE', 'PENDING', 'TRIALING', 'ACTIV…`
+- `cancel_at_period_end IN (0, 1)`
+
+### `edoc_usage_counters`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `organization_id` | TEXT | NO |  |  |  |  | `edoc_organizations.id` ON DELETE CASCADE |
+| `metric_key` | TEXT | NO |  |  |  |  |  |
+| `period_start` | TEXT | NO |  |  |  |  |  |
+| `period_end` | TEXT | NO |  |  |  |  |  |
+| `used_quantity` | INTEGER | NO |  |  | 0 |  |  |
+
+**Indexes:**
+- `idx_edoc_usage_org_metric` (organization_id, metric_key)
+
+### `edoc_billing_events`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `provider` | TEXT | NO |  |  | 'paddle' |  |  |
+| `provider_event_id` | TEXT | NO |  |  |  |  |  |
+| `event_type` | TEXT | NO |  |  |  |  |  |
+| `received_at` | TEXT | NO |  |  |  |  |  |
+| `processed_at` | TEXT | YES |  |  |  |  |  |
+| `processing_status` | TEXT | NO |  |  |  | `processing_status IN (
+                 …` |  |
+| `payload_json` | TEXT | NO |  |  | '{}' |  |  |
+
+**Indexes:**
+- `idx_edoc_billing_events_status` (processing_status, received_at)
+
+**CHECK constraints:**
+- `processing_status IN (
+                        'RECEIVED', 'PROCESSING', 'PROCES…`
+
+### `edoc_billing_transactions`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `organization_id` | TEXT | NO |  |  |  |  | `edoc_organizations.id` |
+| `provider` | TEXT | NO |  |  | 'paddle' |  |  |
+| `provider_transaction_id` | TEXT | NO |  | YES |  |  |  |
+| `amount_minor` | INTEGER | YES |  |  |  |  |  |
+| `currency` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | YES |  |  |  |  |  |
+| `occurred_at` | TEXT | NO |  |  |  |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+
+### `edoc_billing_runtime`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  | `id = 'default'` |  |
+| `billing_enabled` | INTEGER | NO |  |  | 0 | `billing_enabled IN (0, 1)` |  |
+| `free_plan_limits_enabled` | INTEGER | NO |  |  | 0 | `free_plan_limits_enabled IN (0, 1)` |  |
+| `paddle_checkout_enabled` | INTEGER | NO |  |  | 0 | `paddle_checkout_enabled IN (0, 1)` |  |
+| `paymongo_checkout_enabled` | INTEGER | NO |  |  | 0 | `paymongo_checkout_enabled IN (0, 1)` |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+
+**CHECK constraints:**
+- `id = 'default'`
+- `billing_enabled IN (0, 1)`
+- `free_plan_limits_enabled IN (0, 1)`
+- `paddle_checkout_enabled IN (0, 1)`
+- `paymongo_checkout_enabled IN (0, 1)`
+
+### `edoc_billing_reconcile_runs`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `started_at` | TEXT | NO |  |  |  |  |  |
+| `finished_at` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  |  | `status IN ('SKIPPED', 'OK', 'ERROR')` |  |
+| `checked_count` | INTEGER | NO |  |  | 0 |  |  |
+| `mismatch_count` | INTEGER | NO |  |  | 0 |  |  |
+| `repaired_count` | INTEGER | NO |  |  | 0 |  |  |
+| `failed_event_count` | INTEGER | NO |  |  | 0 |  |  |
+| `past_due_count` | INTEGER | NO |  |  | 0 |  |  |
+| `summary_json` | TEXT | NO |  |  | '{}' |  |  |
+
+**CHECK constraints:**
+- `status IN ('SKIPPED', 'OK', 'ERROR')`
+
 ### `apqr_clients`
 
 | Column | Type | Null | PK | Unique | Default | Check | References |
@@ -700,6 +910,518 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `year` | INTEGER | NO | YES |  |  |  |  |
 | `last_number` | INTEGER | NO |  |  | 0 |  |  |
 
+### `cpv_products`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `product_code` | TEXT | NO |  | YES |  |  |  |
+| `product_name` | TEXT | NO |  |  |  |  |  |
+| `generic_name` | TEXT | YES |  |  |  |  |  |
+| `dosage_form` | TEXT | NO |  |  |  |  |  |
+| `strength` | TEXT | YES |  |  |  |  |  |
+| `batch_size` | TEXT | YES |  |  |  |  |  |
+| `batch_size_unit` | TEXT | YES |  |  |  |  |  |
+| `alternate_batch_sizes` | TEXT | YES |  |  |  |  |  |
+| `report_entries` | TEXT | YES |  |  |  |  |  |
+| `hold_entries` | TEXT | YES |  |  |  |  |  |
+| `cpp_monitoring` | TEXT | YES |  |  |  |  |  |
+| `client_owner` | TEXT | YES |  |  |  |  |  |
+| `manufacturing_site` | TEXT | YES |  |  |  |  |  |
+| `packaging_site` | TEXT | YES |  |  |  |  |  |
+| `markets` | TEXT | YES |  |  |  |  |  |
+| `registration_number` | TEXT | YES |  |  |  |  |  |
+| `review_frequency` | TEXT | NO |  |  | 'Annual' | `review_frequency IN ('Monthly', 'Quarter…` |  |
+| `pv_protocol_ref` | TEXT | YES |  |  |  |  |  |
+| `pv_report_ref` | TEXT | YES |  |  |  |  |  |
+| `effective_date` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  | 'Draft' | `status IN ('Draft', 'Active', 'Retired')` |  |
+| `retire_reason` | TEXT | YES |  |  |  |  |  |
+| `proposed_posture` | TEXT | NO |  |  | 'Not Assessed' | `proposed_posture IN ('Not Assessed', 'In…` |  |
+| `official_posture` | TEXT | NO |  |  | 'Not Assessed' | `official_posture IN ('Not Assessed', 'In…` |  |
+| `official_posture_rationale` | TEXT | YES |  |  |  |  |  |
+| `official_posture_approved_by` | TEXT | YES |  |  |  |  |  |
+| `official_posture_approved_at` | TEXT | YES |  |  |  |  |  |
+| `review_period_start` | TEXT | YES |  |  |  |  |  |
+| `review_period_end` | TEXT | YES |  |  |  |  |  |
+| `next_review_due` | TEXT | YES |  |  |  |  |  |
+| `last_assessment_at` | TEXT | YES |  |  |  |  |  |
+| `row_version` | INTEGER | NO |  |  | 1 |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+| `created_by` | TEXT | YES |  |  |  |  |  |
+| `updated_by` | TEXT | YES |  |  |  |  |  |
+
+**Indexes:**
+- `idx_cpv_products_code` (product_code)
+- `idx_cpv_products_status` (status)
+- `idx_cpv_products_name` (product_name)
+
+**CHECK constraints:**
+- `review_frequency IN ('Monthly', 'Quarterly', 'Semiannual', 'Annual')`
+- `status IN ('Draft', 'Active', 'Retired')`
+- `proposed_posture IN ('Not Assessed', 'Insufficient Data', 'Not Valid', 'At Risk'…`
+- `official_posture IN ('Not Assessed', 'Insufficient Data', 'Not Valid', 'At Risk'…`
+
+### `cpv_product_batches`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `product_id` | TEXT | NO |  |  |  |  | `cpv_products.id` |
+| `batch_number` | TEXT | NO |  |  |  |  |  |
+| `mo_control_number` | TEXT | YES |  |  |  |  |  |
+| `manufacturing_start_at` | TEXT | YES |  |  |  |  |  |
+| `manufacturing_end_at` | TEXT | YES |  |  |  |  |  |
+| `packaging_start_at` | TEXT | YES |  |  |  |  |  |
+| `packaging_end_at` | TEXT | YES |  |  |  |  |  |
+| `fg_release_date` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  | 'Planned' | `status IN ('Planned', 'In Process', 'Pac…` |  |
+| `comments` | TEXT | YES |  |  |  |  |  |
+| `date_exception_reason` | TEXT | YES |  |  |  |  |  |
+| `voided` | INTEGER | NO |  |  | 0 |  |  |
+| `void_reason` | TEXT | YES |  |  |  |  |  |
+| `row_version` | INTEGER | NO |  |  | 1 |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+| `created_by` | TEXT | YES |  |  |  |  |  |
+| `updated_by` | TEXT | YES |  |  |  |  |  |
+
+**Indexes:**
+- `idx_cpv_batches_product` (product_id)
+- `idx_cpv_batches_fg` (fg_release_date)
+- `idx_cpv_batches_status` (status)
+
+**CHECK constraints:**
+- `status IN ('Planned', 'In Process', 'Packaged', 'Released', 'Rejected', 'Cancell…`
+
+### `cpv_packaging_orders`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `batch_id` | TEXT | NO |  |  |  |  | `cpv_product_batches.id` |
+| `po_control_number` | TEXT | NO |  |  |  |  |  |
+| `comments` | TEXT | YES |  |  |  |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+
+**Indexes:**
+- `idx_cpv_po_batch` (batch_id)
+
+### `cpv_protocols`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `protocol_number` | TEXT | NO |  |  |  |  |  |
+| `version` | INTEGER | NO |  |  | 1 |  |  |
+| `product_id` | TEXT | NO |  |  |  |  | `cpv_products.id` |
+| `title` | TEXT | NO |  |  |  |  |  |
+| `review_period_start` | TEXT | YES |  |  |  |  |  |
+| `review_period_end` | TEXT | YES |  |  |  |  |  |
+| `scope` | TEXT | YES |  |  |  |  |  |
+| `batch_selection_rule` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  | 'Draft' | `status IN ('Draft', 'In Review', 'Pendin…` |  |
+| `author_id` | TEXT | YES |  |  |  |  |  |
+| `author_name` | TEXT | YES |  |  |  |  |  |
+| `reviewer_name` | TEXT | YES |  |  |  |  |  |
+| `approver_name` | TEXT | YES |  |  |  |  |  |
+| `signoff_printed_name` | TEXT | YES |  |  |  |  |  |
+| `signoff_meaning` | TEXT | YES |  |  |  |  |  |
+| `effective_date` | TEXT | YES |  |  |  |  |  |
+| `superseded_protocol_id` | TEXT | YES |  |  |  |  | `cpv_protocols.id` |
+| `linked_report_id` | TEXT | YES |  |  |  |  |  |
+| `objective` | TEXT | YES |  |  |  |  |  |
+| `reject_comment` | TEXT | YES |  |  |  |  |  |
+| `row_version` | INTEGER | NO |  |  | 1 |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+
+**Indexes:**
+- `idx_cpv_protocols_product` (product_id)
+- `idx_cpv_protocols_status` (status)
+- `idx_cpv_protocols_number` (protocol_number)
+
+**CHECK constraints:**
+- `status IN ('Draft', 'In Review', 'Pending Approval', 'Approved/Effective', 'Reje…`
+
+### `cpv_reports`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `report_number` | TEXT | NO |  |  |  |  |  |
+| `version` | INTEGER | NO |  |  | 1 |  |  |
+| `product_id` | TEXT | NO |  |  |  |  | `cpv_products.id` |
+| `protocol_id` | TEXT | YES |  |  |  |  | `cpv_protocols.id` |
+| `review_period_start` | TEXT | YES |  |  |  |  |  |
+| `review_period_end` | TEXT | YES |  |  |  |  |  |
+| `included_batch_count` | INTEGER | NO |  |  | 0 |  |  |
+| `excluded_batch_count` | INTEGER | NO |  |  | 0 |  |  |
+| `proposed_posture` | TEXT | NO |  |  | 'Not Assessed' | `proposed_posture IN ('Not Assessed', 'In…` |  |
+| `approved_posture` | TEXT | YES |  |  |  | `approved_posture IS NULL OR approved_pos…` |  |
+| `status` | TEXT | NO |  |  | 'Draft' | `status IN ('Draft', 'In Review', 'Pendin…` |  |
+| `snapshot_json` | TEXT | YES |  |  |  |  |  |
+| `author_id` | TEXT | YES |  |  |  |  |  |
+| `author_name` | TEXT | YES |  |  |  |  |  |
+| `reviewer_name` | TEXT | YES |  |  |  |  |  |
+| `approver_name` | TEXT | YES |  |  |  |  |  |
+| `signoff_printed_name` | TEXT | YES |  |  |  |  |  |
+| `signoff_meaning` | TEXT | YES |  |  |  |  |  |
+| `effective_date` | TEXT | YES |  |  |  |  |  |
+| `reject_comment` | TEXT | YES |  |  |  |  |  |
+| `row_version` | INTEGER | NO |  |  | 1 |  |  |
+| `created_at` | TEXT | NO |  |  |  |  |  |
+| `updated_at` | TEXT | NO |  |  |  |  |  |
+
+**Indexes:**
+- `idx_cpv_reports_product` (product_id)
+- `idx_cpv_reports_protocol` (protocol_id)
+- `idx_cpv_reports_status` (status)
+
+**CHECK constraints:**
+- `proposed_posture IN ('Not Assessed', 'Insufficient Data', 'Not Valid', 'At Risk'…`
+- `approved_posture IS NULL OR approved_posture IN ('Not Assessed', 'Insufficient D…`
+- `status IN ('Draft', 'In Review', 'Pending Approval', 'Approved/Effective', 'Reje…`
+
+### `cpv_audit_events`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `occurred_at` | TEXT | NO |  |  |  |  |  |
+| `actor_id` | TEXT | YES |  |  |  |  |  |
+| `actor_name` | TEXT | NO |  |  |  |  |  |
+| `actor_role` | TEXT | YES |  |  |  |  |  |
+| `action_type` | TEXT | NO |  |  |  |  |  |
+| `product_id` | TEXT | YES |  |  |  |  |  |
+| `batch_id` | TEXT | YES |  |  |  |  |  |
+| `module` | TEXT | YES |  |  |  |  |  |
+| `record_type` | TEXT | NO |  |  |  |  |  |
+| `record_id` | TEXT | NO |  |  |  |  |  |
+| `record_label` | TEXT | YES |  |  |  |  |  |
+| `field_name` | TEXT | YES |  |  |  |  |  |
+| `old_value` | TEXT | YES |  |  |  |  |  |
+| `new_value` | TEXT | YES |  |  |  |  |  |
+| `reason` | TEXT | YES |  |  |  |  |  |
+| `source_record_id` | TEXT | YES |  |  |  |  |  |
+| `correlation_id` | TEXT | YES |  |  |  |  |  |
+
+**Indexes:**
+- `idx_cpv_audit_occurred` (occurred_at)
+- `idx_cpv_audit_product` (product_id)
+- `idx_cpv_audit_record` (record_type, record_id)
+- `idx_cpv_audit_actor` (actor_name)
+
+### `cpv_material_definitions`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `product_id` | TEXT | NO |  |  |  |  | `cpv_products.id` |
+| `kind` | TEXT | NO |  |  |  | `kind IN ('rm', 'pm')` |  |
+| `description` | TEXT | NO |  |  |  |  |  |
+| `item_number` | TEXT | NO |  |  |  |  |  |
+| `spec_number` | TEXT | YES |  |  |  |  |  |
+| `amount` | TEXT | YES |  |  |  |  |  |
+| `unit` | TEXT | YES |  |  |  |  |  |
+| `function_in_formulation` | TEXT | YES |  |  |  |  |  |
+| `packaging_level` | TEXT | YES |  |  |  | `packaging_level IS NULL OR packaging_lev…` |  |
+| `approved_suppliers` | TEXT | YES |  |  |  |  |  |
+| `critical` | INTEGER | NO |  |  | 0 |  |  |
+| `effective_from` | TEXT | YES |  |  |  |  |  |
+| `effective_to` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  | 'Active' | `status IN ('Active', 'Retired')` |  |
+| `retire_reason` | TEXT | YES |  |  |  |  |  |
+| `row_version` | INTEGER | NO |  |  | 1 |  |  |
+
+**Indexes:**
+- `idx_cpv_mat_def_product` (product_id, kind)
+
+**CHECK constraints:**
+- `kind IN ('rm', 'pm')`
+- `packaging_level IS NULL OR packaging_level IN ('Primary', 'Secondary', 'Tertiary…`
+- `status IN ('Active', 'Retired')`
+
+### `cpv_material_usages`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `material_id` | TEXT | NO |  |  |  |  | `cpv_material_definitions.id` |
+| `batch_id` | TEXT | NO |  |  |  |  | `cpv_product_batches.id` |
+| `po_id` | TEXT | YES |  |  |  |  | `cpv_packaging_orders.id` |
+| `lot_number` | TEXT | NO |  |  |  |  |  |
+| `supplier` | TEXT | YES |  |  |  |  |  |
+| `quantity` | TEXT | YES |  |  |  |  |  |
+| `comments` | TEXT | YES |  |  |  |  |  |
+
+**Indexes:**
+- `idx_cpv_mat_use_batch` (batch_id)
+- `idx_cpv_mat_use_material` (material_id)
+
+### `cpv_assets`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `product_id` | TEXT | NO |  |  |  |  | `cpv_products.id` |
+| `asset_type` | TEXT | NO |  |  |  | `asset_type IN ('Equipment', 'Room', 'Lin…` |  |
+| `name` | TEXT | NO |  |  |  |  |  |
+| `tag` | TEXT | YES |  |  |  |  |  |
+| `room` | TEXT | YES |  |  |  |  |  |
+| `line` | TEXT | YES |  |  |  |  |  |
+| `stage` | TEXT | NO |  |  |  | `stage IN ('Manufacturing', 'Packaging')` |  |
+| `parameter_name` | TEXT | YES |  |  |  |  |  |
+| `lsl` | TEXT | YES |  |  |  |  |  |
+| `usl` | TEXT | YES |  |  |  |  |  |
+| `unit` | TEXT | YES |  |  |  |  |  |
+| `trend_enabled` | INTEGER | NO |  |  | 0 |  |  |
+| `qual_report` | TEXT | YES |  |  |  |  |  |
+| `qual_status` | TEXT | YES |  |  |  |  |  |
+| `requal_due` | TEXT | YES |  |  |  |  |  |
+| `cleaning_sop` | TEXT | YES |  |  |  |  |  |
+| `cleaning_val_ref` | TEXT | YES |  |  |  |  |  |
+| `cleaning_review_due` | TEXT | YES |  |  |  |  |  |
+| `facility_qual_ref` | TEXT | YES |  |  |  |  |  |
+| `facility_requal_due` | TEXT | YES |  |  |  |  |  |
+| `effective_from` | TEXT | YES |  |  |  |  |  |
+| `effective_to` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  | 'Active' | `status IN ('Active', 'Retired')` |  |
+| `retire_reason` | TEXT | YES |  |  |  |  |  |
+
+**Indexes:**
+- `idx_cpv_assets_product` (product_id, stage)
+
+**CHECK constraints:**
+- `asset_type IN ('Equipment', 'Room', 'Line')`
+- `stage IN ('Manufacturing', 'Packaging')`
+- `status IN ('Active', 'Retired')`
+
+### `cpv_asset_uses`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `asset_id` | TEXT | NO |  |  |  |  | `cpv_assets.id` |
+| `batch_id` | TEXT | NO |  |  |  |  | `cpv_product_batches.id` |
+| `used_at` | TEXT | NO |  |  |  |  |  |
+| `parameter_result` | TEXT | YES |  |  |  |  |  |
+| `comments` | TEXT | YES |  |  |  |  |  |
+| `window_status` | TEXT | NO |  |  |  |  |  |
+
+**Indexes:**
+- `idx_cpv_asset_use_batch` (batch_id)
+
+### `cpv_test_definitions`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `product_id` | TEXT | NO |  |  |  |  | `cpv_products.id` |
+| `kind` | TEXT | NO |  |  |  | `kind IN ('ipc', 'analytical')` |  |
+| `name` | TEXT | NO |  |  |  |  |  |
+| `classification` | TEXT | NO |  |  |  | `classification IN ('Bulk', 'Finished Pro…` |  |
+| `data_type` | TEXT | NO |  |  |  | `data_type IN ('Numeric', 'Text', 'Catego…` |  |
+| `lsl` | TEXT | YES |  |  |  |  |  |
+| `usl` | TEXT | YES |  |  |  |  |  |
+| `target` | TEXT | YES |  |  |  |  |  |
+| `warning_low` | TEXT | YES |  |  |  |  |  |
+| `warning_high` | TEXT | YES |  |  |  |  |  |
+| `unit` | TEXT | YES |  |  |  |  |  |
+| `method_ref` | TEXT | YES |  |  |  |  |  |
+| `method_version` | TEXT | YES |  |  |  |  |  |
+| `criticality` | TEXT | YES |  |  |  |  |  |
+| `instrument_type` | TEXT | YES |  |  |  |  |  |
+| `effective_from` | TEXT | YES |  |  |  |  |  |
+| `effective_to` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  | 'Active' | `status IN ('Active', 'Retired')` |  |
+| `retire_reason` | TEXT | YES |  |  |  |  |  |
+
+**Indexes:**
+- `idx_cpv_test_def_product` (product_id, kind)
+
+**CHECK constraints:**
+- `kind IN ('ipc', 'analytical')`
+- `classification IN ('Bulk', 'Finished Product')`
+- `data_type IN ('Numeric', 'Text', 'Categorical', 'Pass-Fail')`
+- `status IN ('Active', 'Retired')`
+
+### `cpv_test_results`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `definition_id` | TEXT | NO |  |  |  |  | `cpv_test_definitions.id` |
+| `batch_id` | TEXT | NO |  |  |  |  | `cpv_product_batches.id` |
+| `result` | TEXT | YES |  |  |  |  |  |
+| `test_at` | TEXT | YES |  |  |  |  |  |
+| `sample_id` | TEXT | YES |  |  |  |  |  |
+| `report_ref` | TEXT | YES |  |  |  |  |  |
+| `instrument` | TEXT | YES |  |  |  |  |  |
+| `csv_ref` | TEXT | YES |  |  |  |  |  |
+| `investigation_link` | TEXT | YES |  |  |  |  |  |
+| `official_event` | TEXT | YES |  |  |  | `official_event IS NULL OR official_event…` |  |
+| `not_applicable` | INTEGER | NO |  |  | 0 |  |  |
+| `na_justification` | TEXT | YES |  |  |  |  |  |
+| `comments` | TEXT | YES |  |  |  |  |  |
+| `evaluation` | TEXT | NO |  |  |  |  |  |
+| `spec_version_applied` | TEXT | YES |  |  |  |  |  |
+
+**Indexes:**
+- `idx_cpv_test_res_batch` (batch_id)
+
+**CHECK constraints:**
+- `official_event IS NULL OR official_event IN ('OOS', 'OOT')`
+
+### `cpv_stability_studies`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `product_id` | TEXT | NO |  |  |  |  | `cpv_products.id` |
+| `protocol_ref` | TEXT | NO |  |  |  |  |  |
+| `stability_batch` | TEXT | NO |  |  |  |  |  |
+| `product_batch_id` | TEXT | YES |  |  |  |  | `cpv_product_batches.id` |
+| `packaging` | TEXT | YES |  |  |  |  |  |
+| `market` | TEXT | YES |  |  |  |  |  |
+| `start_date` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  | 'Open' |  |  |
+
+**Indexes:**
+- `idx_cpv_stab_product` (product_id)
+
+### `cpv_stability_time_points`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `study_id` | TEXT | NO |  |  |  |  | `cpv_stability_studies.id` |
+| `condition_label` | TEXT | NO |  |  |  |  |  |
+| `months` | INTEGER | NO |  |  |  |  |  |
+| `due_date` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  |  | `status IN ('Scheduled', 'Due', 'Complete…` |  |
+| `parameter` | TEXT | YES |  |  |  |  |  |
+| `lsl` | TEXT | YES |  |  |  |  |  |
+| `usl` | TEXT | YES |  |  |  |  |  |
+| `unit` | TEXT | YES |  |  |  |  |  |
+| `result` | TEXT | YES |  |  |  |  |  |
+| `pull_date` | TEXT | YES |  |  |  |  |  |
+| `test_date` | TEXT | YES |  |  |  |  |  |
+| `method_version` | TEXT | YES |  |  |  |  |  |
+
+**Indexes:**
+- `idx_cpv_stab_tp_study` (study_id)
+
+**CHECK constraints:**
+- `status IN ('Scheduled', 'Due', 'Completed', 'Missed', 'Cancelled')`
+
+### `cpv_hold_time_requirements`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `product_id` | TEXT | NO |  |  |  |  | `cpv_products.id` |
+| `transition` | TEXT | NO |  |  |  |  |  |
+| `min_duration` | TEXT | YES |  |  |  |  |  |
+| `max_duration` | TEXT | NO |  |  |  |  |  |
+| `unit` | TEXT | NO |  |  |  | `unit IN ('minutes', 'hours', 'days')` |  |
+| `study_ref` | TEXT | NO |  |  |  |  |  |
+| `effective_from` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  | 'Active' | `status IN ('Active', 'Retired')` |  |
+
+**Indexes:**
+- `idx_cpv_hold_req_product` (product_id)
+
+**CHECK constraints:**
+- `unit IN ('minutes', 'hours', 'days')`
+- `status IN ('Active', 'Retired')`
+
+### `cpv_hold_time_records`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `product_id` | TEXT | NO |  |  |  |  | `cpv_products.id` |
+| `requirement_id` | TEXT | NO |  |  |  |  | `cpv_hold_time_requirements.id` |
+| `batch_id` | TEXT | YES |  |  |  |  | `cpv_product_batches.id` |
+| `study_batch` | TEXT | YES |  |  |  |  |  |
+| `start_at` | TEXT | NO |  |  |  |  |  |
+| `end_at` | TEXT | NO |  |  |  |  |  |
+| `duration_hours` | REAL | YES |  |  |  |  |  |
+| `evaluation` | TEXT | NO |  |  |  | `evaluation IN ('Complies', 'Excursion', …` |  |
+
+**Indexes:**
+- `idx_cpv_hold_rec_product` (product_id)
+
+**CHECK constraints:**
+- `evaluation IN ('Complies', 'Excursion', 'Not Evaluated')`
+
+### `cpv_linked_events`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `product_id` | TEXT | NO |  |  |  |  | `cpv_products.id` |
+| `kind` | TEXT | NO |  |  |  | `kind IN ('cnf', 'complaint', 'deviation'…` |  |
+| `number` | TEXT | NO |  |  |  |  |  |
+| `title` | TEXT | NO |  |  |  |  |  |
+| `description` | TEXT | NO |  |  |  |  |  |
+| `category` | TEXT | YES |  |  |  |  |  |
+| `risk` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  |  |  |  |
+| `initiated_at` | TEXT | YES |  |  |  |  |  |
+| `target_at` | TEXT | YES |  |  |  |  |  |
+| `closed_at` | TEXT | YES |  |  |  |  |  |
+| `conclusion` | TEXT | YES |  |  |  |  |  |
+| `cancel_or_nfa_reason` | TEXT | YES |  |  |  |  |  |
+| `capa_ref` | TEXT | YES |  |  |  |  |  |
+| `owner` | TEXT | YES |  |  |  |  |  |
+
+**Indexes:**
+- `idx_cpv_events_product` (product_id, kind)
+
+**CHECK constraints:**
+- `kind IN ('cnf', 'complaint', 'deviation')`
+
+### `cpv_event_batch_links`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `event_id` | TEXT | NO |  |  |  |  | `cpv_linked_events.id` |
+| `batch_id` | TEXT | NO |  |  |  |  | `cpv_product_batches.id` |
+
+### `cpv_improvements`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `product_id` | TEXT | NO |  |  |  |  | `cpv_products.id` |
+| `number` | TEXT | NO |  |  |  |  |  |
+| `source_ref` | TEXT | YES |  |  |  |  |  |
+| `endorsed_at` | TEXT | YES |  |  |  |  |  |
+| `summary` | TEXT | NO |  |  |  |  |  |
+| `owner` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  | 'Open' |  |  |
+
+### `cpv_recommendations`
+
+| Column | Type | Null | PK | Unique | Default | Check | References |
+|--------|------|------|----|--------|---------|-------|------------|
+| `id` | TEXT | YES | YES |  |  |  |  |
+| `improvement_id` | TEXT | NO |  |  |  |  | `cpv_improvements.id` |
+| `sequence` | INTEGER | NO |  |  |  |  |  |
+| `text` | TEXT | NO |  |  |  |  |  |
+| `category` | TEXT | YES |  |  |  |  |  |
+| `priority` | TEXT | YES |  |  |  |  |  |
+| `owner` | TEXT | YES |  |  |  |  |  |
+| `target_at` | TEXT | YES |  |  |  |  |  |
+| `status` | TEXT | NO |  |  | 'Open' |  |  |
+
+**Indexes:**
+- `idx_cpv_reco_improvement` (improvement_id)
+
 ## Relationships
 
 - `profiles.password_reset_by` → `profiles.id` (ON DELETE SET NULL)
@@ -775,9 +1497,49 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 - `edoc_file_access_logs.file_id` → `edoc_document_files.id`
 - `edoc_file_access_logs.profile_id` → `profiles.id`
 - `edoc_settings.organization_id` → `edoc_organizations.id`
+- `edoc_page_integrity_codes.organization_id` → `edoc_organizations.id`
+- `edoc_page_integrity_codes.document_id` → `edoc_documents.id` (ON DELETE CASCADE)
+- `edoc_page_integrity_codes.version_id` → `edoc_document_versions.id` (ON DELETE CASCADE)
+- `edoc_page_integrity_codes.route_id` → `edoc_document_routes.id` (ON DELETE CASCADE)
+- `edoc_page_integrity_codes.certificate_id` → `edoc_completion_certificates.id` (ON DELETE CASCADE)
+- `edoc_verification_lookups.certificate_id` → `edoc_completion_certificates.id`
+- `edoc_plan_entitlements.plan_id` → `edoc_subscription_plans.id` (ON DELETE CASCADE)
+- `edoc_billing_customers.organization_id` → `edoc_organizations.id` (ON DELETE CASCADE)
+- `edoc_subscriptions.organization_id` → `edoc_organizations.id` (ON DELETE CASCADE)
+- `edoc_subscriptions.plan_id` → `edoc_subscription_plans.id`
+- `edoc_usage_counters.organization_id` → `edoc_organizations.id` (ON DELETE CASCADE)
+- `edoc_billing_transactions.organization_id` → `edoc_organizations.id`
 - `apqr_scheduler_entries.client_id` → `apqr_clients.id`
 - `apqr_records.scheduler_entry_id` → `apqr_scheduler_entries.id` (ON DELETE CASCADE)
 - `apqr_follow_ups.record_id` → `apqr_records.id` (ON DELETE CASCADE)
+- `cpv_product_batches.product_id` → `cpv_products.id`
+- `cpv_packaging_orders.batch_id` → `cpv_product_batches.id`
+- `cpv_protocols.product_id` → `cpv_products.id`
+- `cpv_protocols.superseded_protocol_id` → `cpv_protocols.id`
+- `cpv_reports.product_id` → `cpv_products.id`
+- `cpv_reports.protocol_id` → `cpv_protocols.id`
+- `cpv_material_definitions.product_id` → `cpv_products.id`
+- `cpv_material_usages.material_id` → `cpv_material_definitions.id`
+- `cpv_material_usages.batch_id` → `cpv_product_batches.id`
+- `cpv_material_usages.po_id` → `cpv_packaging_orders.id`
+- `cpv_assets.product_id` → `cpv_products.id`
+- `cpv_asset_uses.asset_id` → `cpv_assets.id`
+- `cpv_asset_uses.batch_id` → `cpv_product_batches.id`
+- `cpv_test_definitions.product_id` → `cpv_products.id`
+- `cpv_test_results.definition_id` → `cpv_test_definitions.id`
+- `cpv_test_results.batch_id` → `cpv_product_batches.id`
+- `cpv_stability_studies.product_id` → `cpv_products.id`
+- `cpv_stability_studies.product_batch_id` → `cpv_product_batches.id`
+- `cpv_stability_time_points.study_id` → `cpv_stability_studies.id`
+- `cpv_hold_time_requirements.product_id` → `cpv_products.id`
+- `cpv_hold_time_records.product_id` → `cpv_products.id`
+- `cpv_hold_time_records.requirement_id` → `cpv_hold_time_requirements.id`
+- `cpv_hold_time_records.batch_id` → `cpv_product_batches.id`
+- `cpv_linked_events.product_id` → `cpv_products.id`
+- `cpv_event_batch_links.event_id` → `cpv_linked_events.id`
+- `cpv_event_batch_links.batch_id` → `cpv_product_batches.id`
+- `cpv_improvements.product_id` → `cpv_products.id`
+- `cpv_recommendations.improvement_id` → `cpv_improvements.id`
 
 ## All Indexes
 
@@ -793,6 +1555,9 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `idx_vmp_field_options_lookup` | `vmp_field_options` | field_type, validation_area, site_id, department_id, is_active |  |
 | `idx_vmp_qc_instruments_record` | `vmp_qc_instruments` | masterlist_record_id, is_active |  |
 | `idx_registry_values_type` | `registry_values` | registry_type |  |
+| `idx_edoc_subscriptions_org` | `edoc_subscriptions` | organization_id | YES |
+| `idx_edoc_billing_events_status` | `edoc_billing_events` | processing_status, received_at |  |
+| `idx_edoc_usage_org_metric` | `edoc_usage_counters` | organization_id, metric_key |  |
 | `idx_edoc_documents_org_status` | `edoc_documents` | organization_id, status |  |
 | `idx_edoc_documents_owner` | `edoc_documents` | owner_id, status |  |
 | `idx_edoc_versions_document` | `edoc_document_versions` | document_id, version_number |  |
@@ -810,6 +1575,36 @@ Regenerate with `npm run db:map` after editing `database/sqlite/schema.sql`.
 | `idx_apqr_records_apr_ref` | `apqr_records` | apr_reference_number |  |
 | `idx_apqr_follow_ups_record` | `apqr_follow_ups` | record_id |  |
 | `idx_apqr_audit_entity` | `apqr_audit_events` | entity_type, entity_id |  |
+| `idx_cpv_products_code` | `cpv_products` | product_code |  |
+| `idx_cpv_products_status` | `cpv_products` | status |  |
+| `idx_cpv_products_name` | `cpv_products` | product_name |  |
+| `idx_cpv_batches_product` | `cpv_product_batches` | product_id |  |
+| `idx_cpv_batches_fg` | `cpv_product_batches` | fg_release_date |  |
+| `idx_cpv_batches_status` | `cpv_product_batches` | status |  |
+| `idx_cpv_po_batch` | `cpv_packaging_orders` | batch_id |  |
+| `idx_cpv_protocols_product` | `cpv_protocols` | product_id |  |
+| `idx_cpv_protocols_status` | `cpv_protocols` | status |  |
+| `idx_cpv_protocols_number` | `cpv_protocols` | protocol_number |  |
+| `idx_cpv_reports_product` | `cpv_reports` | product_id |  |
+| `idx_cpv_reports_protocol` | `cpv_reports` | protocol_id |  |
+| `idx_cpv_reports_status` | `cpv_reports` | status |  |
+| `idx_cpv_audit_occurred` | `cpv_audit_events` | occurred_at |  |
+| `idx_cpv_audit_product` | `cpv_audit_events` | product_id |  |
+| `idx_cpv_audit_record` | `cpv_audit_events` | record_type, record_id |  |
+| `idx_cpv_audit_actor` | `cpv_audit_events` | actor_name |  |
+| `idx_cpv_mat_def_product` | `cpv_material_definitions` | product_id, kind |  |
+| `idx_cpv_mat_use_batch` | `cpv_material_usages` | batch_id |  |
+| `idx_cpv_mat_use_material` | `cpv_material_usages` | material_id |  |
+| `idx_cpv_assets_product` | `cpv_assets` | product_id, stage |  |
+| `idx_cpv_asset_use_batch` | `cpv_asset_uses` | batch_id |  |
+| `idx_cpv_test_def_product` | `cpv_test_definitions` | product_id, kind |  |
+| `idx_cpv_test_res_batch` | `cpv_test_results` | batch_id |  |
+| `idx_cpv_stab_product` | `cpv_stability_studies` | product_id |  |
+| `idx_cpv_stab_tp_study` | `cpv_stability_time_points` | study_id |  |
+| `idx_cpv_hold_req_product` | `cpv_hold_time_requirements` | product_id |  |
+| `idx_cpv_hold_rec_product` | `cpv_hold_time_records` | product_id |  |
+| `idx_cpv_events_product` | `cpv_linked_events` | product_id, kind |  |
+| `idx_cpv_reco_improvement` | `cpv_recommendations` | improvement_id |  |
 
 ## Entity Relationship Diagram
 
@@ -888,9 +1683,49 @@ erDiagram
   edoc_document_files ||--o{ edoc_file_access_logs : "file_id"
   profiles ||--o{ edoc_file_access_logs : "profile_id"
   edoc_organizations ||--o{ edoc_settings : "organization_id"
+  edoc_organizations ||--o{ edoc_page_integrity_codes : "organization_id"
+  edoc_documents ||--o{ edoc_page_integrity_codes : "document_id"
+  edoc_document_versions ||--o{ edoc_page_integrity_codes : "version_id"
+  edoc_document_routes ||--o{ edoc_page_integrity_codes : "route_id"
+  edoc_completion_certificates ||--o{ edoc_page_integrity_codes : "certificate_id"
+  edoc_completion_certificates ||--o{ edoc_verification_lookups : "certificate_id"
+  edoc_subscription_plans ||--o{ edoc_plan_entitlements : "plan_id"
+  edoc_organizations ||--o{ edoc_billing_customers : "organization_id"
+  edoc_organizations ||--o{ edoc_subscriptions : "organization_id"
+  edoc_subscription_plans ||--o{ edoc_subscriptions : "plan_id"
+  edoc_organizations ||--o{ edoc_usage_counters : "organization_id"
+  edoc_organizations ||--o{ edoc_billing_transactions : "organization_id"
   apqr_clients ||--o{ apqr_scheduler_entries : "client_id"
   apqr_scheduler_entries ||--o{ apqr_records : "scheduler_entry_id"
   apqr_records ||--o{ apqr_follow_ups : "record_id"
+  cpv_products ||--o{ cpv_product_batches : "product_id"
+  cpv_product_batches ||--o{ cpv_packaging_orders : "batch_id"
+  cpv_products ||--o{ cpv_protocols : "product_id"
+  cpv_protocols ||--o{ cpv_protocols : "superseded_protocol_id"
+  cpv_products ||--o{ cpv_reports : "product_id"
+  cpv_protocols ||--o{ cpv_reports : "protocol_id"
+  cpv_products ||--o{ cpv_material_definitions : "product_id"
+  cpv_material_definitions ||--o{ cpv_material_usages : "material_id"
+  cpv_product_batches ||--o{ cpv_material_usages : "batch_id"
+  cpv_packaging_orders ||--o{ cpv_material_usages : "po_id"
+  cpv_products ||--o{ cpv_assets : "product_id"
+  cpv_assets ||--o{ cpv_asset_uses : "asset_id"
+  cpv_product_batches ||--o{ cpv_asset_uses : "batch_id"
+  cpv_products ||--o{ cpv_test_definitions : "product_id"
+  cpv_test_definitions ||--o{ cpv_test_results : "definition_id"
+  cpv_product_batches ||--o{ cpv_test_results : "batch_id"
+  cpv_products ||--o{ cpv_stability_studies : "product_id"
+  cpv_product_batches ||--o{ cpv_stability_studies : "product_batch_id"
+  cpv_stability_studies ||--o{ cpv_stability_time_points : "study_id"
+  cpv_products ||--o{ cpv_hold_time_requirements : "product_id"
+  cpv_products ||--o{ cpv_hold_time_records : "product_id"
+  cpv_hold_time_requirements ||--o{ cpv_hold_time_records : "requirement_id"
+  cpv_product_batches ||--o{ cpv_hold_time_records : "batch_id"
+  cpv_products ||--o{ cpv_linked_events : "product_id"
+  cpv_linked_events ||--o{ cpv_event_batch_links : "event_id"
+  cpv_product_batches ||--o{ cpv_event_batch_links : "batch_id"
+  cpv_products ||--o{ cpv_improvements : "product_id"
+  cpv_improvements ||--o{ cpv_recommendations : "improvement_id"
   profiles {
     text id PK
     text auth_user_id
@@ -946,6 +1781,16 @@ erDiagram
     text criticality
     text responsible_owner
     text remarks
+    text capacity_quantity
+    text unit_operation
+    text verified_operating_limits
+    text direct_contact_parts
+    text moc
+    real total_surface_area
+    real moc_rating
+    real surface_area_rating
+    integer hard_to_reach_area_count
+    text date_of_installation
     integer is_draft
     integer is_archived
     integer version
@@ -1004,6 +1849,7 @@ erDiagram
     text business_unit_name
     text membership_role
     text status
+    integer counts_toward_seat
     text created_at
   }
   edoc_documents {
@@ -1245,6 +2091,130 @@ erDiagram
     text setting_value
     text updated_at
   }
+  edoc_page_integrity_codes {
+    text id PK
+    text organization_id FK
+    text document_id FK
+    text version_id FK
+    text route_id FK
+    text certificate_id FK
+    integer page_number
+    text algorithm
+    text page_content_sha256
+    text page_integrity_code
+    text page_integrity_code_display
+    text created_at
+  }
+  edoc_verification_lookups {
+    text id PK
+    text verification_code
+    text certificate_id FK
+    text result_status
+    text uploaded_sha256
+    integer matched
+    text source_ip
+    text user_agent
+    text created_at
+  }
+  edoc_subscription_plans {
+    text id PK
+    text code UK
+    text name
+    text billing_interval
+    text paddle_product_id
+    text paddle_price_id
+    text paymongo_plan_id
+    integer amount_minor
+    integer php_amount_minor
+    text currency
+    integer is_active
+    text created_at
+    text updated_at
+  }
+  edoc_plan_entitlements {
+    text id PK
+    text plan_id FK
+    text entitlement_key
+    text value_type
+    integer numeric_value
+    integer boolean_value
+    text text_value
+  }
+  edoc_billing_customers {
+    text id PK
+    text organization_id UK FK
+    text provider
+    text provider_customer_id UK
+    text email
+    text country_code
+    text created_at
+    text updated_at
+  }
+  edoc_subscriptions {
+    text id PK
+    text organization_id FK
+    text plan_id FK
+    text provider
+    text provider_customer_id
+    text provider_subscription_id UK
+    text status
+    text current_period_start
+    text current_period_end
+    text scheduled_change_type
+    text scheduled_change_at
+    integer cancel_at_period_end
+    text created_at
+    text updated_at
+  }
+  edoc_usage_counters {
+    text id PK
+    text organization_id FK
+    text metric_key
+    text period_start
+    text period_end
+    integer used_quantity
+  }
+  edoc_billing_events {
+    text id PK
+    text provider
+    text provider_event_id
+    text event_type
+    text received_at
+    text processed_at
+    text processing_status
+    text payload_json
+  }
+  edoc_billing_transactions {
+    text id PK
+    text organization_id FK
+    text provider
+    text provider_transaction_id UK
+    integer amount_minor
+    text currency
+    text status
+    text occurred_at
+    text created_at
+  }
+  edoc_billing_runtime {
+    text id PK
+    integer billing_enabled
+    integer free_plan_limits_enabled
+    integer paddle_checkout_enabled
+    integer paymongo_checkout_enabled
+    text updated_at
+  }
+  edoc_billing_reconcile_runs {
+    text id PK
+    text started_at
+    text finished_at
+    text status
+    integer checked_count
+    integer mismatch_count
+    integer repaired_count
+    integer failed_event_count
+    integer past_due_count
+    text summary_json
+  }
   apqr_clients {
     text id PK
     text code UK
@@ -1343,5 +2313,342 @@ erDiagram
   apqr_id_sequences {
     integer year PK
     integer last_number
+  }
+  cpv_products {
+    text id PK
+    text product_code UK
+    text product_name
+    text generic_name
+    text dosage_form
+    text strength
+    text batch_size
+    text batch_size_unit
+    text alternate_batch_sizes
+    text report_entries
+    text hold_entries
+    text cpp_monitoring
+    text client_owner
+    text manufacturing_site
+    text packaging_site
+    text markets
+    text registration_number
+    text review_frequency
+    text pv_protocol_ref
+    text pv_report_ref
+    text effective_date
+    text status
+    text retire_reason
+    text proposed_posture
+    text official_posture
+    text official_posture_rationale
+    text official_posture_approved_by
+    text official_posture_approved_at
+    text review_period_start
+    text review_period_end
+    text next_review_due
+    text last_assessment_at
+    integer row_version
+    text created_at
+    text updated_at
+    text created_by
+    text updated_by
+  }
+  cpv_product_batches {
+    text id PK
+    text product_id FK
+    text batch_number
+    text mo_control_number
+    text manufacturing_start_at
+    text manufacturing_end_at
+    text packaging_start_at
+    text packaging_end_at
+    text fg_release_date
+    text status
+    text comments
+    text date_exception_reason
+    integer voided
+    text void_reason
+    integer row_version
+    text created_at
+    text updated_at
+    text created_by
+    text updated_by
+  }
+  cpv_packaging_orders {
+    text id PK
+    text batch_id FK
+    text po_control_number
+    text comments
+    text created_at
+    text updated_at
+  }
+  cpv_protocols {
+    text id PK
+    text protocol_number
+    integer version
+    text product_id FK
+    text title
+    text review_period_start
+    text review_period_end
+    text scope
+    text batch_selection_rule
+    text status
+    text author_id
+    text author_name
+    text reviewer_name
+    text approver_name
+    text signoff_printed_name
+    text signoff_meaning
+    text effective_date
+    text superseded_protocol_id FK
+    text linked_report_id
+    text objective
+    text reject_comment
+    integer row_version
+    text created_at
+    text updated_at
+  }
+  cpv_reports {
+    text id PK
+    text report_number
+    integer version
+    text product_id FK
+    text protocol_id FK
+    text review_period_start
+    text review_period_end
+    integer included_batch_count
+    integer excluded_batch_count
+    text proposed_posture
+    text approved_posture
+    text status
+    text snapshot_json
+    text author_id
+    text author_name
+    text reviewer_name
+    text approver_name
+    text signoff_printed_name
+    text signoff_meaning
+    text effective_date
+    text reject_comment
+    integer row_version
+    text created_at
+    text updated_at
+  }
+  cpv_audit_events {
+    text id PK
+    text occurred_at
+    text actor_id
+    text actor_name
+    text actor_role
+    text action_type
+    text product_id
+    text batch_id
+    text module
+    text record_type
+    text record_id
+    text record_label
+    text field_name
+    text old_value
+    text new_value
+    text reason
+    text source_record_id
+    text correlation_id
+  }
+  cpv_material_definitions {
+    text id PK
+    text product_id FK
+    text kind
+    text description
+    text item_number
+    text spec_number
+    text amount
+    text unit
+    text function_in_formulation
+    text packaging_level
+    text approved_suppliers
+    integer critical
+    text effective_from
+    text effective_to
+    text status
+    text retire_reason
+    integer row_version
+  }
+  cpv_material_usages {
+    text id PK
+    text material_id FK
+    text batch_id FK
+    text po_id FK
+    text lot_number
+    text supplier
+    text quantity
+    text comments
+  }
+  cpv_assets {
+    text id PK
+    text product_id FK
+    text asset_type
+    text name
+    text tag
+    text room
+    text line
+    text stage
+    text parameter_name
+    text lsl
+    text usl
+    text unit
+    integer trend_enabled
+    text qual_report
+    text qual_status
+    text requal_due
+    text cleaning_sop
+    text cleaning_val_ref
+    text cleaning_review_due
+    text facility_qual_ref
+    text facility_requal_due
+    text effective_from
+    text effective_to
+    text status
+    text retire_reason
+  }
+  cpv_asset_uses {
+    text id PK
+    text asset_id FK
+    text batch_id FK
+    text used_at
+    text parameter_result
+    text comments
+    text window_status
+  }
+  cpv_test_definitions {
+    text id PK
+    text product_id FK
+    text kind
+    text name
+    text classification
+    text data_type
+    text lsl
+    text usl
+    text target
+    text warning_low
+    text warning_high
+    text unit
+    text method_ref
+    text method_version
+    text criticality
+    text instrument_type
+    text effective_from
+    text effective_to
+    text status
+    text retire_reason
+  }
+  cpv_test_results {
+    text id PK
+    text definition_id FK
+    text batch_id FK
+    text result
+    text test_at
+    text sample_id
+    text report_ref
+    text instrument
+    text csv_ref
+    text investigation_link
+    text official_event
+    integer not_applicable
+    text na_justification
+    text comments
+    text evaluation
+    text spec_version_applied
+  }
+  cpv_stability_studies {
+    text id PK
+    text product_id FK
+    text protocol_ref
+    text stability_batch
+    text product_batch_id FK
+    text packaging
+    text market
+    text start_date
+    text status
+  }
+  cpv_stability_time_points {
+    text id PK
+    text study_id FK
+    text condition_label
+    integer months
+    text due_date
+    text status
+    text parameter
+    text lsl
+    text usl
+    text unit
+    text result
+    text pull_date
+    text test_date
+    text method_version
+  }
+  cpv_hold_time_requirements {
+    text id PK
+    text product_id FK
+    text transition
+    text min_duration
+    text max_duration
+    text unit
+    text study_ref
+    text effective_from
+    text status
+  }
+  cpv_hold_time_records {
+    text id PK
+    text product_id FK
+    text requirement_id FK
+    text batch_id FK
+    text study_batch
+    text start_at
+    text end_at
+    real duration_hours
+    text evaluation
+  }
+  cpv_linked_events {
+    text id PK
+    text product_id FK
+    text kind
+    text number
+    text title
+    text description
+    text category
+    text risk
+    text status
+    text initiated_at
+    text target_at
+    text closed_at
+    text conclusion
+    text cancel_or_nfa_reason
+    text capa_ref
+    text owner
+  }
+  cpv_event_batch_links {
+    text event_id FK
+    text batch_id FK
+  }
+  cpv_improvements {
+    text id PK
+    text product_id FK
+    text number
+    text source_ref
+    text endorsed_at
+    text summary
+    text owner
+    text status
+  }
+  cpv_recommendations {
+    text id PK
+    text improvement_id FK
+    integer sequence
+    text text
+    text category
+    text priority
+    text owner
+    text target_at
+    text status
   }
 ```

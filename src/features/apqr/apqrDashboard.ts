@@ -62,9 +62,9 @@ export function reviewCycleFromYear(cycleYear: number): { start: string; end: st
   return { start: `${cycleYear - 1}-11-01`, end: `${cycleYear}-10-31` }
 }
 
-/** Operational APQR cycle year = calendar year when the entry is created (not review coverage). */
+/** Operational APQR cycle year = the calendar year of the current local date. */
 export function defaultApqrCycleYear(today = new Date()): number {
-  return today.getUTCFullYear()
+  return today.getFullYear()
 }
 
 /** Legacy APQR-YYYY-xxxx IDs only; short IDs use review coverage for cycle year. */

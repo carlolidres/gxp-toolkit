@@ -6,6 +6,7 @@ import {
   formatAppDate,
   formatAppDateTime,
   formatAppMonthYear,
+  parseAppDate,
   parseIsoDate,
 } from './dateUtils'
 
@@ -14,6 +15,13 @@ describe('dateUtils', () => {
     expect(formatAppDate('2025-01-01')).toBe('01 Jan 2025')
     expect(formatAppDate('2025-12-31')).toBe('31 Dec 2025')
     expect(formatAppDate(null)).toBe('—')
+  })
+
+  it('parses dd Mmm YYYY into an ISO date', () => {
+    expect(parseAppDate('01 Jan 2025')).toBe('2025-01-01')
+    expect(parseAppDate('31 Dec 2025')).toBe('2025-12-31')
+    expect(parseAppDate('2025-01-01')).toBe('2025-01-01')
+    expect(parseAppDate('31 Feb 2025')).toBeNull()
   })
 
   it('parses ISO date prefixes without timezone drift', () => {

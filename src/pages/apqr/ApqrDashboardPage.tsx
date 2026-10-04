@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Input, Select } from 'antd'
+import { CalendarClock, CircleAlert, FlaskConical, Info, Mail, Minus, TrendingDown, TrendingUp, UserRound, type LucideIcon } from 'lucide-react'
+
+import './apqr-dashboard-page.css'
 import {
   Bar,
   BarChart,
@@ -135,7 +138,7 @@ export function ApqrDashboardPage() {
   const rows = useApqrDatabase()
   const { canExport } = useMenuPermission('apqr-dashboard')
   const { canViewMenu } = usePermissions()
-  const [cycleYear, setCycleYear] = useState(defaultApqrCycleYear)
+  const [cycleYear, setCycleYear] = useState(() => defaultApqrCycleYear())
   const [workFilter, setWorkFilter] = useState<DashboardWorkFilter>('all')
   const [search, setSearch] = useState('')
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS)
@@ -200,7 +203,7 @@ export function ApqrDashboardPage() {
 
   if (rows.loading) {
     return (
-      <ApqrPage title="Dashboard" description="Commitment-schedule triage and delivery performance.">
+      <ApqrPage pageClassName="apqr-dashboard" icon="dashboard" title="Dashboard" description="Commitment-schedule triage and delivery performance.">
         <ApqrLoading />
       </ApqrPage>
     )
@@ -208,6 +211,8 @@ export function ApqrDashboardPage() {
 
   return (
     <ApqrPage
+      pageClassName="apqr-dashboard"
+      icon="dashboard"
       title="Dashboard"
       description={`${formatApqrCycleYearLabel(cycleYear)} · ${m.totalActive} active`}
       action={
@@ -247,24 +252,33 @@ export function ApqrDashboardPage() {
     >
       {rows.error ? <ApqrError message={rows.error} /> : null}
 
-      <section className="apqr-kpi-board" aria-label="Action metrics">
-        <div className="apqr-kpi-grid apqr-kpi-grid-lean">
-          {ACTION_KPIS.map((kpi) => (
-            <KpiCard
-              key={kpi.filter}
-              label={kpi.label}
-              value={kpi.value(m, dueSoonCount)}
-              trend={trends[kpi.trendKey]}
-              icon={kpi.icon}
-              tone={kpi.tone}
-              active={workFilter === kpi.filter}
-              onClick={() => applyWorkFilter(kpi.filter)}
-            />
-          ))}
-        </div>
-      </section>
+      <div className="apqr-dashboard-metrics">
+        <section className="apqr-kpi-board" aria-label="Action metrics">
+          <div className="apqr-kpi-grid apqr-kpi-grid-lean">
+            {ACTION_KPIS.map((kpi) => (
+              <KpiCard
+                key={kpi.filter}
+                label={kpi.label}
+                value={kpi.value(m, dueSoonCount)}
+                trend={trends[kpi.trendKey]}
+                icon={kpi.icon}
+                tone={kpi.tone}
+                active={workFilter === kpi.filter}
+                onClick={() => applyWorkFilter(kpi.filter)}
+              />
+            ))}
+          </div>
+        </section>
+        <article className="panel apqr-panel-compact apqr-panel-triage">
+          <PanelHeader title="Priority mix" icon="chartPie" />
+          <p className="help-text">{scopedRows.length} active records</p>
+          <div className="apqr-panel-body">
+            <TriageDonutChart data={triage} total={scopedRows.length} />
+          </div>
+        </article>
+      </div>
 
-      <section className="apqr-dashboard-panels apqr-dashboard-attention-row" aria-label="Needs attention and triage mix">
+      <section className="apqr-dashboard-panels apqr-dashboard-attention-row" aria-label="Needs attention">
         <article className="panel apqr-panel-compact apqr-panel-actions">
           <div className="apqr-upcoming-header">
             <PanelHeader title="Needs Attention" icon="clipboard" />
@@ -272,13 +286,6 @@ export function ApqrDashboardPage() {
           </div>
           <div className="apqr-upcoming-scroll">
             <NeedsAttentionList items={attention} onViewAll={() => applyWorkFilter('all')} />
-          </div>
-        </article>
-        <article className="panel apqr-panel-compact apqr-panel-triage">
-          <PanelHeader title="Priority mix" icon="chartPie" />
-          <p className="help-text">{scopedRows.length} active records</p>
-          <div className="apqr-panel-body">
-            <TriageDonutChart data={triage} total={scopedRows.length} />
           </div>
         </article>
       </section>
@@ -515,98 +522,39 @@ function KpiCard({
       aria-pressed={active}
       onClick={onClick}
     >
-      <span className={`apqr-kpi-icon tone-${tone}`} aria-hidden>
-        <KpiIcon name={icon} />
+      <span className="apqr-kpi-topline">
+        <span className={`apqr-kpi-icon icon-${icon}`} aria-hidden>
+          <KpiIcon name={icon} />
+        </span>
+        <span className="apqr-kpi-label">{label}</span>
       </span>
-      <span className="apqr-kpi-label">{label}</span>
       <strong className="apqr-kpi-value">{value}</strong>
-      <small className={`apqr-kpi-trend trend-${trend.tone}`}>{trend.text}</small>
+      <small className={`apqr-kpi-trend trend-${trend.tone}`} aria-label={trend.text}>
+        <TrendMark tone={trend.tone} />
+        {trend.text.replace(/^[↑↓]\s*/, '')}
+      </small>
     </button>
   )
 }
 
-function KpiIcon({ name }: { name: string }) {
-  const shared = {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.8,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-  }
+const KPI_ICONS: Record<string, LucideIcon> = {
+  alert: CircleAlert,
+  calendar: CalendarClock,
+  info: Info,
+  user: UserRound,
+  mail: Mail,
+  lab: FlaskConical,
+}
 
-  if (name === 'alert') {
-    return (
-      <svg {...shared}>
-        <path d="M12 3 2.5 20h19L12 3Z" />
-        <path d="M12 9v5" />
-      </svg>
-    )
-  }
-  if (name === 'check') {
-    return (
-      <svg {...shared}>
-        <circle cx="12" cy="12" r="9" />
-        <path d="m8 12 2.6 2.6L16 9" />
-      </svg>
-    )
-  }
-  if (name === 'calendar') {
-    return (
-      <svg {...shared}>
-        <rect x="3" y="5" width="18" height="16" rx="2" />
-        <path d="M8 3v4M16 3v4M3 10h18" />
-      </svg>
-    )
-  }
-  if (name === 'clock') {
-    return (
-      <svg {...shared}>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3 2" />
-      </svg>
-    )
-  }
-  if (name === 'mail') {
-    return (
-      <svg {...shared}>
-        <rect x="3" y="6" width="18" height="13" rx="2" />
-        <path d="m3 8 9 6 9-6" />
-      </svg>
-    )
-  }
-  if (name === 'lab') {
-    return (
-      <svg {...shared}>
-        <path d="M9 3h6" />
-        <path d="M10 3v6l-5 8a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-8V3" />
-      </svg>
-    )
-  }
-  if (name === 'user') {
-    return (
-      <svg {...shared}>
-        <circle cx="12" cy="8" r="3.5" />
-        <path d="M5 19a7 7 0 0 1 14 0" />
-      </svg>
-    )
-  }
-  if (name === 'info') {
-    return (
-      <svg {...shared}>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 10v6M12 7h.01" />
-      </svg>
-    )
-  }
-  return (
-    <svg {...shared}>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-      <path d="M14 2v6h6" />
-    </svg>
-  )
+function KpiIcon({ name }: { name: string }) {
+  const Icon = KPI_ICONS[name] ?? Info
+  return <Icon size={18} strokeWidth={1.75} aria-hidden />
+}
+
+function TrendMark({ tone }: { tone: ApqrMetricTrend['tone'] }) {
+  if (tone === 'good') return <TrendingUp size={14} strokeWidth={1.75} aria-hidden />
+  if (tone === 'bad') return <TrendingDown size={14} strokeWidth={1.75} aria-hidden />
+  return <Minus size={14} strokeWidth={1.75} aria-hidden />
 }
 
 function PanelHeader({ title, icon }: { title: string; icon: string }) {

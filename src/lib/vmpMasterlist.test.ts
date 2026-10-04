@@ -9,6 +9,7 @@ import {
   getOtherOptionValue,
   getVmpKpiCounts,
   mergeVmpOptions,
+  validateEquipmentProfileFields,
   VMP_OTHER_OPTION,
   vmpMasterlistSeedRecords,
 } from './vmpMasterlist'
@@ -77,5 +78,25 @@ describe('vmp masterlist selectors', () => {
     expect(options).toContain('Steam-Jacketed Tank (SJT)')
     expect(options).toContain('Filters')
     expect(getEquipmentGroupOptions('DRY PRODUCTS MANUFACTURING')).toEqual([])
+  })
+
+  it('rejects invalid equipment profile numbers and accepts a blank optional profile', () => {
+    const equipment = vmpMasterlistSeedRecords.find((record) => record.validationArea === 'Equipment')
+    expect(equipment).toBeTruthy()
+    expect(validateEquipmentProfileFields(equipment!)).toBeNull()
+    expect(
+      validateEquipmentProfileFields({
+        ...equipment!,
+        assetTagNo: ' ',
+        totalSurfaceArea: -1,
+        hardToReachAreaCount: 1.5,
+      }),
+    ).toBe('IL-Tag is required.')
+    expect(validateEquipmentProfileFields({ ...equipment!, totalSurfaceArea: -1 })).toBe(
+      'Total Surface Area cannot be negative.',
+    )
+    expect(validateEquipmentProfileFields({ ...equipment!, hardToReachAreaCount: 1.5 })).toBe(
+      'Number of Hard-to-Reach Areas must be a whole number of 0 or more.',
+    )
   })
 })

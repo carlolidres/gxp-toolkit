@@ -11,8 +11,9 @@ import {
   ApqrPriorityBadge,
   ApqrReportStatusBadge,
 } from '../../components/apqr/ApqrComponents'
+import { useToast } from '../../components/feedback/ToastProvider'
 import { AppDateInput } from '../../components/forms/AppDateInput'
-import { formatApqrDate, formatReviewCoverage } from '../../features/apqr/apqrService'
+import { formatApqrDate, formatReviewCoverage, saveRecord } from '../../features/apqr/apqrService'
 import { apqrCycleYearFromCommitment, apqrCycleYearOptions } from '../../features/apqr/apqrDashboard'
 import type { ApqrDatabaseRow, ApqrPriority, DeliveryClassification } from '../../features/apqr/types'
 import {
@@ -28,6 +29,7 @@ import {
   type ApqrLinkedDateField,
 } from '../../features/apqr/scheduling'
 import { useColumnResize } from '../../hooks/useColumnResize'
+import { useAuth } from '../../hooks/useAuth'
 import { useMenuPermission } from '../../hooks/useMenuPermission'
 import { useApqrDatabase } from '../../features/apqr/useApqrData'
 import { currentAppMonthYear, dateInAppMonthYear } from '../../utils/dateUtils'
@@ -97,8 +99,9 @@ function ensureProductCodeBeforeDepartment(columns: ColumnKey[]): ColumnKey[] {
 
 const DATABASE_PAGE_PROPS = {
   icon: 'database',
+  eyebrow: 'Annual Product Quality Review',
   headerClassName: 'apqr-page-header--database',
-  title: 'Records',
+  title: 'APQR / Records',
   description: 'Consolidated APQR records from Scheduler and Form.',
   action: (
     <Link className="button secondary apqr-page-header-action" to="/apqr/scheduler">
@@ -109,9 +112,12 @@ const DATABASE_PAGE_PROPS = {
 } as const
 
 export function ApqrDatabasePage() {
-  const { data, loading, error } = useApqrDatabase()
+  const { data, loading, error, reload } = useApqrDatabase()
   const { canExport } = useMenuPermission('apqr-database')
   const { canEdit: canEditForm } = useMenuPermission('apqr-form')
+  const { hasRole } = useAuth()
+  const { notify } = useToast()
+  const isAdmin = hasRole(['Admin'])
 
   const [search, setSearch] = useState('')
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -607,6 +613,7 @@ export function ApqrDatabasePage() {
             <table className="data-table apqr-database-table compact">
               <thead>
                 <tr>
+                  <th className="apqr-sheet-corner" scope="col" aria-label="Row" />
                   {visibleColumns.map((key) => (
                     <th key={key} scope="col" style={getColumnStyle(key)}>
                       <span className="apqr-th-label">{COLUMN_LABELS[key]}</span>
@@ -622,11 +629,14 @@ export function ApqrDatabasePage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((row) => (
+                {filtered.map((row, index) => (
                   <tr key={row.apqr_id}>
+                    <th className="apqr-sheet-rowhead" scope="row">{index + 1}</th>
                     {visibleColumns.map((key) => (
                       <td key={key} style={getColumnStyle(key)}>
-                        {renderDatabaseCell(key, row)}
+                        {renderDatabaseCell(key, row, isAdmin ? (field, value) => {
+                          void saveSheetCell(row.apqr_id, field, value, notify).then(() => reload())
+                        } : undefined)}
                       </td>
                     ))}
                   </tr>
@@ -713,7 +723,11 @@ export function ApqrDatabasePage() {
   )
 }
 
-function renderDatabaseCell(key: ColumnKey, row: ApqrDatabaseRow) {
+function renderDatabaseCell(
+  key: ColumnKey,
+  row: ApqrDatabaseRow,
+  onAdminSave?: (field: 'department' | 'apr_reference_number', value: string) => void,
+) {
   if (key === 'apqr_id') {
     return (
       <Link className="apqr-db-link-primary" to={`/apqr/form?apqr=${encodeURIComponent(row.apqr_id)}`}>
@@ -735,6 +749,12 @@ function renderDatabaseCell(key: ColumnKey, row: ApqrDatabaseRow) {
       </Link>
     )
   }
+  if (key === 'department' && onAdminSave) {
+    return <AdminSheetCell value={row.department ?? ''} onSave={(value) => onAdminSave('department', value)} />
+  }
+  if (key === 'apr_ref' && onAdminSave) {
+    return <AdminSheetCell value={row.apr_reference_number ?? ''} onSave={(value) => onAdminSave('apr_reference_number', value)} />
+  }
   if (key === 'product_code') {
     const code = row.product_code?.trim()
     return code ? <span className="apqr-form-info-code">{code}</span> : '—'
@@ -753,6 +773,38 @@ function renderDatabaseCell(key: ColumnKey, row: ApqrDatabaseRow) {
     )
   }
   return <ApqrPriorityBadge {...apqrPriorityDisplay(row)} />
+}
+
+function AdminSheetCell({ value, onSave }: { value: string; onSave: (value: string) => void }) {
+  const [draft, setDraft] = useState(value)
+  useEffect(() => setDraft(value), [value])
+  return (
+    <input
+      className="apqr-sheet-edit"
+      value={draft}
+      aria-label="Edit cell"
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={() => {
+        if (draft !== value) onSave(draft)
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') event.currentTarget.blur()
+      }}
+    />
+  )
+}
+
+async function saveSheetCell(
+  apqrId: string,
+  field: 'department' | 'apr_reference_number',
+  value: string,
+  notify: (message: string) => void,
+) {
+  try {
+    await saveRecord(apqrId, { [field]: value.trim() || null })
+  } catch (err) {
+    notify(err instanceof Error ? err.message : 'Failed to Save')
+  }
 }
 
 function DatabaseEmptyState({

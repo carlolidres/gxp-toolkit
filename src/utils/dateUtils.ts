@@ -23,6 +23,29 @@ export function formatAppDate(value: string | null | undefined, empty = '—'): 
   return `${String(parts.day).padStart(2, '0')} ${APP_MONTHS[parts.month - 1]} ${parts.year}`
 }
 
+/** Accept dd Mmm YYYY or YYYY-MM-DD and return YYYY-MM-DD. */
+export function parseAppDate(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const iso = parseIsoDate(trimmed)
+    if (!iso || !isRealDate(iso.year, iso.month, iso.day)) return null
+    return trimmed
+  }
+  const match = /^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$/.exec(trimmed)
+  if (!match) return null
+  const day = Number(match[1])
+  const month = APP_MONTHS.findIndex((name) => name.toLowerCase() === match[2].toLowerCase()) + 1
+  const year = Number(match[3])
+  if (!month || !isRealDate(year, month, day)) return null
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function isRealDate(year: number, month: number, day: number): boolean {
+  const date = new Date(year, month - 1, day)
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+}
+
 /** Parse YYYY-MM (optional day/time suffix) without timezone drift. */
 export function parseIsoMonthYear(value: string): { year: number; month: number } | null {
   const match = /^(\d{4})-(\d{2})/.exec(value.trim())

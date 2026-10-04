@@ -23,17 +23,47 @@ export function readDepartmentSuggestions(): string[] {
 export function rememberDepartment(value: string): void {
   const trimmed = normalizeDepartment(value)
   if (!trimmed) return
-  const existing = readDepartmentSuggestions().filter((entry) => entry !== trimmed)
+  unhide(trimmed)
+  const existing = readDepartmentSuggestions().filter((entry) => entry.toLowerCase() !== trimmed.toLowerCase())
   localStorage.setItem(STORAGE_KEY, JSON.stringify([trimmed, ...existing].slice(0, MAX_SUGGESTIONS)))
+}
+
+export function forgetDepartment(value: string): void {
+  const trimmed = normalizeDepartment(value)
+  if (!trimmed) return
+  const existing = readDepartmentSuggestions().filter((entry) => entry.toLowerCase() !== trimmed.toLowerCase())
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing))
+  const hidden = readHidden().filter((entry) => entry.toLowerCase() !== trimmed.toLowerCase())
+  localStorage.setItem(HIDDEN_KEY, JSON.stringify([trimmed, ...hidden].slice(0, MAX_SUGGESTIONS)))
+}
+
+const HIDDEN_KEY = 'apqr-department-hidden'
+
+function readHidden(): string[] {
+  try {
+    const raw = localStorage.getItem(HIDDEN_KEY)
+    if (!raw) return []
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((value): value is string => typeof value === 'string').map(normalizeDepartment).filter(Boolean)
+  } catch {
+    return []
+  }
+}
+
+function unhide(value: string): void {
+  const hidden = readHidden().filter((entry) => entry.toLowerCase() !== value.toLowerCase())
+  localStorage.setItem(HIDDEN_KEY, JSON.stringify(hidden))
 }
 
 export function mergeDepartmentSuggestions(additional: string[] = []): string[] {
   const recent = readDepartmentSuggestions()
+  const hidden = new Set(readHidden().map((entry) => entry.toLowerCase()))
   const seen = new Set<string>()
   const merged: string[] = []
 
   for (const name of [...recent, ...additional.map(normalizeDepartment)]) {
-    if (!name || seen.has(name)) continue
+    if (!name || seen.has(name) || hidden.has(name.toLowerCase())) continue
     seen.add(name)
     merged.push(name)
   }

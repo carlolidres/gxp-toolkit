@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+import { EdocBillingAlerts } from '../../features/edoc/billing/EdocBillingAlerts'
 import { formatAppDate } from '../../utils/dateUtils'
 import type {
   EdocAssignableAction,
@@ -264,6 +265,7 @@ export function EdocPage({
         </div>
         {action ? <div className="edoc-page-header-actions">{action}</div> : null}
       </section>
+      <EdocBillingAlerts />
       {children}
     </div>
   )

@@ -18,6 +18,10 @@ import { UserSelectModal } from '../../components/admin/UserSelectModal'
 import { PermissionMatrix } from '../../components/permissions/PermissionMatrix'
 import { VrmsPage } from '../../components/vrms/VrmsPage'
 import { useToast } from '../../components/feedback/ToastProvider'
+import {
+  billingLimitUserMessage,
+  parseBillingLimitError,
+} from '../../features/edoc/billing/entitlementService'
 import { useAuth } from '../../hooks/useAuth'
 import { usePermissions } from '../../hooks/usePermissions'
 import {
@@ -185,7 +189,9 @@ export function UserManagementPage() {
         }
       }
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'Failed to save user permissions.')
+      const raw = err instanceof Error ? err.message : 'Failed to save user permissions.'
+      const kind = parseBillingLimitError(raw)
+      notify(kind ? billingLimitUserMessage(kind) : raw)
     } finally {
       setSaving(false)
     }

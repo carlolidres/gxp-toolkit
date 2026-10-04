@@ -61,6 +61,7 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   document: FileText,
   link: Link2,
   calendar: Calendar,
+  info: Info,
   'clipboard-list': ClipboardList,
 }
 
@@ -148,6 +149,8 @@ export function FormInput({
   readOnly = false,
   helper,
   wide = false,
+  min,
+  step,
 }: {
   label: string
   value: string
@@ -158,6 +161,8 @@ export function FormInput({
   readOnly?: boolean
   helper?: string
   wide?: boolean
+  min?: number
+  step?: string | number
 }) {
   if (type === 'date') {
     return (
@@ -182,6 +187,8 @@ export function FormInput({
         value={value}
         readOnly={readOnly}
         placeholder={placeholder}
+        min={min}
+        step={step}
         onChange={(event) => onChange(event.target.value)}
       />
       {helper ? <small className="text-xs leading-relaxed text-[var(--muted)]">{helper}</small> : null}

@@ -10,6 +10,9 @@ describe('permissions', () => {
     expect(hasPermission(permissions, 'routing', 'approve')).toBe(true)
     expect(hasPermission(permissions, 'user-management', 'delete')).toBe(true)
     expect(hasPermission(permissions, 'edoc-all-documents', 'delete')).toBe(true)
+    expect(hasPermission(permissions, 'cpv-protocols', 'approve')).toBe(false)
+    expect(hasPermission(permissions, 'cpv-reports', 'approve')).toBe(false)
+    expect(hasPermission(permissions, 'cpv-products', 'approve')).toBe(false)
   })
 
   it('limits viewers to view actions', () => {
@@ -27,6 +30,7 @@ describe('permissions', () => {
     expect(groups.find((group) => group.id === 'vrms')?.items.length).toBeGreaterThan(0)
     expect(groups.find((group) => group.id === 'vmp')?.items.map((item) => item.id)).toEqual([
       'vmp-masterlist',
+      'vmp-equipment-profile',
       'vmp-risk-assessment',
       'vmp-timeline',
       'vmp-database',
@@ -45,6 +49,10 @@ describe('permissions', () => {
       'apqr-scheduler',
       'apqr-registry',
       'apqr-audit',
+    ])
+    expect(groups.find((group) => group.id === 'cpv')?.items.map((item) => item.id)).toEqual([
+      'cpv-products',
+      'cpv-audit',
     ])
   })
 

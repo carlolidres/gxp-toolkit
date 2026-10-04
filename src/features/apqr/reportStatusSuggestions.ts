@@ -23,17 +23,47 @@ export function readReportStatusSuggestions(): string[] {
 export function rememberReportStatus(value: string): void {
   const trimmed = normalizeStatus(value)
   if (!trimmed) return
-  const existing = readReportStatusSuggestions().filter((entry) => entry !== trimmed)
+  unhide(trimmed)
+  const existing = readReportStatusSuggestions().filter((entry) => entry.toLowerCase() !== trimmed.toLowerCase())
   localStorage.setItem(STORAGE_KEY, JSON.stringify([trimmed, ...existing].slice(0, MAX_SUGGESTIONS)))
+}
+
+export function forgetReportStatus(value: string): void {
+  const trimmed = normalizeStatus(value)
+  if (!trimmed) return
+  const existing = readReportStatusSuggestions().filter((entry) => entry.toLowerCase() !== trimmed.toLowerCase())
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing))
+  const hidden = readHidden().filter((entry) => entry.toLowerCase() !== trimmed.toLowerCase())
+  localStorage.setItem(HIDDEN_KEY, JSON.stringify([trimmed, ...hidden].slice(0, MAX_SUGGESTIONS)))
+}
+
+const HIDDEN_KEY = 'apqr-report-status-hidden'
+
+function readHidden(): string[] {
+  try {
+    const raw = localStorage.getItem(HIDDEN_KEY)
+    if (!raw) return []
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((value): value is string => typeof value === 'string').map(normalizeStatus).filter(Boolean)
+  } catch {
+    return []
+  }
+}
+
+function unhide(value: string): void {
+  const hidden = readHidden().filter((entry) => entry.toLowerCase() !== value.toLowerCase())
+  localStorage.setItem(HIDDEN_KEY, JSON.stringify(hidden))
 }
 
 export function mergeReportStatusSuggestions(additional: string[] = []): string[] {
   const recent = readReportStatusSuggestions()
+  const hidden = new Set(readHidden().map((entry) => entry.toLowerCase()))
   const seen = new Set<string>()
   const merged: string[] = []
 
   for (const status of [...recent, ...additional.map(normalizeStatus)]) {
-    if (!status || seen.has(status)) continue
+    if (!status || seen.has(status) || hidden.has(status.toLowerCase())) continue
     seen.add(status)
     merged.push(status)
   }

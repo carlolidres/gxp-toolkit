@@ -11,6 +11,7 @@ import { ToastProvider } from './components/feedback/ToastProvider'
 import './styles/globals.css'
 import './styles/multiform-project.css'
 import './styles/vrms.css'
+import './styles/cpv.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

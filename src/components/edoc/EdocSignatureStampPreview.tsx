@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 
 import {
   STAMP_MODE_LABEL,
+  VERIFY_CAPTION_FULL,
+  VERIFY_CAPTION_SHORT,
   computeFieldScale,
   pickPreferredMode,
   type StampLayoutMode,
@@ -20,10 +22,28 @@ export type EdocSignatureStampPreviewProps = {
   className?: string
 }
 
+function QrPlaceholder() {
+  return (
+    <svg className="esignature-qr-mark" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <rect x="1" y="1" width="8" height="8" fill="none" stroke="#102a43" strokeWidth="1.6" />
+      <rect x="3.2" y="3.2" width="3.6" height="3.6" fill="#102a43" />
+      <rect x="19" y="1" width="8" height="8" fill="none" stroke="#102a43" strokeWidth="1.6" />
+      <rect x="21.2" y="3.2" width="3.6" height="3.6" fill="#102a43" />
+      <rect x="1" y="19" width="8" height="8" fill="none" stroke="#102a43" strokeWidth="1.6" />
+      <rect x="3.2" y="21.2" width="3.6" height="3.6" fill="#102a43" />
+      <rect x="12" y="4" width="2.2" height="2.2" fill="#102a43" />
+      <rect x="16" y="8" width="2.2" height="2.2" fill="#102a43" />
+      <rect x="12" y="12" width="4" height="4" fill="#102a43" />
+      <rect x="20" y="14" width="2.2" height="2.2" fill="#102a43" />
+      <rect x="14" y="20" width="2.2" height="2.2" fill="#102a43" />
+      <rect x="20" y="22" width="2.2" height="2.2" fill="#102a43" />
+    </svg>
+  )
+}
+
 /**
  * Live HTML preview of the professional e-signature stamp.
- * Layout modes (wide / compact / micro) follow field size via container queries
- * with a ResizeObserver fallback for browsers / PDF overlay contexts.
+ * Three columns + footer match the PDF planner (ink | details | QR, then verify row).
  */
 export function EdocSignatureStampPreview({
   signerName,
@@ -61,6 +81,10 @@ export function EdocSignatureStampPreview({
     return () => observer.disconnect()
   }, [])
 
+  const caption = mode === 'full' ? VERIFY_CAPTION_FULL : VERIFY_CAPTION_SHORT
+  const showCaption = mode === 'full' || mode === 'compact'
+  const showQr = mode !== 'slim'
+
   return (
     <div
       ref={rootRef}
@@ -70,36 +94,46 @@ export function EdocSignatureStampPreview({
       aria-hidden
     >
       <div className="stamp-inner">
-        <div className="identity">
-          <div className="signature-mark">
-            {signatureSrc ? (
-              <img src={signatureSrc} alt="" draggable={false} />
-            ) : (
-              <svg viewBox="0 0 280 70" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                <path
-                  d="M8 48 C40 10, 70 70, 102 34 S150 8, 178 40 220 62, 272 22"
-                  fill="none"
-                  stroke="#102a43"
-                  strokeWidth="3.2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            )}
+        <div className="esignature-main">
+          <div className="identity">
+            <div className="signature-mark">
+              {signatureSrc ? (
+                <img src={signatureSrc} alt="" draggable={false} />
+              ) : (
+                <svg viewBox="0 0 280 70" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                  <path
+                    d="M8 48 C40 10, 70 70, 102 34 S150 8, 178 40 220 62, 272 22"
+                    fill="none"
+                    stroke="#102a43"
+                    strokeWidth="3.2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )}
+            </div>
+            <div className="signer">
+              <p className="signer-name">{signerName}</p>
+              <p className="signer-role">{role}</p>
+            </div>
           </div>
-          <div className="signer">
-            <p className="signer-name">{signerName}</p>
-            <p className="signer-role">{role}</p>
+          <div className="audit">
+            <div className="status">Digitally Signed</div>
+            <p className="reason">{reason}</p>
+            <div className="metadata">
+              <span className="datetime">{signedAtLabel}</span>
+              {email ? <span className="email">{email}</span> : null}
+              {recordId ? <span className="record-id">Record ID: {recordId}</span> : null}
+            </div>
           </div>
+          {showQr ? (
+            <div className="esignature-qr" title="Scan or click to verify document authenticity">
+              <QrPlaceholder />
+            </div>
+          ) : null}
         </div>
-        <div className="audit">
-          <div className="status">Digitally Signed</div>
-          <p className="reason">{reason}</p>
-          <div className="metadata">
-            <span className="datetime">{signedAtLabel}</span>
-            {email ? <span className="email">{email}</span> : null}
-            {recordId ? <span className="record-id">Record ID: {recordId}</span> : null}
-          </div>
-        </div>
+        {showCaption ? (
+          <p className="esignature-verification">{caption}</p>
+        ) : null}
       </div>
     </div>
   )
