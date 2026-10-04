@@ -38,7 +38,7 @@ Deployment:
 
 **CPV Phase 3–4 (2026-09-12):** workspace modules encode RM, PM, Equipment/Rooms/Lines, IPC, AR against the Product Batch Register; Stability, Hold-Time, CNF, Complaints, Deviations, and Process Improvements are independent. SQLite tables are in `database/sqlite/cpv_schema.sql`. Runtime is still in-memory + session cache. No Supabase CPV migration (C16). Process capability indices are not calculated (C6).
 
-CPV Phase 1–2 remains usable: Product Profile, Protocol, Report, and Audit Trail. Production builds hide CPV unless `VITE_ENABLE_CPV=true`; local `npm run dev` shows it.
+CPV Phase 1–2 remains usable: Product Profile, Protocol, Report, and Audit Trail. GitHub Pages builds set `VITE_ENABLE_CPV=true`. Local `npm run dev` shows CPV unless that flag is false. PayMongo flags stay off.
 
 Additive PayMongo provider is implemented beside Paddle. **`ENABLE_PAYMONGO` / `VITE_ENABLE_PAYMONGO` default false.** Hosted checkout payment methods: **GCash (`gcash`), Visa/Mastercard (`card`), PayMaya (`paymaya`)**. Paddle routes, price IDs, and webhook behavior are unchanged except:
 
