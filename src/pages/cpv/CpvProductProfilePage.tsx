@@ -103,17 +103,7 @@ export function CpvProductProfilePage() {
   return (
     <div className="page equipment-profile-page cpv-product-profile">
       <header className="equipment-profile-header">
-        <p className="eyebrow">Product Profile</p>
-        <h1>{record.product_name}</h1>
-        <p className="cpv-profile-meta">
-          <span>
-            Product Code: <strong>{record.product_code}</strong>
-          </span>
-          <span className="cpv-profile-meta-sep" aria-hidden>
-            |
-          </span>
-          <span>Maintain product-related data, test results, and quality information.</span>
-        </p>
+        <h1>{record.product_name} ({record.product_code})</h1>
       </header>
       {sheetError ? <p className="eq-banner">{sheetError}</p> : null}
       <EquipmentSpreadsheet

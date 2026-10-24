@@ -3,14 +3,41 @@ import { describe, expect, it } from 'vitest'
 import {
   addSheet,
   columnLabel,
+  copySheet,
   createSheet,
   createWorkbook,
+  DEFAULT_ROW_HEIGHT,
   deleteSheet,
   displayCell,
+  EXCEL_COLS,
+  EXCEL_ROWS,
+  hideSheet,
+  importCsvText,
+  indexAt,
   insertRow,
+  insertSheetBefore,
+  logicalOffset,
+  mergeCells,
+  mergeDiscardCount,
+  mergeMenuState,
+  normalizeWorkbook,
+  offsetAt,
+  parseA1,
   pasteText,
+  removeDuplicateRows,
   renameSheet,
+  replaceSheet,
+  scrollForLogical,
   setCellValue,
+  setSheetProtection,
+  setSheetTabColor,
+  sheetToCsv,
+  sortRowRange,
+  trimCells,
+  unhideSheets,
+  unmergeCells,
+  visibleSheets,
+  writeAxisSize,
 } from './equipmentWorkbook'
 import { loadEquipmentWorkbook, saveEquipmentWorkbook } from './equipmentWorkbookStorage'
 
@@ -62,5 +89,155 @@ describe('equipment workbook', () => {
     expect(() => deleteSheet(workbook, workbook.sheets[0].id)).toThrow(/at least one/)
     const added = addSheet(workbook, 'Sheet2')
     expect(() => renameSheet(added, added.sheets[1].id, 'Sheet1')).toThrow(/already exists/)
+  })
+
+  it('keeps formulas when a worksheet is renamed, inserted, or copied', () => {
+    let workbook = createWorkbook()
+    const id = workbook.sheets[0].id
+    workbook = replaceSheet(workbook, setCellValue(workbook.sheets[0], 0, 0, '=A2+1'))
+    workbook = renameSheet(workbook, id, 'Batch')
+    expect(workbook.sheets[0].cells['0:0']).toBe('=A2+1')
+    workbook = insertSheetBefore(workbook, id, 'Cover')
+    expect(workbook.sheets.map((sheet) => sheet.name)).toEqual(['Cover', 'Batch'])
+    const copied = copySheet(workbook, id, null)
+    expect(copied.sheets.at(-1)?.name).toBe('Batch (2)')
+    expect(copied.sheets.at(-1)?.cells['0:0']).toBe('=A2+1')
+    expect(copied.sheets.at(-1)?.id).not.toBe(id)
+  })
+
+  it('rejects an illegal name and a protected cell edit', () => {
+    const workbook = createWorkbook()
+    expect(() => renameSheet(workbook, workbook.sheets[0].id, 'A/B')).toThrow(/cannot contain/)
+    const locked = setSheetProtection(workbook, workbook.sheets[0].id, {
+      locked: true,
+      allowEditCells: false,
+      allowFormat: false,
+      allowInsert: false,
+      allowDelete: false,
+    })
+    expect(() => setCellValue(locked.sheets[0], 0, 0, 'x')).toThrow(/protected/)
+  })
+
+  it('hides a worksheet without deleting its cells and keeps one visible sheet', () => {
+    let workbook = addSheet(createWorkbook(), 'Sheet2')
+    workbook = replaceSheet(workbook, setCellValue(workbook.sheets[0], 0, 0, 'keep'))
+    const hidden = hideSheet(workbook, workbook.sheets[0].id)
+    expect(hidden.sheets[0].hidden).toBe(true)
+    expect(hidden.sheets[0].cells['0:0']).toBe('keep')
+    expect(visibleSheets(hidden)).toHaveLength(1)
+    expect(() => hideSheet(hidden, hidden.sheets[1].id)).toThrow(/visible/)
+    expect(unhideSheets(hidden, [hidden.sheets[0].id]).sheets[0].hidden).toBe(false)
+  })
+
+  it('keeps tab color and protection when a workbook is reloaded', () => {
+    const base = createWorkbook()
+    const id = base.sheets[0].id
+    const workbook = setSheetTabColor(
+      setSheetProtection(base, id, {
+        locked: true,
+        allowEditCells: true,
+        allowFormat: false,
+        allowInsert: false,
+        allowDelete: false,
+      }),
+      id,
+      '#ff0000',
+    )
+    const normalized = normalizeWorkbook(JSON.parse(JSON.stringify(workbook)))
+    expect(normalized?.sheets[0].tabColor).toBe('#ff0000')
+    expect(normalized?.sheets[0].protection?.allowEditCells).toBe(true)
+    expect(normalized?.sheets[0].hidden).toBe(false)
+  })
+
+  it('keeps identifiers as text and moves an entire row when sorting', () => {
+    let sheet = setCellValue(createSheet('Data'), 1, 0, '00188835')
+    sheet = setCellValue(sheet, 1, 1, 'Batch A')
+    sheet = setCellValue(sheet, 2, 0, '10')
+    sheet = setCellValue(sheet, 2, 1, 'Batch B')
+    expect(displayCell(sheet, 1, 0)).toBe('00188835')
+    const sorted = sortRowRange(sheet, 1, 2, 0, 'desc')
+    expect(sorted.cells['1:0']).toBe('00188835')
+    expect(sorted.cells['1:1']).toBe('Batch A')
+    expect(sorted.cells['2:0']).toBe('10')
+    expect(sorted.cells['2:1']).toBe('Batch B')
+    expect(displayCell(setCellValue(sheet, 3, 0, "'00188835"), 3, 0)).toBe('00188835')
+  })
+
+  it('formats a percent for display and imports formulas as text', () => {
+    const styled = {
+      ...setCellValue(createSheet('Data'), 0, 0, '0.25'),
+      styles: { '0:0': { format: 'percent' as const } },
+    }
+    expect(displayCell(styled, 0, 0)).toBe('25%')
+    expect(styled.cells['0:0']).toBe('0.25')
+    const imported = importCsvText(createSheet('Data'), '=1+1,kept')
+    expect(imported.cells['0:0']).toBe("'=1+1")
+    expect(sheetToCsv(imported)).toContain("'=1+1")
+    expect(displayCell(setCellValue(createSheet('Data'), 0, 0, '=ROUND(1.236,2)'), 0, 0)).toBe('1.24')
+    expect(displayCell(setCellValue(createSheet('Data'), 0, 0, '=STDEV.S(1,2,3)'), 0, 0)).toBe('1')
+  })
+
+  it('shows currency without changing the stored value or a leading-zero identifier', () => {
+    const amount = setCellValue(createSheet('Data'), 0, 0, '12.5')
+    const styled = { ...amount, styles: { '0:0': { format: 'currency' as const, decimals: 2 } } }
+    expect(displayCell(styled, 0, 0)).toBe('$12.50')
+    expect(styled.cells['0:0']).toBe('12.5')
+    const identifier = setCellValue(createSheet('Data'), 0, 0, '00188835')
+    expect(displayCell({ ...identifier, styles: { '0:0': { format: 'number' as const } } }, 0, 0)).toBe('00188835')
+  })
+
+  it('enables merge only for several unmerged cells and keeps the top-left value', () => {
+    let sheet = setCellValue(createSheet('Data'), 0, 0, 'Keep')
+    sheet = setCellValue(sheet, 0, 1, 'Drop')
+    sheet = { ...sheet, styles: { '0:0': { bold: true }, '0:1': { italic: true } } }
+    expect(mergeMenuState([], 0, 0, 0, 0)).toMatchObject({ canMerge: false, canUnmerge: false })
+    expect(mergeMenuState([], 0, 0, 0, 1).canMerge).toBe(true)
+    expect(mergeDiscardCount(sheet, 0, 0, 0, 1, 'all')).toBe(1)
+    const merged = mergeCells(sheet, 0, 0, 0, 1, 'all')
+    expect(merged.cells['0:0']).toBe('Keep')
+    expect(merged.cells['0:1']).toBeUndefined()
+    expect(merged.styles['0:0']).toEqual({ bold: true })
+    expect(merged.styles['0:1']).toEqual({ italic: true })
+    expect(mergeMenuState(merged.merges ?? [], 0, 0, 0, 1)).toMatchObject({ canMerge: false, canUnmerge: true })
+    expect(mergeCells(merged, 0, 0, 0, 1, 'all').merges).toHaveLength(1)
+    const opened = unmergeCells(merged, 0, 0, 0, 0)
+    expect(opened.merges).toEqual([])
+    expect(opened.cells['0:0']).toBe('Keep')
+    expect(opened.styles['0:1']).toEqual({ italic: true })
+    expect(mergeMenuState([], 0, 0, 1, 0).canUnmerge).toBe(false)
+  })
+
+  it('addresses the Excel grid without storing empty rows', () => {
+    expect(columnLabel(EXCEL_COLS - 1)).toBe('XFD')
+    expect(parseA1('A100000')).toMatchObject({ row: 99999, column: 0 })
+    expect(parseA1('XFD1048576')).toMatchObject({ row: EXCEL_ROWS - 1, column: EXCEL_COLS - 1 })
+    expect(parseA1('A1048577')).toBeNull()
+    expect(parseA1('XFE1')).toBeNull()
+    expect(offsetAt([], 100000, DEFAULT_ROW_HEIGHT)).toBe(100000 * DEFAULT_ROW_HEIGHT)
+    expect(indexAt([], 100000 * DEFAULT_ROW_HEIGHT, DEFAULT_ROW_HEIGHT, EXCEL_ROWS)).toBe(100000)
+    const marks: Array<[number, number]> = [[1, 48]]
+    expect(offsetAt(marks, 2, DEFAULT_ROW_HEIGHT)).toBe(72)
+    expect(indexAt(marks, 72, DEFAULT_ROW_HEIGHT, 100)).toBe(2)
+    const sized = writeAxisSize([DEFAULT_ROW_HEIGHT, DEFAULT_ROW_HEIGHT], undefined, 500, 40, DEFAULT_ROW_HEIGHT)
+    expect(sized.dense).toHaveLength(2)
+    expect(sized.extra[500]).toBe(40)
+    const far = setCellValue(createSheet('Data'), 1000, 0, 'Far')
+    expect(far.cells['1000:0']).toBe('Far')
+    expect(far.rowHeights.length).toBeLessThan(200)
+    const logical = logicalOffset(100, 1000, 5000, 100)
+    expect(scrollForLogical(logical, 1000, 5000, 100)).toBeCloseTo(100, 5)
+  })
+
+  it('trims text and drops a duplicate row without losing the kept record', () => {
+    let sheet = setCellValue(createSheet('Data'), 1, 0, '  ABES  ')
+    sheet = setCellValue(sheet, 1, 1, 'Kept')
+    sheet = setCellValue(sheet, 2, 0, 'ABES')
+    sheet = setCellValue(sheet, 2, 1, 'Drop')
+    const trimmed = trimCells(sheet, 1, 0, 1, 0)
+    expect(trimmed.cells['1:0']).toBe('ABES')
+    const unique = removeDuplicateRows(trimmed, 1, 2, 0)
+    expect(unique.cells['1:0']).toBe('ABES')
+    expect(unique.cells['1:1']).toBe('Kept')
+    expect(unique.cells['2:1']).toBeUndefined()
   })
 })

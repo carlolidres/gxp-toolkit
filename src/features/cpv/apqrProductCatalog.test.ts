@@ -69,6 +69,7 @@ describe('uniqueApqrProducts', () => {
       {
         product_code: 'ABC-1',
         product_name: 'Current Name',
+        client_id: 'client',
         client_name: 'Zuellig Pharma',
         department: 'Dry',
         apqr_id: 'current',
@@ -76,6 +77,7 @@ describe('uniqueApqrProducts', () => {
       {
         product_code: 'XYZ-9',
         product_name: 'Second',
+        client_id: 'client',
         client_name: 'Other',
         department: 'Dry',
         apqr_id: 'id',
@@ -106,6 +108,7 @@ describe('uniqueApqrProducts', () => {
       {
         product_code: 'TCN',
         product_name: 'Latest',
+        client_id: 'client',
         client_name: 'Client',
         department: 'Liquids',
         apqr_id: 'latest',

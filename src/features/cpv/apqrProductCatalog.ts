@@ -3,6 +3,7 @@ import type { ApqrDatabaseRow } from '../apqr/types'
 export type ApqrCatalogProduct = {
   product_code: string
   product_name: string
+  client_id: string
   client_name: string
   department: string | null
   apqr_id: string
@@ -29,6 +30,7 @@ export function uniqueApqrProducts(rows: ApqrDatabaseRow[]): ApqrCatalogProduct[
     seen.set(product_code, {
       product_code,
       product_name: row.product_name.trim(),
+      client_id: row.client_id,
       client_name: row.client_name.trim(),
       department,
       apqr_id: row.apqr_id,

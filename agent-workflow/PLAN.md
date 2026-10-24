@@ -1,6 +1,6 @@
 # Active Plan
 
-Last Updated: `2026-09-12`
+Last Updated: `2026-10-24`
 
 Plan Owner: `Cursor`
 
@@ -16,6 +16,7 @@ Make the CPV sidebar menus usable: Product Profile, Protocol, Report, and Audit 
 
 ## This slice
 
+- Product Profile at `#/cpv/products` is the record table. Product-profile sections keep the shared spreadsheet.
 - Product Profile lists unique APQR Database products. Clicking a code opens the workspace in this tab.
 - Phase 3: RM, PM, Equipment/Rooms/Lines, IPC, AR encode against `cpv_product_batches.id`.
 - Phase 4: Stability, Hold-Time, CNF, Complaints, Deviations, Process Improvements are independently created and may link batches.

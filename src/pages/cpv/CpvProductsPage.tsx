@@ -1,16 +1,20 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Button, DatePicker, Modal, Select, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
-import { Circle, CircleCheck, FileText, Hourglass, Plus, Scale, Tags, Trash2 } from 'lucide-react'
+import { Circle, CircleCheck, Download, FileText, Filter, Hourglass, Plus, Scale, Search, ShieldCheck, Table2, Tags, Trash2, Wrench } from 'lucide-react'
 
+import { ApqrContactRoleEditor } from '../../components/apqr/ApqrContactRoleEditor'
 import { ApqrSearchableCombobox } from '../../components/apqr/ApqrSearchableCombobox'
 import { CpvEmpty, CpvError, CpvLoading, CpvPage } from '../../components/cpv/CpvComponents'
-import { cpvProductWindowHref, openCpvProductWindow } from '../../features/cpv/cpvLinks'
+import { CPV_PROFILE_OPEN_TAB, cpvProductWindowHref, openCpvProductWindow } from '../../features/cpv/cpvLinks'
 import { useToast } from '../../components/feedback/ToastProvider'
-import { listDatabaseRows, listDepartmentSuggestions, saveApqrProductIdentity, saveRecord } from '../../features/apqr/apqrService'
+import { listAccountManagerSuggestions, listClients, listDatabaseRows, listDepartmentSuggestions, saveApqrProductIdentity, saveClient, saveRecord } from '../../features/apqr/apqrService'
+import { rememberAccountManager } from '../../features/apqr/accountManagerSuggestions'
+import { parseContacts, serializeContacts, type ApqrContactEntry } from '../../features/apqr/apqrContacts'
 import { forgetDepartment, rememberDepartment } from '../../features/apqr/departmentSuggestions'
-import type { ApqrDepartment } from '../../features/apqr/types'
+import type { ApqrDepartment, ApqrPackage } from '../../features/apqr/types'
 import { uniqueApqrProducts, type ApqrCatalogProduct } from '../../features/cpv/apqrProductCatalog'
 import { formatBatchSizeLabel, type CpvBatchSizeUnit } from '../../features/cpv/batchSizes'
 import { hasCppEntries } from '../../features/cpv/cppMonitoring'
@@ -98,6 +102,17 @@ const APQR_DEPARTMENTS: ApqrDepartment[] = ['Dry', 'Liquids', 'Creams and Ointme
 type SizeDraft = { size: string; unit: CpvBatchSizeUnit }
 type ReportDraft = { id: string; tracer_no: string; issued_date: string; remarks: string }
 type CppDraft = { id: string; step_no: string; description: string; cpp: string }
+type ClientDraft = {
+  id: string
+  code: string
+  client_name: string
+  account_manager: string
+  apqr_package: ApqrPackage
+  auto_compute_dates: boolean
+  qa: ApqrContactEntry[]
+  technical: ApqrContactEntry[]
+  regulatory: ApqrContactEntry[]
+}
 
 function batchUnit(value: string | null | undefined): CpvBatchSizeUnit {
   return value === 'L' ? 'L' : 'Kg'
@@ -350,6 +365,7 @@ export function CpvProductsPage() {
   })
   const { canExport, canEdit: canEditCpv } = useMenuPermission('cpv-products')
   const { canEdit: canEditApqr } = useMenuPermission('apqr-form')
+  const { canEdit: canEditClient } = useMenuPermission('apqr-registry')
   const { notify } = useToast()
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | CpvProductStatus>('all')
@@ -374,9 +390,39 @@ export function CpvProductsPage() {
   const [cppRows, setCppRows] = useState<CppDraft[]>([])
   const [savingCpp, setSavingCpp] = useState(false)
   const [identityEdit, setIdentityEdit] = useState<CatalogRow | null>(null)
+  const [profileOverlay, setProfileOverlay] = useState<string | null>(null)
   const [identityName, setIdentityName] = useState('')
   const [identityCode, setIdentityCode] = useState('')
   const [savingIdentity, setSavingIdentity] = useState(false)
+  const [clientEdit, setClientEdit] = useState<ClientDraft | null>(null)
+  const [accountManagers, setAccountManagers] = useState<string[]>([])
+  const [savingClient, setSavingClient] = useState(false)
+
+  useEffect(() => {
+    if (!profileOverlay) return
+    const productCode = profileOverlay
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setProfileOverlay(null)
+    }
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return
+      if (event.data?.type !== CPV_PROFILE_OPEN_TAB) return
+      if (!openCpvProductWindow(productCode)) {
+        notify('Allow pop-ups to open the product in a new tab.')
+        return
+      }
+      setProfileOverlay(null)
+    }
+    document.addEventListener('keydown', onKey)
+    window.addEventListener('message', onMessage)
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      window.removeEventListener('message', onMessage)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [profileOverlay, notify])
 
   const catalog = useMemo(() => uniqueApqrProducts(list.data?.apqrRows ?? []), [list.data])
   const cpvByCode = useMemo(() => {
@@ -398,6 +444,7 @@ export function CpvProductsPage() {
       .map((product) => ({
         product_code: product.product_code,
         product_name: product.product_name,
+        client_id: '',
         client_name: product.client_owner ?? '',
         department: null,
         apqr_id: '',
@@ -587,6 +634,63 @@ export function CpvProductsPage() {
     }
   }
 
+  async function openClient(row: CatalogRow) {
+    if (!row.client_id) return
+    try {
+      const client = (await listClients()).find((item) => item.id === row.client_id)
+      if (!client) {
+        notify('APQR client not found.')
+        return
+      }
+      setClientEdit({
+        id: client.id,
+        code: client.code,
+        client_name: client.client_name,
+        account_manager: client.account_manager,
+        apqr_package: client.apqr_package,
+        auto_compute_dates: client.auto_compute_dates,
+        qa: parseContacts(client.qa),
+        technical: parseContacts(client.technical),
+        regulatory: parseContacts(client.regulatory),
+      })
+      setAccountManagers(await listAccountManagerSuggestions())
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Failed to load the client.')
+    }
+  }
+
+  async function saveClientDetails() {
+    if (!clientEdit || !canEditClient) return
+    if (!clientEdit.code.trim() || !clientEdit.client_name.trim()) {
+      notify('Client code and name are required.')
+      return
+    }
+    setSavingClient(true)
+    try {
+      await saveClient(
+        {
+          code: clientEdit.code,
+          account_manager: clientEdit.account_manager,
+          client_name: clientEdit.client_name,
+          qa: serializeContacts(clientEdit.qa),
+          technical: serializeContacts(clientEdit.technical),
+          regulatory: serializeContacts(clientEdit.regulatory),
+          apqr_package: clientEdit.apqr_package,
+          auto_compute_dates: clientEdit.auto_compute_dates,
+        },
+        clientEdit.id,
+      )
+      if (clientEdit.account_manager.trim()) rememberAccountManager(clientEdit.account_manager)
+      notify('Successfully Saved')
+      setClientEdit(null)
+      await list.reload()
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Failed to Save')
+    } finally {
+      setSavingClient(false)
+    }
+  }
+
   function openDepartment(row: CatalogRow) {
     if (!row.apqr_id || !canEditApqr) return
     setDepartmentEdit({ apqrId: row.apqr_id, productCode: row.product_code, productName: row.product_name })
@@ -638,16 +742,19 @@ export function CpvProductsPage() {
       <section className="cpv-products-sheet" aria-labelledby="cpv-products-list-title">
         <div className="cpv-products-heading">
           <div className="cpv-products-heading-title">
+            <Table2 size={16} strokeWidth={1.75} aria-hidden />
             <h2 id="cpv-products-list-title">All Products</h2>
             <span className="cpv-products-count" aria-label={`${filtered.length} products`}>
               {filtered.length}
             </span>
           </div>
+          <span className="cpv-products-sep" aria-hidden />
           <div className="cpv-products-toolbar">
             <Select
               showSearch
               allowClear
-              placeholder="Select product from APQR Database…"
+              prefix={<Search size={15} strokeWidth={1.75} aria-hidden />}
+              placeholder="Search products..."
               value={selectedCode}
               onChange={(value) => setSelectedCode(value ?? null)}
               optionFilterProp="label"
@@ -659,16 +766,25 @@ export function CpvProductsPage() {
               className="cpv-products-search"
             />
             <Select
+              prefix={<Filter size={15} strokeWidth={1.75} aria-hidden />}
               value={statusFilter}
               onChange={(value) => setStatusFilter(value)}
               options={[{ value: 'all', label: 'All statuses' }, ...CPV_PRODUCT_STATUSES.map((status) => ({ value: status, label: status }))]}
               aria-label="Filter by status"
-              className="cpv-products-status"
+              className={statusFilter === 'all' ? 'cpv-products-status' : 'cpv-products-status is-active'}
             />
             {canExport ? (
-              <Button className="button secondary" onClick={handleExport} disabled={filtered.length === 0}>
-                Export
-              </Button>
+              <>
+                <span className="cpv-products-sep" aria-hidden />
+                <Button
+                  className="cpv-products-export"
+                  icon={<Download size={15} strokeWidth={1.75} aria-hidden />}
+                  onClick={handleExport}
+                  disabled={filtered.length === 0}
+                >
+                  Export
+                </Button>
+              </>
             ) : null}
           </div>
         </div>
@@ -700,18 +816,25 @@ export function CpvProductsPage() {
                           <a
                             className="cpv-sheet-name-button"
                             href={cpvProductWindowHref(row.product_code)}
-                            title="Open in a new window"
+                            title="Open product profile"
                             onClick={(event) => {
                               event.preventDefault()
-                              if (!openCpvProductWindow(row.product_code)) {
-                                notify('Allow pop-ups to open the product in a new window.')
-                              }
+                              setProfileOverlay(row.product_code)
+                            }}
+                            onAuxClick={(event) => {
+                              if (event.button !== 1) return
+                              event.preventDefault()
+                              setProfileOverlay(row.product_code)
                             }}
                           >
                             {cells[header]}
                           </a>
                         ) : header === 'Product Code' ? (
                           <button type="button" className="cpv-sheet-code-button" onClick={() => openIdentity(row)}>
+                            {cells[header]}
+                          </button>
+                        ) : header === 'Client' && row.client_id ? (
+                          <button type="button" className="cpv-sheet-code-button" onClick={() => void openClient(row)}>
                             {cells[header]}
                           </button>
                         ) : header === 'Department' && row.apqr_id && canEditApqr ? (
@@ -1251,6 +1374,115 @@ export function CpvProductsPage() {
           />
         </div>
       </Modal>
+      <Modal
+        title="Client information"
+        open={clientEdit != null}
+        onCancel={() => setClientEdit(null)}
+        onOk={() => void saveClientDetails()}
+        confirmLoading={savingClient}
+        okText="Save"
+        okButtonProps={{ disabled: !canEditClient }}
+        width={720}
+        destroyOnHidden
+      >
+        {clientEdit ? (
+          <div className="flex flex-col gap-3 pt-1">
+            <p className="text-sm text-slate-500">
+              This is the APQR client. Products that use this client show the same details.
+            </p>
+            <label htmlFor="cpv-apqr-client-code" className="text-sm font-medium text-slate-700">
+              Code
+            </label>
+            <input
+              id="cpv-apqr-client-code"
+              value={clientEdit.code}
+              disabled={!canEditClient}
+              onChange={(event) => setClientEdit({ ...clientEdit, code: event.target.value })}
+              className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold tracking-wide text-slate-500 outline-none focus:border-teal-700"
+            />
+            <label htmlFor="cpv-apqr-client-name" className="text-sm font-medium text-slate-700">
+              Client Name
+            </label>
+            <input
+              id="cpv-apqr-client-name"
+              value={clientEdit.client_name}
+              disabled={!canEditClient}
+              onChange={(event) => setClientEdit({ ...clientEdit, client_name: event.target.value })}
+              className="rounded-md border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 outline-none focus:border-teal-700"
+            />
+            <label htmlFor="cpv-apqr-client-am" className="text-sm font-medium text-slate-700">
+              Account Manager
+            </label>
+            <ApqrSearchableCombobox
+              id="cpv-apqr-client-am"
+              value={clientEdit.account_manager}
+              options={accountManagers}
+              placeholder="Type or select account manager…"
+              createLabel={(next) => `Add “${next}”`}
+              onChange={(account_manager) => setClientEdit({ ...clientEdit, account_manager })}
+              disabled={!canEditClient}
+            />
+            <label htmlFor="cpv-apqr-client-package" className="text-sm font-medium text-slate-700">
+              APQR Package
+            </label>
+            <select
+              id="cpv-apqr-client-package"
+              value={clientEdit.apqr_package}
+              disabled={!canEditClient}
+              onChange={(event) => setClientEdit({ ...clientEdit, apqr_package: event.target.value as ApqrPackage })}
+              className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-teal-700"
+            >
+              <option value="Billable">Billable</option>
+              <option value="Not Billable">Not Billable</option>
+            </select>
+            <fieldset
+              disabled={!canEditClient}
+              aria-labelledby="cpv-apqr-client-contacts"
+              className="m-0 mt-1 flex min-w-0 flex-col gap-3 border-0 border-t border-slate-200 p-0 pt-4"
+            >
+              <h3 id="cpv-apqr-client-contacts" className="text-sm font-semibold text-slate-900">
+                Contacts
+              </h3>
+              <ApqrContactRoleEditor
+                compact
+                icon={<ShieldCheck size={16} className="shrink-0 text-teal-700" aria-hidden />}
+                label="QA"
+                idPrefix="cpv-apqr-client-qa"
+                entries={clientEdit.qa}
+                onChange={(qa) => setClientEdit({ ...clientEdit, qa })}
+              />
+              <ApqrContactRoleEditor
+                compact
+                icon={<Wrench size={16} className="shrink-0 text-teal-700" aria-hidden />}
+                label="Technical"
+                idPrefix="cpv-apqr-client-technical"
+                entries={clientEdit.technical}
+                onChange={(technical) => setClientEdit({ ...clientEdit, technical })}
+              />
+              <ApqrContactRoleEditor
+                compact
+                icon={<Scale size={16} className="shrink-0 text-teal-700" aria-hidden />}
+                label="Regulatory"
+                idPrefix="cpv-apqr-client-regulatory"
+                entries={clientEdit.regulatory}
+                onChange={(regulatory) => setClientEdit({ ...clientEdit, regulatory })}
+              />
+            </fieldset>
+          </div>
+        ) : null}
+      </Modal>
+      {profileOverlay
+        ? createPortal(
+            <div className="cpv-profile-overlay" role="dialog" aria-modal="true" aria-label="Product profile">
+              <iframe
+                className="cpv-profile-overlay-frame"
+                title={`Product profile ${profileOverlay}`}
+                src={cpvProductWindowHref(profileOverlay)}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
     </CpvPage>
   )
 }
