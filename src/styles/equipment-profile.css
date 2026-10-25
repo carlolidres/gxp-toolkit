@@ -195,6 +195,7 @@
 }
 
 .eq-col-headers {
+  position: relative;
   flex: 1;
   overflow: hidden;
   height: 28px;
@@ -217,10 +218,17 @@
 }
 
 .eq-row-headers {
+  position: relative;
   flex: 0 0 46px;
   overflow: hidden;
   background: #f3f4f6;
   border-right: 1px solid #d5d8dc;
+}
+
+.eq-axis {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
 }
 
 .eq-row-header {
@@ -234,38 +242,60 @@
 }
 
 .eq-grid {
+  position: relative;
   flex: 1 1 auto;
-  overflow: auto;
+  overflow: hidden;
   outline: none;
   background: #fff;
-  scrollbar-width: thin;
-  scrollbar-color: #c5c9ce transparent;
-}
-
-.eq-grid::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.eq-grid::-webkit-scrollbar-track,
-.eq-grid::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-.eq-grid::-webkit-scrollbar-thumb {
-  background: #c5c9ce;
-  border: 2px solid transparent;
-  border-radius: 999px;
-  background-clip: padding-box;
-}
-
-.eq-grid::-webkit-scrollbar-thumb:hover {
-  background: #9aa1a8;
-  background-clip: padding-box;
+  overscroll-behavior: contain;
 }
 
 .eq-canvas {
-  position: relative;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  contain: paint;
+}
+
+.eq-vbar,
+.eq-hbar {
+  position: absolute;
+  z-index: 6;
+  touch-action: none;
+}
+
+.eq-vbar {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+}
+
+.eq-hbar {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 8px;
+}
+
+.eq-thumb {
+  position: absolute;
+  border-radius: 999px;
+  background: #c5c9ce;
+}
+
+.eq-vbar .eq-thumb {
+  left: 0;
+  width: 8px;
+}
+
+.eq-hbar .eq-thumb {
+  top: 0;
+  height: 8px;
+}
+
+.eq-thumb:hover {
+  background: #9aa1a8;
 }
 
 .eq-cell {

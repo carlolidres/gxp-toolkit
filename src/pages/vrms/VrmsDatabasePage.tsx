@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button, Input, Select, Spin } from 'antd'
 import { Download } from 'lucide-react'
@@ -61,6 +61,28 @@ export function VrmsDatabasePage() {
   const client = searchParams.get('client') ?? ''
   const department = searchParams.get('department') ?? ''
   const overdue = searchParams.get('overdue') === '1'
+  const [searchDraft, setSearchDraft] = useState(search)
+  const committedSearch = useRef(search)
+
+  useEffect(() => {
+    if (search === committedSearch.current) return
+    committedSearch.current = search
+    setSearchDraft(search)
+  }, [search])
+
+  useEffect(() => {
+    if (searchDraft === search) return
+    const timer = window.setTimeout(() => {
+      committedSearch.current = searchDraft
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current)
+        if (searchDraft) next.set('search', searchDraft)
+        else next.delete('search')
+        return next
+      }, { replace: true })
+    }, 250)
+    return () => window.clearTimeout(timer)
+  }, [searchDraft, search, setSearchParams])
 
   function updateFilter(key: string, value: string) {
     const next = new URLSearchParams(searchParams)
@@ -103,7 +125,7 @@ export function VrmsDatabasePage() {
         <div className="vrms-toolbar">
           <div className="vrms-toolbar-search">
             <label>Global search</label>
-            <Input placeholder="Search all fields…" value={search} onChange={(event) => updateFilter('search', event.target.value)} />
+            <Input placeholder="Search all fields…" value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} />
           </div>
           <div>
             <label>Status</label>

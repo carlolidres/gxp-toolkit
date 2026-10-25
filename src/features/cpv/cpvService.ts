@@ -227,6 +227,10 @@ export function resetCpvStoreForTests() {
   setCpvActor({ id: 'tester', name: 'Test User', email: 'tester@local', role: 'Manager' })
 }
 
+export function reloadCpvStoreFromSession(): void {
+  hydrateCpvStore()
+}
+
 export async function listCpvProducts(): Promise<CpvProduct[]> {
   return products.map((product) => ({ ...refreshProductDerived(product) }))
 }
@@ -582,6 +586,7 @@ export async function retireCpvProduct(productId: string, reason: string): Promi
   const idx = products.findIndex((row) => row.id === productId)
   if (idx === -1) throw new Error('Product not found.')
   const previous = products[idx]
+  if (previous.status === 'Retired') return refreshProductDerived(previous)
   const updated: CpvProduct = {
     ...previous,
     status: 'Retired',

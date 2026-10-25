@@ -8,17 +8,17 @@ import { Circle, CircleCheck, Download, FileText, Filter, Hourglass, Plus, Scale
 import { ApqrContactRoleEditor } from '../../components/apqr/ApqrContactRoleEditor'
 import { ApqrSearchableCombobox } from '../../components/apqr/ApqrSearchableCombobox'
 import { CpvEmpty, CpvError, CpvLoading, CpvPage } from '../../components/cpv/CpvComponents'
-import { CPV_PROFILE_OPEN_TAB, cpvProductWindowHref, openCpvProductWindow } from '../../features/cpv/cpvLinks'
+import { CPV_PRODUCT_ARCHIVED, CPV_PROFILE_OPEN_TAB, cpvProductWindowHref, openCpvProductWindow } from '../../features/cpv/cpvLinks'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { listAccountManagerSuggestions, listClients, listDatabaseRows, listDepartmentSuggestions, saveApqrProductIdentity, saveClient, saveRecord } from '../../features/apqr/apqrService'
 import { rememberAccountManager } from '../../features/apqr/accountManagerSuggestions'
 import { parseContacts, serializeContacts, type ApqrContactEntry } from '../../features/apqr/apqrContacts'
 import { forgetDepartment, rememberDepartment } from '../../features/apqr/departmentSuggestions'
 import type { ApqrDepartment, ApqrPackage } from '../../features/apqr/types'
-import { uniqueApqrProducts, type ApqrCatalogProduct } from '../../features/cpv/apqrProductCatalog'
+import { showsInProductList, uniqueApqrProducts, type ApqrCatalogProduct } from '../../features/cpv/apqrProductCatalog'
 import { formatBatchSizeLabel, type CpvBatchSizeUnit } from '../../features/cpv/batchSizes'
 import { hasCppEntries } from '../../features/cpv/cppMonitoring'
-import { ensureCpvProductFromApqr, listCpvProducts, renameCpvProductIdentity, saveCpvBatchSizes, saveCpvCppMonitoring, saveCpvHoldEntries, saveCpvReportEntries } from '../../features/cpv/cpvService'
+import { ensureCpvProductFromApqr, listCpvProducts, reloadCpvStoreFromSession, renameCpvProductIdentity, saveCpvBatchSizes, saveCpvCppMonitoring, saveCpvHoldEntries, saveCpvReportEntries } from '../../features/cpv/cpvService'
 import { arrangeReportRows, latestReportEntry } from '../../features/cpv/reportEntries'
 import { listProductProfileFacts } from '../../features/cpv/cpvPhaseService'
 import { useCpvLoad } from '../../features/cpv/useCpvData'
@@ -406,6 +406,11 @@ export function CpvProductsPage() {
     }
     function onMessage(event: MessageEvent) {
       if (event.origin !== window.location.origin) return
+      if (event.data?.type === CPV_PRODUCT_ARCHIVED) {
+        reloadCpvStoreFromSession()
+        void list.reload()
+        return
+      }
       if (event.data?.type !== CPV_PROFILE_OPEN_TAB) return
       if (!openCpvProductWindow(productCode)) {
         notify('Allow pop-ups to open the product in a new tab.')
@@ -422,7 +427,7 @@ export function CpvProductsPage() {
       window.removeEventListener('message', onMessage)
       document.body.style.overflow = previousOverflow
     }
-  }, [profileOverlay, notify])
+  }, [profileOverlay, notify, list.reload])
 
   const catalog = useMemo(() => uniqueApqrProducts(list.data?.apqrRows ?? []), [list.data])
   const cpvByCode = useMemo(() => {
@@ -456,8 +461,7 @@ export function CpvProductsPage() {
   const filtered = useMemo(() => {
     return rows.filter((row) => {
       if (selectedCode && row.product_code !== selectedCode) return false
-      if (statusFilter === 'all') return true
-      return (row.cpv?.status ?? 'Draft') === statusFilter
+      return showsInProductList(row.cpv?.status, statusFilter)
     })
   }, [rows, selectedCode, statusFilter])
 
@@ -758,7 +762,7 @@ export function CpvProductsPage() {
               value={selectedCode}
               onChange={(value) => setSelectedCode(value ?? null)}
               optionFilterProp="label"
-              options={catalog.map((product) => ({
+              options={rows.filter((row) => showsInProductList(row.cpv?.status, statusFilter)).map((product) => ({
                 value: product.product_code,
                 label: `${product.product_code} · ${product.product_name} · ${product.client_name}`,
               }))}
@@ -769,7 +773,7 @@ export function CpvProductsPage() {
               prefix={<Filter size={15} strokeWidth={1.75} aria-hidden />}
               value={statusFilter}
               onChange={(value) => setStatusFilter(value)}
-              options={[{ value: 'all', label: 'All statuses' }, ...CPV_PRODUCT_STATUSES.map((status) => ({ value: status, label: status }))]}
+              options={[{ value: 'all', label: 'Current' }, ...CPV_PRODUCT_STATUSES.map((status) => ({ value: status, label: status === 'Retired' ? 'Archived' : status }))]}
               aria-label="Filter by status"
               className={statusFilter === 'all' ? 'cpv-products-status' : 'cpv-products-status is-active'}
             />

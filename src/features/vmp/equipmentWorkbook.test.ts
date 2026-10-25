@@ -12,11 +12,12 @@ import {
   EXCEL_COLS,
   EXCEL_ROWS,
   hideSheet,
+  axisIndexes,
+  clampScroll,
   importCsvText,
   indexAt,
   insertRow,
   insertSheetBefore,
-  logicalOffset,
   mergeCells,
   mergeDiscardCount,
   mergeMenuState,
@@ -26,16 +27,18 @@ import {
   pasteText,
   removeDuplicateRows,
   renameSheet,
+  offsetForThumb,
   replaceSheet,
-  scrollForLogical,
   setCellValue,
   setSheetProtection,
   setSheetTabColor,
   sheetToCsv,
   sortRowRange,
+  thumbMetrics,
   trimCells,
   unhideSheets,
   unmergeCells,
+  visibleIndexes,
   visibleSheets,
   writeAxisSize,
 } from './equipmentWorkbook'
@@ -70,6 +73,8 @@ describe('equipment workbook', () => {
     sheet = setCellValue(sheet, 2, 0, '5')
     sheet = setCellValue(sheet, 3, 0, '=SUM(A1:A3)')
     expect(displayCell(sheet, 3, 0)).toBe('7')
+    expect(displayCell(sheet, 3, 0)).toBe('7')
+    expect(displayCell(setCellValue(sheet, 0, 0, '4'), 3, 0)).toBe('9')
     sheet = setCellValue(sheet, 4, 0, '=A1+A3')
     expect(displayCell(sheet, 4, 0)).toBe('7')
   })
@@ -224,8 +229,23 @@ describe('equipment workbook', () => {
     const far = setCellValue(createSheet('Data'), 1000, 0, 'Far')
     expect(far.cells['1000:0']).toBe('Far')
     expect(far.rowHeights.length).toBeLessThan(200)
-    const logical = logicalOffset(100, 1000, 5000, 100)
-    expect(scrollForLogical(logical, 1000, 5000, 100)).toBeCloseTo(100, 5)
+    const total = offsetAt([], EXCEL_ROWS, DEFAULT_ROW_HEIGHT)
+    const view = 600
+    expect(clampScroll(-10, total, view)).toBe(0)
+    expect(clampScroll(total, total, view)).toBe(total - view)
+    const mid = clampScroll(total / 2, total, view)
+    const thumb = thumbMetrics(total, view, mid, 400)
+    expect(thumb).not.toBeNull()
+    expect(Math.abs(offsetForThumb(thumb!.pos, total, view, 400) - mid)).toBeLessThan(1)
+    const row = 99999
+    const top = offsetAt([], row, DEFAULT_ROW_HEIGHT)
+    const scrolled = clampScroll(top, total, view)
+    expect(top - scrolled).toBeGreaterThanOrEqual(0)
+    expect(top - scrolled).toBeLessThan(view)
+    expect(axisIndexes({ start: 4, end: 8 }, 1, [{ r1: 0, c1: 0, r2: 6, c2: 1 }], 'row', 0, 2)).toContain(0)
+    const started = performance.now()
+    for (let step = 0; step < 2000; step += 1) visibleIndexes([], clampScroll(step * 10000, total, view), view, DEFAULT_ROW_HEIGHT, EXCEL_ROWS)
+    expect(performance.now() - started).toBeLessThan(500)
   })
 
   it('trims text and drops a duplicate row without losing the kept record', () => {

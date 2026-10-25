@@ -1,6 +1,6 @@
 # Current Handoff
 
-Last Updated: `2026-10-24`
+Last Updated: `2026-10-25`
 Version: `v43+paymongo-wip`
 Branch: `feature/paymongo-integration`
 Commit: uncommitted (restore tag `pre-paymongo-integration`)
@@ -11,6 +11,10 @@ Deployment:
 - App URL: https://carlolidres.github.io/gxp-toolkit/
 
 ## Current Status
+
+**CPV product archive (2026-10-25):** the product profile header has Archive. A reason is required. The product status becomes Retired, the sheet stays saved and becomes view-only, and the product leaves the current product list. Choose Archived in the status filter to see it again. Browser click-through is NOT_RUN.
+
+**Spreadsheet scroll (2026-10-25):** the product-profile sheet no longer lays out a 1.7-million-by-12-million-pixel scroll box. Wheel, keyboard, name box, and the thin scrollbar move through the same Excel-sized grid, and only the visible cells are painted. Formula results are reused until the sheet changes. A failed browser save stays “Not saved” and is kept in the tab until storage accepts it. This is browser JSON, not a GxP audit trail. The product profile title, menus, and toolbar are unchanged. Every profile section uses this sheet. Browser frame-rate measurement is NOT_RUN.
 
 **CPV product list (2026-10-24):** `#/cpv/products` is the record table. The All Products bar is a compact Excel-style toolbar: title, live count, product search, status filter, and CSV Export. Product name, code, client, department, batch size, reports, hold-time, and CPP monitoring still open their existing editors. A product profile header is one line, `Product Name (CODE)`. File, Edit, View, Insert, Format, and Data open above the formatting toolbar and close on a second click, an outside click, or Escape. Browser click-through is NOT_RUN.
 
@@ -31,6 +35,8 @@ Deployment:
 **Merge menu (2026-10-13):** Format → Merge cells is enabled only for several cells that are not already merged. Unmerge cells, beside it, is enabled only when the selection contains a merge. The toolbar merge menu uses the same rules. Merging keeps the top-left value and cell formatting, warns, then clears the other values. Unmerge leaves that value and formatting in place.
 
 **Infinite grid (2026-10-13):** each worksheet can be addressed through row 1,048,576 and column XFD. Only the visible rows and columns are painted, and empty cells are not stored. Scrolling, arrow keys, Tab, Enter, Page Up, Page Down, Home, and Ctrl+End move through that grid. A name-box reference such as A100000 scrolls the cell into view. The sheet scrollbars are thin. The product profile title is the product name and code, for example Amlodipine Besilate 10mg Tablet (ABES). Browser click-through is NOT_RUN.
+
+**VRMS database search (2026-10-25):** the global search box keeps each keystroke locally and updates the URL and table about 250ms after typing pauses. Status, client, department, and overdue filters still apply immediately. Browser click-through is NOT_RUN.
 
 **CPV Product Profile sheet (2026-10-03):** the product list uses the APQR Records sheet frame. Columns are Product Name, Product Code, Client, Department, Batch Size, Report Tracer No., Issued Date, Remarks, BHT-Report reference no., Hold-Time, CPP, CQA, and CPP/CQA monitoring status. Report and Protocol are hidden from the CPV sidebar. The sheet no longer has Edit, Retire, or a product-code link. A Department cell opens an editor on the sheet. Empty cells show an Add control; saved departments show as a tag. Saving writes that department onto the product’s APQR record and its other cycles. A Batch Size cell opens an editor for the commercial size and unit (Kg or L) and any alternate sizes. An empty cell uses the same dashed Add chip as Department. Those values stay on the CPV product. Report Tracer No., Issued Date, and Remarks open one list. Issued Date on the report list, the VMP report, and each bulk hold-time row uses a calendar and the dd Mmm YYYY format. Product Name stays frozen at the left of the product sheet, at a readable width, and the sheet scrollbars are thin. The row-number corner stays fixed when the sheet scrolls sideways, and column headers stay opaque. The list puts the newest issued date first, and that row is what the sheet shows. BHT-Report reference no. and Hold-Time open one list of bulk hold-time studies. CPP/CQA Monitoring Status opens the VMP report number, an issued date in dd Mmm YYYY, and the CPP steps for BMR and BPR. Remarks, Hold-Time, and that monitoring cell show a green check when something is saved and a red circle when nothing is saved. Both stay clickable.
 

@@ -8,11 +8,12 @@ import {
   applyCellStyle,
   assertSheetAction,
   autoSumFormula,
+  axisIndexes,
   cellKey,
   clearRange,
+  clampScroll,
   columnLabel,
   columnStats,
-  canvasSpan,
   deleteColumn,
   deleteRow,
   displayCell,
@@ -29,8 +30,8 @@ import {
   mergeCells,
   mergeDiscardCount,
   mergeMenuState,
-  logicalOffset,
   offsetAt,
+  offsetForThumb,
   parseA1,
   pasteText,
   rearrangeRows,
@@ -41,12 +42,12 @@ import {
   sheetToCsv,
   shuffleRows,
   sizeMarks,
-  scrollForLogical,
   sortRowRange,
   splitTextToColumns,
   trimCells,
   unmergeCells,
   usedCorner,
+  thumbMetrics,
   visibleIndexes,
   visibleSheets,
   writeAxisSize,
@@ -82,6 +83,8 @@ function covers(selection: Selection, row: number, column: number) {
 
 function selectionSummary(sheet: EquipmentSheet, selection: Selection) {
   const box = bounds(selection)
+  const span = (box.r2 - box.r1 + 1) * (box.c2 - box.c1 + 1)
+  if (span > 5000) return `${span} cells selected`
   let count = 0
   let numeric = 0
   let sum = 0
@@ -102,15 +105,6 @@ function selectionSummary(sheet: EquipmentSheet, selection: Selection) {
   if (!count) return ''
   if (!numeric) return `Count ${count}`
   return `Count ${count}   Sum ${Math.round(sum * 100) / 100}   Average ${Math.round((sum / numeric) * 100) / 100}`
-}
-
-function spanIndexes(span: { start: number; end: number }, frozen: number) {
-  const indexes: number[] = []
-  for (let index = 0; index < frozen; index += 1) indexes.push(index)
-  for (let index = span.start; index <= span.end; index += 1) {
-    if (index >= frozen) indexes.push(index)
-  }
-  return indexes
 }
 
 export function EquipmentSpreadsheet({
@@ -134,6 +128,8 @@ export function EquipmentSpreadsheet({
 }) {
   const sheet = activeSheet(workbook)
   const gridRef = useRef<HTMLDivElement>(null)
+  const colHeaderRef = useRef<HTMLDivElement>(null)
+  const rowHeaderRef = useRef<HTMLDivElement>(null)
   const tabsRef = useRef<HTMLDivElement>(null)
   const undoRef = useRef<EquipmentWorkbook[]>([])
   const redoRef = useRef<EquipmentWorkbook[]>([])
@@ -163,6 +159,12 @@ export function EquipmentSpreadsheet({
   const [chartType, setChartType] = useState('bar')
   const [pivotRows, setPivotRows] = useState<Array<{ label: string; count: number }> | null>(null)
   const linkedSheet = useRef(false)
+  const scrollRef = useRef(scroll)
+  const frameRef = useRef(0)
+  const gridWidthRef = useRef(0)
+  const gridHeightRef = useRef(0)
+  const zoomRef = useRef(zoom)
+  zoomRef.current = zoom
 
   const rowSizeList = useMemo(
     () => sheet.rowHeights.map((height, row) => (isRowFilteredOut(sheet, row) ? 0 : height)),
@@ -178,18 +180,76 @@ export function EquipmentSpreadsheet({
   )
   const gridWidth = offsetAt(colMarks, EXCEL_COLS, DEFAULT_COL_WIDTH)
   const gridHeight = offsetAt(rowMarks, EXCEL_ROWS, DEFAULT_ROW_HEIGHT)
-  const canvasWidth = canvasSpan(gridWidth)
-  const canvasHeight = canvasSpan(gridHeight)
-  const logicalLeft = logicalOffset(scroll.left, canvasWidth, gridWidth, scroll.width)
-  const logicalTop = logicalOffset(scroll.top, canvasHeight, gridHeight, scroll.height)
+  gridWidthRef.current = gridWidth
+  gridHeightRef.current = gridHeight
+  const logicalLeft = scroll.left
+  const logicalTop = scroll.top
   const cols = visibleIndexes(colMarks, logicalLeft, scroll.width, DEFAULT_COL_WIDTH, EXCEL_COLS)
   const rows = visibleIndexes(rowMarks, logicalTop, scroll.height, DEFAULT_ROW_HEIGHT, EXCEL_ROWS)
   const rowStart = (row: number) => offsetAt(rowMarks, row, DEFAULT_ROW_HEIGHT)
   const colStart = (column: number) => offsetAt(colMarks, column, DEFAULT_COL_WIDTH)
   const rowSize = (row: number) => (row < rowSizeList.length ? rowSizeList[row] : axisSize(sheet.rowHeights, sheet.rowSizes, row, DEFAULT_ROW_HEIGHT))
   const colSize = (column: number) => axisSize(sheet.columnWidths, sheet.colSizes, column, DEFAULT_COL_WIDTH)
-  const placeY = (row: number, frozen: boolean) => (frozen ? scroll.top + rowStart(row) : rowStart(row) - logicalTop + scroll.top)
-  const placeX = (column: number, frozen: boolean) => (frozen ? scroll.left + colStart(column) : colStart(column) - logicalLeft + scroll.left)
+  const placeY = (row: number, frozen: boolean) => (frozen ? rowStart(row) : rowStart(row) - logicalTop)
+  const placeX = (column: number, frozen: boolean) => (frozen ? colStart(column) : colStart(column) - logicalLeft)
+  const vThumb = thumbMetrics(gridHeight, scroll.height, logicalTop, scroll.height)
+  const hThumb = thumbMetrics(gridWidth, scroll.width, logicalLeft, scroll.width)
+
+  function publish(next: { left: number; top: number; width: number; height: number }, immediate = false) {
+    const clamped = {
+      ...next,
+      left: clampScroll(next.left, gridWidthRef.current, next.width),
+      top: clampScroll(next.top, gridHeightRef.current, next.height),
+    }
+    scrollRef.current = clamped
+    if (immediate) {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current)
+      frameRef.current = 0
+      setScroll(clamped)
+      return
+    }
+    if (frameRef.current) return
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = 0
+      setScroll(scrollRef.current)
+    })
+  }
+
+  function dragThumb(axis: 'x' | 'y', event: ReactPointerEvent<HTMLDivElement>) {
+    event.preventDefault()
+    event.stopPropagation()
+    const metrics = axis === 'y' ? vThumb : hThumb
+    if (!metrics) return
+    const start = axis === 'y' ? event.clientY : event.clientX
+    const total = axis === 'y' ? gridHeight : gridWidth
+    const view = axis === 'y' ? scroll.height : scroll.width
+    const target = event.currentTarget
+    target.setPointerCapture(event.pointerId)
+    const move = (ev: PointerEvent) => {
+      const delta = (axis === 'y' ? ev.clientY : ev.clientX) - start
+      const logical = offsetForThumb(metrics.pos + delta, total, view, view)
+      const current = scrollRef.current
+      publish({ ...current, left: axis === 'x' ? logical : current.left, top: axis === 'y' ? logical : current.top })
+    }
+    const stop = () => {
+      target.removeEventListener('pointermove', move)
+      target.removeEventListener('pointerup', stop)
+    }
+    target.addEventListener('pointermove', move)
+    target.addEventListener('pointerup', stop)
+  }
+
+  function pageTrack(axis: 'x' | 'y', event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget) return
+    const rect = event.currentTarget.getBoundingClientRect()
+    const click = axis === 'y' ? event.clientY - rect.top : event.clientX - rect.left
+    const metrics = axis === 'y' ? vThumb : hThumb
+    if (!metrics) return
+    const page = (axis === 'y' ? scroll.height : scroll.width) * 0.9
+    const delta = click < metrics.pos ? -page : page
+    const current = scrollRef.current
+    publish({ ...current, left: current.left + (axis === 'x' ? delta : 0), top: current.top + (axis === 'y' ? delta : 0) })
+  }
   const mergeState = useMemo(() => {
     const box = bounds(selection)
     return mergeMenuState(sheet.merges ?? [], box.r1, box.c1, box.r2, box.c2)
@@ -198,11 +258,39 @@ export function EquipmentSpreadsheet({
   useEffect(() => {
     const node = gridRef.current
     if (!node) return
-    const update = () => setScroll((current) => ({ ...current, width: node.clientWidth, height: node.clientHeight }))
+    const update = () => {
+      publish({ ...scrollRef.current, width: node.clientWidth, height: node.clientHeight }, true)
+    }
     update()
     const observer = new ResizeObserver(update)
     observer.observe(node)
     return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => () => {
+    if (frameRef.current) cancelAnimationFrame(frameRef.current)
+  }, [])
+
+  useEffect(() => {
+    const nodes = [gridRef.current, colHeaderRef.current, rowHeaderRef.current].filter((node): node is HTMLDivElement => node !== null)
+    const onWheel = (event: WheelEvent) => {
+      const target = event.target
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return
+      if (event.ctrlKey) return
+      event.preventDefault()
+      const scale = zoomRef.current / 100 || 1
+      const unit = event.deltaMode === 1 ? DEFAULT_ROW_HEIGHT : event.deltaMode === 2 ? scrollRef.current.height : 1
+      let dx = (event.deltaX * unit) / scale
+      let dy = (event.deltaY * unit) / scale
+      if (event.shiftKey && dx === 0) {
+        dx = dy
+        dy = 0
+      }
+      const current = scrollRef.current
+      publish({ ...current, left: current.left + dx, top: current.top + dy })
+    }
+    nodes.forEach((node) => node.addEventListener('wheel', onWheel, { passive: false }))
+    return () => nodes.forEach((node) => node.removeEventListener('wheel', onWheel))
   }, [])
 
   useEffect(() => {
@@ -239,18 +327,19 @@ export function EquipmentSpreadsheet({
     const width = axisSize(sheet.columnWidths, sheet.colSizes, selection.focusCol, DEFAULT_COL_WIDTH)
     const frozenTop = offsetAt(rowMarks, sheet.freezeRows || 0, DEFAULT_ROW_HEIGHT)
     const frozenLeft = offsetAt(colMarks, sheet.freezeCols || 0, DEFAULT_COL_WIDTH)
-    const viewTop = logicalOffset(node.scrollTop, canvasHeight, gridHeight, node.clientHeight)
-    const viewLeft = logicalOffset(node.scrollLeft, canvasWidth, gridWidth, node.clientWidth)
-    let nextTop = viewTop
-    let nextLeft = viewLeft
+    const current = scrollRef.current
+    const viewHeight = node.clientHeight || current.height
+    const viewWidth = node.clientWidth || current.width
+    let nextTop = current.top
+    let nextLeft = current.left
     if (top < nextTop + frozenTop) nextTop = Math.max(0, top - frozenTop)
-    else if (top + height > nextTop + node.clientHeight) nextTop = top + height - node.clientHeight
+    else if (top + height > nextTop + viewHeight) nextTop = top + height - viewHeight
     if (left < nextLeft + frozenLeft) nextLeft = Math.max(0, left - frozenLeft)
-    else if (left + width > nextLeft + node.clientWidth) nextLeft = left + width - node.clientWidth
-    const scrollTop = scrollForLogical(nextTop, canvasHeight, gridHeight, node.clientHeight)
-    const scrollLeft = scrollForLogical(nextLeft, canvasWidth, gridWidth, node.clientWidth)
-    if (Math.abs(scrollTop - node.scrollTop) > 1 || Math.abs(scrollLeft - node.scrollLeft) > 1) node.scrollTo({ top: scrollTop, left: scrollLeft })
-  }, [selection.focusRow, selection.focusCol, rowMarks, colMarks, rowSizeList, sheet, canvasHeight, canvasWidth, gridHeight, gridWidth])
+    else if (left + width > nextLeft + viewWidth) nextLeft = left + width - viewWidth
+    if (Math.abs(nextTop - current.top) > 1 || Math.abs(nextLeft - current.left) > 1) {
+      publish({ ...current, left: nextLeft, top: nextTop, width: viewWidth, height: viewHeight }, true)
+    }
+  }, [selection.focusRow, selection.focusCol, rowMarks, colMarks, rowSizeList, sheet, gridHeight, gridWidth])
 
   useEffect(() => {
     const visible = visibleSheets(workbook).map((item) => item.id)
@@ -1284,8 +1373,8 @@ export function EquipmentSpreadsheet({
     })
   }
 
-  const rowIndexes = spanIndexes(rows, sheet.freezeRows || 0)
-  const colIndexes = spanIndexes(cols, sheet.freezeCols || 0)
+  const rowIndexes = axisIndexes(rows, sheet.freezeRows || 0, sheet.merges, 'row', cols.start, cols.end)
+  const colIndexes = axisIndexes(cols, sheet.freezeCols || 0, sheet.merges, 'column', rows.start, rows.end)
   const cells = rowIndexes.flatMap((row) =>
     colIndexes.map((column) => {
       const active = selection.focusRow === row && selection.focusCol === column
@@ -1303,6 +1392,17 @@ export function EquipmentSpreadsheet({
         for (let col = merge.c1; col <= merge.c2; col += 1) width += colSize(col)
         for (let index = merge.r1; index <= merge.r2; index += 1) height += rowSize(index)
       }
+      const rawTop = placeY(row, frozenRow)
+      const rawLeft = placeX(column, frozenCol)
+      const oversized = height > scroll.height + 64 || width > scroll.width + 64 || rawTop < -scroll.height || rawLeft < -scroll.width
+      const paintBottom = oversized ? Math.min(rawTop + height, scroll.height + 1) : rawTop + height
+      const paintRight = oversized ? Math.min(rawLeft + width, scroll.width + 1) : rawLeft + width
+      const paintTop = oversized ? Math.max(rawTop, -1) : rawTop
+      const paintLeft = oversized ? Math.max(rawLeft, -1) : rawLeft
+      const paintWidth = paintRight - paintLeft
+      const paintHeight = paintBottom - paintTop
+      if (paintWidth < 1 || paintHeight < 1) return null
+      const showValue = !oversized || (paintTop === rawTop && paintLeft === rawLeft)
       const cellRaw = sheet.cells[`${row}:${column}`] ?? ''
       const shown = displayCell(sheet, row, column)
       const custom = renderCell?.(row, column, shown)
@@ -1312,10 +1412,10 @@ export function EquipmentSpreadsheet({
           role="gridcell"
           className={`eq-cell${covers(selection, row, column) ? ' is-selected' : ''}${active ? ' is-active' : ''}${sheet.links?.[`${row}:${column}`] ? ' is-link' : ''}`}
           style={{
-            left: placeX(column, frozenCol),
-            top: placeY(row, frozenRow),
-            width,
-            height,
+            left: paintLeft,
+            top: paintTop,
+            width: paintWidth,
+            height: paintHeight,
             zIndex: frozenRow || frozenCol || merge ? 4 : undefined,
             fontWeight: style?.bold ? 700 : undefined,
             fontStyle: style?.italic ? 'italic' : undefined,
@@ -1374,7 +1474,7 @@ export function EquipmentSpreadsheet({
           }}
           onContextMenu={(event) => openMenu(event, { row, column, target: 'cell' })}
         >
-          {editingHere ? (
+          {!showValue ? null : editingHere ? (
             <input
               className="eq-editor"
               autoFocus
@@ -1715,8 +1815,8 @@ export function EquipmentSpreadsheet({
           aria-label="Select all cells"
           onClick={() => setSelection({ anchorRow: 0, anchorCol: 0, focusRow: sheet.rowCount - 1, focusCol: sheet.columnCount - 1 })}
         />
-        <div className="eq-col-headers">
-          <div style={{ width: canvasWidth, height: 28, position: 'relative', transform: `translateX(${-scroll.left}px)` }}>
+        <div className="eq-col-headers" ref={colHeaderRef}>
+          <div className="eq-axis">
             {colIndexes.map((column) => (
               <button
                 type="button"
@@ -1753,8 +1853,8 @@ export function EquipmentSpreadsheet({
         </div>
       </div>
       <div className="eq-body" style={{ zoom: zoom / 100 }}>
-        <div className="eq-row-headers">
-          <div style={{ height: canvasHeight, position: 'relative', transform: `translateY(${-scroll.top}px)` }}>
+        <div className="eq-row-headers" ref={rowHeaderRef}>
+          <div className="eq-axis">
             {rowIndexes.map((row) => (
               <button
                 type="button"
@@ -1781,10 +1881,6 @@ export function EquipmentSpreadsheet({
           tabIndex={0}
           role="grid"
           aria-label="Equipment Profile worksheet"
-          onScroll={(event) => {
-            const target = event.currentTarget
-            setScroll({ left: target.scrollLeft, top: target.scrollTop, width: target.clientWidth, height: target.clientHeight })
-          }}
           onKeyDown={onKeyDown}
           onPaste={(event) => {
             if (editing) return
@@ -1805,9 +1901,19 @@ export function EquipmentSpreadsheet({
             clearSelection()
           }}
         >
-          <div className="eq-canvas" style={{ width: canvasWidth, height: canvasHeight }}>
+          <div className="eq-canvas">
             {cells}
           </div>
+          {vThumb ? (
+            <div className="eq-vbar" onPointerDown={(event) => pageTrack('y', event)}>
+              <div className="eq-thumb" style={{ height: vThumb.size, transform: `translateY(${vThumb.pos}px)` }} onPointerDown={(event) => dragThumb('y', event)} />
+            </div>
+          ) : null}
+          {hThumb ? (
+            <div className="eq-hbar" onPointerDown={(event) => pageTrack('x', event)}>
+              <div className="eq-thumb" style={{ width: hThumb.size, transform: `translateX(${hThumb.pos}px)` }} onPointerDown={(event) => dragThumb('x', event)} />
+            </div>
+          ) : null}
         </div>
       </div>
       <div className="eq-footer">

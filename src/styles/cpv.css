@@ -595,7 +595,61 @@
 }
 
 .cpv-product-profile .equipment-profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin: 0 0 6px;
+}
+
+.cpv-profile-archive,
+.cpv-profile-archive-form button {
+  border: 1px solid #c9d0d6;
+  border-radius: 6px;
+  background: #fff;
+  color: #3c4450;
+  font: 600 12px/1 'Segoe UI', sans-serif;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.cpv-profile-archive:hover,
+.cpv-profile-archive-form button:hover {
+  background: #f4f6f8;
+}
+
+.cpv-profile-archived {
+  flex: 0 0 auto;
+  color: #66707a;
+  font: 600 12px/1 'Segoe UI', sans-serif;
+}
+
+.cpv-profile-archive-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  color: #3c4450;
+  font: 13px/1.4 'Segoe UI', sans-serif;
+}
+
+.cpv-profile-archive-form label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cpv-profile-archive-form input {
+  border: 1px solid #c9d0d6;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font: inherit;
+}
+
+.cpv-profile-archive-form p {
+  margin: 0;
+  flex: 1 1 220px;
 }
 
 .cpv-product-profile .equipment-profile-header h1 {

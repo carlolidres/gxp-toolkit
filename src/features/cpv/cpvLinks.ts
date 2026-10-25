@@ -2,6 +2,7 @@ import { productProfilePath } from './productProfile'
 
 /** Posted from the profile frame so the sheet page can open a real tab. */
 export const CPV_PROFILE_OPEN_TAB = 'gxp-cpv-profile-open-tab'
+export const CPV_PRODUCT_ARCHIVED = 'gxp-cpv-product-archived'
 
 export function cpvWorkspacePath(productId: string, section = ''): string {
   return section ? `/cpv/products/${productId}/${section}` : `/cpv/products/${productId}`

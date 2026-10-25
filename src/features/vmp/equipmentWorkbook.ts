@@ -324,24 +324,59 @@ export function visibleIndexes(marks: SizeMark[], scroll: number, viewport: numb
   return { start, end }
 }
 
-export const CANVAS_CAP = 12_000_000
-
-export function canvasSpan(total: number, cap = CANVAS_CAP): number {
-  return Math.min(Math.max(0, total), cap)
+export function clampScroll(offset: number, total: number, view: number): number {
+  const max = Math.max(0, total - Math.max(0, view))
+  return Math.min(max, Math.max(0, offset))
 }
 
-export function logicalOffset(scroll: number, canvas: number, total: number, view: number): number {
-  if (total <= canvas) return scroll
-  const bar = Math.max(1, canvas - Math.max(0, view))
-  const range = Math.max(0, total - Math.max(0, view))
-  return Math.min(range, (Math.max(0, scroll) / bar) * range)
+function thumbSize(total: number, view: number, track: number): number {
+  return Math.max(18, Math.min(track, (view / total) * track))
 }
 
-export function scrollForLogical(logical: number, canvas: number, total: number, view: number): number {
-  if (total <= canvas) return Math.max(0, logical)
-  const bar = Math.max(1, canvas - Math.max(0, view))
-  const range = Math.max(1, total - Math.max(0, view))
-  return Math.min(bar, (Math.max(0, logical) / range) * bar)
+export function thumbMetrics(total: number, view: number, offset: number, track: number): { size: number; pos: number } | null {
+  if (!(total > view) || track <= 0 || view <= 0) return null
+  const size = thumbSize(total, view, track)
+  const travel = Math.max(1, track - size)
+  const range = Math.max(1, total - view)
+  return { size, pos: (clampScroll(offset, total, view) / range) * travel }
+}
+
+export function offsetForThumb(pos: number, total: number, view: number, track: number): number {
+  if (!(total > view) || track <= 0 || view <= 0) return 0
+  const travel = Math.max(1, track - thumbSize(total, view, track))
+  const range = Math.max(0, total - view)
+  return clampScroll((Math.max(0, pos) / travel) * range, total, view)
+}
+
+export function axisIndexes(
+  span: { start: number; end: number },
+  frozen: number,
+  merges: Array<{ r1: number; c1: number; r2: number; c2: number }> | undefined,
+  axis: 'row' | 'column',
+  otherStart: number,
+  otherEnd: number,
+): number[] {
+  const indexes: number[] = []
+  const seen = new Set<number>()
+  const add = (index: number) => {
+    if (index < 0 || seen.has(index)) return
+    seen.add(index)
+    indexes.push(index)
+  }
+  for (let index = 0; index < frozen; index += 1) add(index)
+  for (let index = span.start; index <= span.end; index += 1) {
+    if (index >= frozen) add(index)
+  }
+  for (const merge of merges ?? []) {
+    const start = axis === 'row' ? merge.r1 : merge.c1
+    const end = axis === 'row' ? merge.r2 : merge.c2
+    const other1 = axis === 'row' ? merge.c1 : merge.r1
+    const other2 = axis === 'row' ? merge.c2 : merge.r2
+    if (end < span.start || start > span.end || other2 < otherStart || other1 > otherEnd) continue
+    add(start)
+  }
+  indexes.sort((left, right) => left - right)
+  return indexes
 }
 
 export function usedCorner(sheet: { cells: Record<string, string>; styles?: Record<string, unknown>; notes?: Record<string, string>; comments?: Record<string, string>; merges?: Array<{ r2: number; c2: number }> }): { row: number; column: number } {
@@ -844,14 +879,27 @@ function tokenize(input: string): Token[] {
   return tokens
 }
 
+const numberCache = new WeakMap<EquipmentSheet, Map<string, number>>()
+
 function cellNumber(sheet: EquipmentSheet, row: number, column: number, stack: Set<string>): number {
   const key = cellKey(row, column)
   if (stack.has(key)) throw new Error('#CYCLE!')
+  const cached = numberCache.get(sheet)?.get(key)
+  if (cached !== undefined) return cached
   const raw = sheet.cells[key]?.trim() ?? ''
   if (!raw) return 0
-  if (raw.startsWith('=')) return evaluateFormula(sheet, raw.slice(1), new Set(stack).add(key))
-  const value = Number(raw)
-  if (!Number.isFinite(value)) throw new Error('#VALUE!')
+  let value: number
+  if (raw.startsWith('=')) value = evaluateFormula(sheet, raw.slice(1), new Set(stack).add(key))
+  else {
+    value = Number(raw)
+    if (!Number.isFinite(value)) throw new Error('#VALUE!')
+  }
+  let cache = numberCache.get(sheet)
+  if (!cache) {
+    cache = new Map()
+    numberCache.set(sheet, cache)
+  }
+  cache.set(key, value)
   return value
 }
 
@@ -1010,7 +1058,7 @@ export function displayCell(sheet: EquipmentSheet, row: number, column: number):
   const format = style?.format ?? 'general'
   if (raw.startsWith('=')) {
     try {
-      const value = evaluateFormula(sheet, raw.slice(1), new Set([cellKey(row, column)]))
+      const value = cellNumber(sheet, row, column, new Set())
       const rounded = Math.round(value * 1e10) / 1e10
       if (format === 'date' || format === 'time' || format === 'text' || format === 'general') return String(rounded)
       return formatNumber(rounded, style)

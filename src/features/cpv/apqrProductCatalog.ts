@@ -38,3 +38,8 @@ export function uniqueApqrProducts(rows: ApqrDatabaseRow[]): ApqrCatalogProduct[
   }
   return [...seen.values()].sort((left, right) => left.product_code.localeCompare(right.product_code))
 }
+
+export function showsInProductList(status: string | null | undefined, filter: 'all' | string): boolean {
+  if (filter === 'all') return status !== 'Retired'
+  return (status ?? 'Draft') === filter
+}

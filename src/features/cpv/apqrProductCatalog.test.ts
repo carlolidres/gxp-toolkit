@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ApqrDatabaseRow } from '../apqr/types'
-import { uniqueApqrProducts } from './apqrProductCatalog'
+import { showsInProductList, uniqueApqrProducts } from './apqrProductCatalog'
 
 function row(partial: Partial<ApqrDatabaseRow> & Pick<ApqrDatabaseRow, 'product_code' | 'product_name'>): ApqrDatabaseRow {
   return {
@@ -114,5 +114,12 @@ describe('uniqueApqrProducts', () => {
         apqr_id: 'latest',
       },
     ])
+  })
+
+  it('hides a retired product from the current list and keeps it on the Retired filter', () => {
+    expect(showsInProductList('Retired', 'all')).toBe(false)
+    expect(showsInProductList('Active', 'all')).toBe(true)
+    expect(showsInProductList(undefined, 'all')).toBe(true)
+    expect(showsInProductList('Retired', 'Retired')).toBe(true)
   })
 })
