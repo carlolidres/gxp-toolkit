@@ -137,9 +137,9 @@ export function CpvProductProfilePage() {
     try {
       reloadCpvStoreFromSession()
       await retireCpvProduct(record.id, archiveReason)
-      if (window.parent !== window) {
-        window.parent.postMessage({ type: CPV_PRODUCT_ARCHIVED, productCode: record.product_code }, window.location.origin)
-      }
+      const archivedMessage = { type: CPV_PRODUCT_ARCHIVED, productCode: record.product_code }
+      if (window.parent !== window) window.parent.postMessage(archivedMessage, window.location.origin)
+      if (window.opener && window.opener !== window) window.opener.postMessage(archivedMessage, window.location.origin)
       setArchiveOpen(false)
       setArchiveReason('')
       await product.reload()

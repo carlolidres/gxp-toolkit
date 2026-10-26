@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createWorkbook, setCellValue } from '../vmp/equipmentWorkbook'
+import { buildDatabaseRows } from '../apqr/apqrService'
+import { createWorkbook, displayCell, setCellValue } from '../vmp/equipmentWorkbook'
 import { matchProductProfile, productProfilePath } from './productProfile'
 import { loadProductSectionWorkbook, saveProductSectionWorkbook } from './productProfileWorkbook'
+import { fixtureWorkbook, SPREADSHEET_FIXTURE_CODE } from './spreadsheetTestFixture'
 
 describe('product profile', () => {
   it('keeps the product id in the section path', () => {
@@ -43,5 +45,16 @@ describe('product profile', () => {
     } finally {
       setItem.mockRestore()
     }
+  })
+
+  it('keeps the spreadsheet fixture out of the catalog and stored products', () => {
+    localStorage.clear()
+    expect(buildDatabaseRows().some((row) => row.product_code === SPREADSHEET_FIXTURE_CODE)).toBe(false)
+    expect(loadProductSectionWorkbook(SPREADSHEET_FIXTURE_CODE, 'raw-material').sheets[0].cells['0:0']).toBeUndefined()
+    const book = fixtureWorkbook('small')
+    expect(displayCell(book.sheets[0], 2, 0)).toBe('5')
+    expect(book.sheets.map((sheet) => sheet.name)).toEqual(['Data', 'Notes'])
+    expect(Object.keys(fixtureWorkbook('medium').sheets[0].cells)).toHaveLength(503)
+    expect(Object.keys(fixtureWorkbook('large').sheets[0].cells)).toHaveLength(5003)
   })
 })

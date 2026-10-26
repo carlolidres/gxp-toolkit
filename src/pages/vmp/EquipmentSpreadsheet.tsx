@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 
 import {
   activeSheet,
@@ -9,6 +9,7 @@ import {
   assertSheetAction,
   autoSumFormula,
   axisIndexes,
+  cellContentLayout,
   cellKey,
   clearRange,
   clampScroll,
@@ -21,6 +22,7 @@ import {
   EXCEL_COLS,
   EXCEL_ROWS,
   findNextCell,
+  formulaForRange,
   highlightMatches,
   importCsvText,
   insertColumn,
@@ -33,6 +35,7 @@ import {
   offsetAt,
   offsetForThumb,
   parseA1,
+  paintedFill,
   pasteText,
   rearrangeRows,
   removeDuplicateRows,
@@ -81,6 +84,18 @@ function covers(selection: Selection, row: number, column: number) {
   return row >= box.r1 && row <= box.r2 && column >= box.c1 && column <= box.c2
 }
 
+function valueStyle(layout: ReturnType<typeof cellContentLayout>): CSSProperties {
+  return {
+    textAlign: layout.textAlign,
+    whiteSpace: layout.whiteSpace,
+    overflow: layout.overflow,
+    textOverflow: layout.textOverflow,
+    writingMode: layout.writingMode,
+    transform: layout.transform,
+    height: layout.writingMode ? '100%' : undefined,
+  }
+}
+
 function selectionSummary(sheet: EquipmentSheet, selection: Selection) {
   const box = bounds(selection)
   const span = (box.r2 - box.r1 + 1) * (box.c2 - box.c1 + 1)
@@ -126,6 +141,11 @@ export function EquipmentSpreadsheet({
   onRecordCell?: (row: number, column: number) => void
   renderCell?: (row: number, column: number, shown: string) => ReactNode | null
 }) {
+  useEffect(() => {
+    if (import.meta.env.VITE_SPREADSHEET_FIXTURE !== 'true') return
+    const probe = window as Window & { __sheetCommits?: number }
+    probe.__sheetCommits = (probe.__sheetCommits ?? 0) + 1
+  })
   const sheet = activeSheet(workbook)
   const gridRef = useRef<HTMLDivElement>(null)
   const colHeaderRef = useRef<HTMLDivElement>(null)
@@ -611,18 +631,22 @@ export function EquipmentSpreadsheet({
     const column = selection.focusCol
     if (command === 'undo') {
       const previous = undoRef.current.pop()
-      if (previous) {
-        redoRef.current.push(workbook)
-        onChange(previous, null)
+      if (!previous) {
+        setNotice('Nothing to undo.')
+        return true
       }
+      redoRef.current.push(workbook)
+      onChange(previous, null)
       return true
     }
     if (command === 'redo') {
       const next = redoRef.current.pop()
-      if (next) {
-        undoRef.current.push(workbook)
-        onChange(next, null)
+      if (!next) {
+        setNotice('Nothing to redo.')
+        return true
       }
+      undoRef.current.push(workbook)
+      onChange(next, null)
       return true
     }
     if (command === 'paste-values' || command === 'paste-formulas' || command === 'paste-formats') {
@@ -697,6 +721,7 @@ export function EquipmentSpreadsheet({
     if (command === 'filter-create') {
       const values = columnChoices(column)
       guard(() => changeGrouped((item) => setSheetFilter(item, { column, headerRow: 0, values, fill: null, fontColor: null }), sheetAudit('Filter created')))
+      setNotice(`Filter is on column ${columnLabel(column)}. Use the list in its header cell.`)
       return true
     }
     if (command === 'filter-fill' || command === 'filter-font') {
@@ -836,9 +861,14 @@ export function EquipmentSpreadsheet({
     }
     if (command.startsWith('fn-')) {
       const name = command.slice(3)
-      if (name === 'SUM') writeCell(selection.focusRow, selection.focusCol, autoSumFormula(sheet, selection.focusRow, selection.focusCol))
-      else if (name === 'ROUND') writeCell(selection.focusRow, selection.focusCol, '=ROUND(0,2)')
-      else writeCell(selection.focusRow, selection.focusCol, `=${name}()`)
+      const multi = box.r1 !== box.r2 || box.c1 !== box.c2
+      const row = multi ? Math.min(EXCEL_ROWS - 1, box.r2 + 1) : selection.focusRow
+      const columnForFormula = multi ? box.c1 : selection.focusCol
+      const formula = name === 'SUM' && !multi
+        ? autoSumFormula(sheet, selection.focusRow, selection.focusCol)
+        : formulaForRange(name, box.r1, box.c1, box.r2, box.c2)
+      writeCell(row, columnForFormula, formula)
+      if (multi) setSelection({ anchorRow: row, anchorCol: columnForFormula, focusRow: row, focusCol: columnForFormula })
       return true
     }
     if (command === 'checkbox') {
@@ -1406,10 +1436,13 @@ export function EquipmentSpreadsheet({
       const cellRaw = sheet.cells[`${row}:${column}`] ?? ''
       const shown = displayCell(sheet, row, column)
       const custom = renderCell?.(row, column, shown)
+      const layout = cellContentLayout(style)
+      const filterHere = Boolean(sheet.filter && row === sheet.filter.headerRow && column === sheet.filter.column && sheet.filter.values)
       return (
         <div
           key={`${row}:${column}`}
           role="gridcell"
+          data-address={import.meta.env.VITE_SPREADSHEET_FIXTURE === 'true' ? `${row}:${column}` : undefined}
           className={`eq-cell${covers(selection, row, column) ? ' is-selected' : ''}${active ? ' is-active' : ''}${sheet.links?.[`${row}:${column}`] ? ' is-link' : ''}`}
           style={{
             left: paintLeft,
@@ -1420,17 +1453,16 @@ export function EquipmentSpreadsheet({
             fontWeight: style?.bold ? 700 : undefined,
             fontStyle: style?.italic ? 'italic' : undefined,
             textDecoration: [style?.underline ? 'underline' : '', style?.strike ? 'line-through' : ''].filter(Boolean).join(' ') || undefined,
-            textAlign: style?.align,
+            textAlign: layout.textAlign,
             fontFamily: style?.fontFamily,
             display: 'flex',
-            alignItems: style?.valign === 'top' ? 'flex-start' : style?.valign === 'bottom' ? 'flex-end' : 'center',
-            whiteSpace: style?.wrapMode === 'wrap' || style?.wrap ? 'pre-wrap' : 'nowrap',
-            overflow: style?.wrapMode === 'overflow' ? 'visible' : 'hidden',
-            background: covers(selection, row, column) ? undefined : style?.fill || undefined,
+            flexDirection: 'column',
+            justifyContent: layout.justifyContent,
+            whiteSpace: layout.whiteSpace,
+            overflow: layout.overflow === 'visible' || filterHere ? 'visible' : 'hidden',
+            background: paintedFill(style?.fill, covers(selection, row, column)),
             color: style?.color,
             fontSize: style?.fontSize,
-            writingMode: style?.rotate === 90 || style?.rotate === -90 ? 'vertical-rl' : undefined,
-            transform: style?.rotate && Math.abs(style.rotate) !== 90 ? `rotate(${style.rotate}deg)` : undefined,
             borderTop: style?.borderTop ? `1px ${style.borderStyle ?? 'solid'} ${style.borderColor ?? '#202124'}` : undefined,
             borderRight: style?.borderRight ? `1px ${style.borderStyle ?? 'solid'} ${style.borderColor ?? '#202124'}` : undefined,
             borderBottom: style?.borderBottom ? `1px ${style.borderStyle ?? 'solid'} ${style.borderColor ?? '#202124'}` : undefined,
@@ -1480,6 +1512,7 @@ export function EquipmentSpreadsheet({
               autoFocus
               aria-label={`Edit ${addressLabel(row, column)}`}
               value={editing.draft}
+              style={{ textAlign: layout.textAlign }}
               onChange={(event) => setEditing({ row, column, draft: event.target.value })}
               onBlur={() => commitEdit()}
               onKeyDown={(event) => {
@@ -1523,18 +1556,19 @@ export function EquipmentSpreadsheet({
           ) : cellRaw.startsWith('data:image') ? (
             <img src={cellRaw} alt="" />
           ) : custom ? (
-            <span onMouseDown={(event) => event.stopPropagation()} onDoubleClick={(event) => event.stopPropagation()}>
+            <span className="eq-cell-value" style={valueStyle(layout)} onMouseDown={(event) => event.stopPropagation()} onDoubleClick={(event) => event.stopPropagation()}>
               {custom}
               {sheet.notes?.[`${row}:${column}`] ? <i className="eq-note" title={sheet.notes[`${row}:${column}`]} /> : null}
               {sheet.comments?.[`${row}:${column}`] ? <i className="eq-comment" title={sheet.comments[`${row}:${column}`]} /> : null}
             </span>
           ) : (
-            <span>
+            <span className="eq-cell-value" style={valueStyle(layout)}>
               {shown}
-              {sheet.filter && row === sheet.filter.headerRow && column === sheet.filter.column && sheet.filter.values ? (
+              {filterHere ? (
                 <select
+                  className="eq-filter"
                   aria-label={`Filter ${columnLabel(column)}`}
-                  value={sheet.filter.values.length === 1 ? sheet.filter.values[0] : '*'}
+                  value={(sheet.filter?.values?.length === 1 ? sheet.filter?.values[0] : '*') ?? '*'}
                   onMouseDown={(event) => event.stopPropagation()}
                   onChange={(event) => {
                     const values = event.target.value === '*' ? columnChoices(column) : [event.target.value]

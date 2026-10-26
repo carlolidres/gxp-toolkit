@@ -29,7 +29,7 @@ export function VrmsAuditPage() {
     <VrmsPage title="Audit Trail" description="Create, update, and registry activity.">
       <section className="vrms-panel">
         {loading ? (
-          <Spin tip="Loading audit trail…" />
+          <Spin description="Loading audit trail…" />
         ) : rows.length === 0 ? (
           <Empty description="No audit events recorded." />
         ) : (

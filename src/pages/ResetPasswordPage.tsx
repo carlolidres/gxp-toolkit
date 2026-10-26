@@ -33,7 +33,7 @@ export function ResetPasswordPage() {
     return (
       <div className="flex min-h-screen items-center justify-center" role="status" aria-live="polite">
         <Spin
-          tip="Preparing password reset…"
+          description="Preparing password reset…"
           indicator={<Loader2 className="anticon-spin" size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />}
         />
       </div>
@@ -89,7 +89,7 @@ export function ResetPasswordPage() {
       </section>
 
       <section className="login-panel">
-        <Card className={AUTH_CARD_CLASS} bordered>
+        <Card className={AUTH_CARD_CLASS} variant="outlined">
           <form onSubmit={handleSubmit} aria-labelledby="reset-title">
             <header className="gxp-auth-header">
               <span className="eyebrow">Password reset</span>

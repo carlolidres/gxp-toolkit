@@ -3,20 +3,25 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  AlignVerticalJustifyCenter,
   Bold,
   ChevronDown,
   DollarSign,
   Filter,
+  Grid2x2,
   Italic,
   Link2,
   Minus,
   Paintbrush,
+  PaintBucket,
   Percent,
   Plus,
   Printer,
   Redo2,
+  RotateCw,
   Search,
   Strikethrough,
+  TableCellsMerge,
   Undo2,
   WrapText,
 } from 'lucide-react'
@@ -100,6 +105,8 @@ export function SheetRibbon({
   const [open, setOpen] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [fontQuery, setFontQuery] = useState('')
+  const [textColor, setTextColor] = useState('#000000')
+  const [fillColor, setFillColor] = useState('#fff2cc')
   const root = useRef<HTMLDivElement>(null)
   const matches = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -126,6 +133,8 @@ export function SheetRibbon({
   }, [open])
 
   function run(command: string) {
+    if (command.startsWith('color-')) setTextColor(command.slice(6))
+    if (command.startsWith('fill-') && command !== 'fill-none') setFillColor(command.slice(5))
     setOpen(null)
     onCommand(command)
   }
@@ -205,49 +214,49 @@ export function SheetRibbon({
       <ToolButton title="Bold (Ctrl+B)" disabled={readOnly} pressed={Boolean(active?.bold)} onClick={() => run('bold')}><Bold size={16} /></ToolButton>
       <ToolButton title="Italic (Ctrl+I)" disabled={readOnly} pressed={Boolean(active?.italic)} onClick={() => run('italic')}><Italic size={16} /></ToolButton>
       <ToolButton title="Strikethrough" disabled={readOnly} pressed={Boolean(active?.strike)} onClick={() => run('strike')}><Strikethrough size={16} /></ToolButton>
-      <Drop title="Text color" label="A" open={open === 'color'} onOpen={() => setOpen(open === 'color' ? null : 'color')}>
+      <Drop title="Text color" action={`color-${textColor}`} disabled={readOnly} icon={<span className="eq-gtext" style={{ borderBottomColor: textColor }}>A</span>} open={open === 'color'} onOpen={() => setOpen(open === 'color' ? null : 'color')} onRun={run}>
         <div className="eq-swatches">
           {COLORS.map((color) => <button key={color} type="button" style={{ background: color }} aria-label={color} onClick={() => run(`color-${color}`)} />)}
         </div>
         <input aria-label="Custom text color" type="color" onChange={(event) => run(`color-${event.target.value}`)} />
       </Drop>
       <span className="eq-gsep" />
-      <Drop title="Fill color" label="" open={open === 'fill'} onOpen={() => setOpen(open === 'fill' ? null : 'fill')}>
+      <Drop title="Fill color" action={`fill-${fillColor}`} disabled={readOnly} icon={<PaintBucket size={16} />} open={open === 'fill'} onOpen={() => setOpen(open === 'fill' ? null : 'fill')} onRun={run}>
         <div className="eq-swatches">
           {COLORS.map((color) => <button key={color} type="button" style={{ background: color }} aria-label={color} onClick={() => run(`fill-${color}`)} />)}
         </div>
         <button type="button" onClick={() => run('fill-none')}>No fill</button>
         <input aria-label="Custom fill color" type="color" onChange={(event) => run(`fill-${event.target.value}`)} />
       </Drop>
-      <Drop title="Borders" label="" open={open === 'border'} onOpen={() => setOpen(open === 'border' ? null : 'border')}>
+      <Drop title="Borders" action="border-all" disabled={readOnly} icon={<Grid2x2 size={16} />} open={open === 'border'} onOpen={() => setOpen(open === 'border' ? null : 'border')} onRun={run}>
         {['all', 'outer', 'inner', 'top', 'bottom', 'left', 'right', 'none'].map((mode) => (
           <button key={mode} type="button" onClick={() => run(`border-${mode}`)}>{mode} borders</button>
         ))}
         <button type="button" onClick={() => run('border-dashed')}>Dashed</button>
         <button type="button" onClick={() => run('border-dotted')}>Dotted</button>
       </Drop>
-      <Drop title="Merge cells" label="" open={open === 'merge'} onOpen={() => setOpen(open === 'merge' ? null : 'merge')}>
+      <Drop title="Merge cells" action="merge" disabled={readOnly || !canMerge} menuDisabled={readOnly} icon={<TableCellsMerge size={16} />} open={open === 'merge'} onOpen={() => setOpen(open === 'merge' ? null : 'merge')} onRun={run}>
         <button type="button" disabled={readOnly || !canMerge} onClick={() => run('merge')}>Merge cells</button>
         <button type="button" disabled={readOnly || !canMergeHorizontal} onClick={() => run('merge-h')}>Merge horizontally</button>
         <button type="button" disabled={readOnly || !canMergeVertical} onClick={() => run('merge-v')}>Merge vertically</button>
         <button type="button" disabled={readOnly || !canUnmerge} onClick={() => run('unmerge')}>Unmerge cells</button>
       </Drop>
-      <Drop title="Horizontal alignment" label="" open={open === 'align'} onOpen={() => setOpen(open === 'align' ? null : 'align')}>
+      <Drop title="Horizontal alignment" action="align-left" disabled={readOnly} icon={<AlignLeft size={16} />} open={open === 'align'} onOpen={() => setOpen(open === 'align' ? null : 'align')} onRun={run}>
         <button type="button" onClick={() => run('align-left')}><AlignLeft size={14} /> Left</button>
         <button type="button" onClick={() => run('align-center')}><AlignCenter size={14} /> Center</button>
         <button type="button" onClick={() => run('align-right')}><AlignRight size={14} /> Right</button>
       </Drop>
-      <Drop title="Vertical alignment" label="" open={open === 'valign'} onOpen={() => setOpen(open === 'valign' ? null : 'valign')}>
+      <Drop title="Vertical alignment" action="valign-middle" disabled={readOnly} icon={<AlignVerticalJustifyCenter size={16} />} open={open === 'valign'} onOpen={() => setOpen(open === 'valign' ? null : 'valign')} onRun={run}>
         <button type="button" onClick={() => run('valign-top')}>Top</button>
         <button type="button" onClick={() => run('valign-middle')}>Middle</button>
         <button type="button" onClick={() => run('valign-bottom')}>Bottom</button>
       </Drop>
-      <Drop title="Text wrapping" label="" open={open === 'wrap'} onOpen={() => setOpen(open === 'wrap' ? null : 'wrap')}>
+      <Drop title="Text wrapping" action="wrap-wrap" disabled={readOnly} icon={<WrapText size={16} />} open={open === 'wrap'} onOpen={() => setOpen(open === 'wrap' ? null : 'wrap')} onRun={run}>
         <button type="button" onClick={() => run('wrap-overflow')}><WrapText size={14} /> Overflow</button>
         <button type="button" onClick={() => run('wrap-wrap')}>Wrap</button>
         <button type="button" onClick={() => run('wrap-clip')}>Clip</button>
       </Drop>
-      <Drop title="Text rotation" label="" open={open === 'rotate'} onOpen={() => setOpen(open === 'rotate' ? null : 'rotate')}>
+      <Drop title="Text rotation" action="rotate-up" disabled={readOnly} icon={<RotateCw size={16} />} open={open === 'rotate'} onOpen={() => setOpen(open === 'rotate' ? null : 'rotate')} onRun={run}>
         <button type="button" onClick={() => run('rotate-up')}>Rotate up</button>
         <button type="button" onClick={() => run('rotate-down')}>Rotate down</button>
         <button type="button" onClick={() => run('rotate-vert')}>Vertical</button>
@@ -259,7 +268,7 @@ export function SheetRibbon({
       <ToolButton title="Add comment" disabled={readOnly} onClick={() => run('comment')}>💬</ToolButton>
       <ToolButton title="Insert chart" onClick={() => run('chart')}>▦</ToolButton>
       <ToolButton title="Create a filter" disabled={readOnly} onClick={() => run('filter-create')}><Filter size={16} /></ToolButton>
-      <Drop title="Functions" label="Σ" open={open === 'fn'} onOpen={() => setOpen(open === 'fn' ? null : 'fn')}>
+      <Drop title="Functions" label="Σ" action="fn-SUM" disabled={readOnly} open={open === 'fn'} onOpen={() => setOpen(open === 'fn' ? null : 'fn')} onRun={run}>
         {['SUM', 'AVERAGE', 'COUNT', 'COUNTA', 'MIN', 'MAX', 'ROUND', 'STDEV.S', 'VAR.S'].map((name) => (
           <button key={name} type="button" onClick={() => run(`fn-${name}`)}>{name}</button>
         ))}
@@ -294,23 +303,45 @@ function ToolButton({
 function Drop({
   title,
   label,
+  icon,
+  action,
+  disabled,
+  menuDisabled,
   open,
   onOpen,
+  onRun,
   children,
 }: {
   title: string
-  label: string
+  label?: string
+  icon?: ReactNode
+  action?: string
+  disabled?: boolean
+  menuDisabled?: boolean
   open: boolean
   onOpen: () => void
+  onRun?: (command: string) => void
   children: ReactNode
 }) {
   return (
     <div className="eq-gdrop">
-      <button type="button" title={title} aria-expanded={open} onClick={onOpen}>
+      <button
+        type="button"
+        title={title}
+        disabled={disabled}
+        aria-expanded={action ? undefined : open}
+        onClick={() => (action && onRun ? onRun(action) : onOpen())}
+      >
+        {icon}
         {label ? <span>{label}</span> : null}
-        <ChevronDown size={12} />
+        {action ? null : <ChevronDown size={12} />}
       </button>
-      {open ? <div className="eq-gpop">{children}</div> : null}
+      {action ? (
+        <button type="button" className="eq-gcaret" title={`${title} menu`} aria-label={`${title} menu`} aria-expanded={open} disabled={menuDisabled ?? disabled} onClick={onOpen}>
+          <ChevronDown size={12} />
+        </button>
+      ) : null}
+      {open ? <div className="eq-gpop" onMouseDown={(event) => event.stopPropagation()}>{children}</div> : null}
     </div>
   )
 }

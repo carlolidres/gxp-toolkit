@@ -326,7 +326,7 @@ export function EdocLoading({ label = 'Loading eDoc data...' }: { label?: string
   return (
     <div className="edoc-loading" role="status" aria-live="polite">
       <Spin
-        tip={label}
+        description={label}
         indicator={<Loader2 className="anticon-spin" size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />}
       />
     </div>

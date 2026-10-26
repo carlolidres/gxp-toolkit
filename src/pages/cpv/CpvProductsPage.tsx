@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { Button, DatePicker, Modal, Select, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
@@ -8,7 +7,7 @@ import { Circle, CircleCheck, Download, FileText, Filter, Hourglass, Plus, Scale
 import { ApqrContactRoleEditor } from '../../components/apqr/ApqrContactRoleEditor'
 import { ApqrSearchableCombobox } from '../../components/apqr/ApqrSearchableCombobox'
 import { CpvEmpty, CpvError, CpvLoading, CpvPage } from '../../components/cpv/CpvComponents'
-import { CPV_PRODUCT_ARCHIVED, CPV_PROFILE_OPEN_TAB, cpvProductWindowHref, openCpvProductWindow } from '../../features/cpv/cpvLinks'
+import { CPV_PRODUCT_ARCHIVED, cpvProductWindowHref, openCpvProductWindow } from '../../features/cpv/cpvLinks'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { listAccountManagerSuggestions, listClients, listDatabaseRows, listDepartmentSuggestions, saveApqrProductIdentity, saveClient, saveRecord } from '../../features/apqr/apqrService'
 import { rememberAccountManager } from '../../features/apqr/accountManagerSuggestions'
@@ -390,7 +389,6 @@ export function CpvProductsPage() {
   const [cppRows, setCppRows] = useState<CppDraft[]>([])
   const [savingCpp, setSavingCpp] = useState(false)
   const [identityEdit, setIdentityEdit] = useState<CatalogRow | null>(null)
-  const [profileOverlay, setProfileOverlay] = useState<string | null>(null)
   const [identityName, setIdentityName] = useState('')
   const [identityCode, setIdentityCode] = useState('')
   const [savingIdentity, setSavingIdentity] = useState(false)
@@ -399,35 +397,15 @@ export function CpvProductsPage() {
   const [savingClient, setSavingClient] = useState(false)
 
   useEffect(() => {
-    if (!profileOverlay) return
-    const productCode = profileOverlay
-    function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') setProfileOverlay(null)
-    }
     function onMessage(event: MessageEvent) {
       if (event.origin !== window.location.origin) return
-      if (event.data?.type === CPV_PRODUCT_ARCHIVED) {
-        reloadCpvStoreFromSession()
-        void list.reload()
-        return
-      }
-      if (event.data?.type !== CPV_PROFILE_OPEN_TAB) return
-      if (!openCpvProductWindow(productCode)) {
-        notify('Allow pop-ups to open the product in a new tab.')
-        return
-      }
-      setProfileOverlay(null)
+      if (event.data?.type !== CPV_PRODUCT_ARCHIVED) return
+      reloadCpvStoreFromSession()
+      void list.reload()
     }
-    document.addEventListener('keydown', onKey)
     window.addEventListener('message', onMessage)
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      window.removeEventListener('message', onMessage)
-      document.body.style.overflow = previousOverflow
-    }
-  }, [profileOverlay, notify, list.reload])
+    return () => window.removeEventListener('message', onMessage)
+  }, [list.reload])
 
   const catalog = useMemo(() => uniqueApqrProducts(list.data?.apqrRows ?? []), [list.data])
   const cpvByCode = useMemo(() => {
@@ -820,15 +798,15 @@ export function CpvProductsPage() {
                           <a
                             className="cpv-sheet-name-button"
                             href={cpvProductWindowHref(row.product_code)}
-                            title="Open product profile"
+                            title="Open product profile in a new window"
                             onClick={(event) => {
                               event.preventDefault()
-                              setProfileOverlay(row.product_code)
+                              if (!openCpvProductWindow(row.product_code)) notify('Allow pop-ups to open the product in a new window.')
                             }}
                             onAuxClick={(event) => {
                               if (event.button !== 1) return
                               event.preventDefault()
-                              setProfileOverlay(row.product_code)
+                              if (!openCpvProductWindow(row.product_code)) notify('Allow pop-ups to open the product in a new window.')
                             }}
                           >
                             {cells[header]}
@@ -1475,18 +1453,6 @@ export function CpvProductsPage() {
           </div>
         ) : null}
       </Modal>
-      {profileOverlay
-        ? createPortal(
-            <div className="cpv-profile-overlay" role="dialog" aria-modal="true" aria-label="Product profile">
-              <iframe
-                className="cpv-profile-overlay-frame"
-                title={`Product profile ${profileOverlay}`}
-                src={cpvProductWindowHref(profileOverlay)}
-              />
-            </div>,
-            document.body,
-          )
-        : null}
     </CpvPage>
   )
 }

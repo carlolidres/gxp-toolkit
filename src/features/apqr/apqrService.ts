@@ -1,4 +1,5 @@
 import seedBundle from '../../data/apqrSeedData.json'
+import { spreadsheetFixtureEnabled, spreadsheetFixtureRow } from '../cpv/spreadsheetTestFixture'
 import { getSupabaseClient, isSupabaseConfigured } from '../../lib/supabase'
 import { formatAppDate, formatAppDateTime } from '../../utils/dateUtils'
 import {
@@ -107,7 +108,7 @@ function recordBySchedulerId(schedulerId: string) {
 export function buildDatabaseRows(): ApqrDatabaseRow[] {
   const today = new Date().toISOString().slice(0, 10)
 
-  return schedulerEntries
+  const rows = schedulerEntries
     .filter((s) => s.is_active)
     .map((sched) => {
       const client = clientById(sched.client_id)
@@ -169,6 +170,8 @@ export function buildDatabaseRows(): ApqrDatabaseRow[] {
       row.missing_critical_count = countMissingCritical(row)
       return row
     })
+  if (spreadsheetFixtureEnabled()) rows.push(spreadsheetFixtureRow())
+  return rows
     .sort((a, b) => {
       const p = PRIORITY_SORT[a.priority] - PRIORITY_SORT[b.priority]
       if (p !== 0) return p

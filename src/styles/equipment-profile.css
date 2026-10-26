@@ -313,8 +313,15 @@
   user-select: none;
 }
 
+.eq-cell-value {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
 .eq-cell.is-selected {
   background: #e7f4f3;
+  box-shadow: inset 0 0 0 2px rgba(22, 125, 131, 0.45);
 }
 
 .eq-cell.is-active {
@@ -847,6 +854,7 @@
 
 .eq-gtoolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 2px;
   margin: 6px 8px 4px;
@@ -855,7 +863,7 @@
   border: 1px solid #e4e7eb;
   border-radius: 10px;
   position: relative;
-  z-index: 7;
+  z-index: 20;
   overflow: visible;
 }
 
@@ -918,12 +926,38 @@
 
 .eq-gdrop {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.eq-gcaret {
+  min-width: 16px;
+  padding: 0 1px;
+}
+
+.eq-gtext {
+  font-weight: 700;
+  border-bottom: 3px solid #000;
+  line-height: 1;
+}
+
+.eq-filter {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 5;
+  max-width: calc(100% - 8px);
+  min-height: 18px;
+  background: #fff;
+  border: 1px solid #c5cad3;
+  border-radius: 3px;
+  font: 11px 'Segoe UI', sans-serif;
 }
 
 .eq-gpop,
 .eq-formula-hints {
   position: absolute;
-  z-index: 30;
+  z-index: 80;
   top: 100%;
   left: 0;
   min-width: 180px;

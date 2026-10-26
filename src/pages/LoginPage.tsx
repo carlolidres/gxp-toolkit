@@ -62,7 +62,7 @@ export function LoginPage() {
     return (
       <div className="flex min-h-screen items-center justify-center" role="status" aria-live="polite">
         <Spin
-          tip="Restoring session…"
+          description="Restoring session…"
           indicator={<Loader2 className="anticon-spin" size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />}
         />
       </div>
@@ -104,7 +104,7 @@ export function LoginPage() {
 
       <section className="login-panel">
         <div className="login-panel-stack">
-        <Card className={AUTH_CARD_CLASS} bordered>
+        <Card className={AUTH_CARD_CLASS} variant="outlined">
           <form
             onSubmit={handleSubmit}
             autoComplete="off"
@@ -149,15 +149,6 @@ export function LoginPage() {
                 label="Password"
                 htmlFor={passwordId}
                 icon={<Lock size={iconSize.xs} strokeWidth={iconStroke} aria-hidden />}
-                hint={
-                  <button
-                    type="button"
-                    className="gxp-auth-text-link"
-                    onClick={() => navigate('/forgot-password', { state: { email } })}
-                  >
-                    Forgot password?
-                  </button>
-                }
               >
                 <PasswordInput
                   id={passwordId}

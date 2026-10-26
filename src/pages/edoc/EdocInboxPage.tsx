@@ -50,7 +50,7 @@ export function EdocInboxPage() {
       >
         {error ? <EdocError message={error} /> : null}
 
-        <Card className="panel edoc-list-panel" bordered={false}>
+        <Card className="panel edoc-list-panel" variant="borderless">
           <header className="edoc-list-panel-header">
             <div>
               <p className="edoc-list-kicker">Assignments</p>

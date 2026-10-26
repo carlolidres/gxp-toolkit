@@ -1,4 +1,5 @@
 import { createWorkbook, normalizeWorkbook, type EquipmentWorkbook } from '../vmp/equipmentWorkbook'
+import { fixtureWorkbook, SPREADSHEET_FIXTURE_CODE, spreadsheetFixtureEnabled } from './spreadsheetTestFixture'
 
 const STORAGE_KEY = 'gxp.cpv.product-profile.v1'
 
@@ -23,11 +24,20 @@ export function productSectionHeld(productId: string, section: string): boolean 
   return held?.key === storageKey(productId, section)
 }
 
+function requestedFixtureSize(): 'small' | 'medium' | 'large' {
+  if (typeof window === 'undefined') return 'small'
+  const size = new URLSearchParams(window.location.search).get('sheetSize')
+  if (size === 'medium' || size === 'large') return size
+  return 'small'
+}
+
 export function loadProductSectionWorkbook(productId: string, section: string): EquipmentWorkbook {
   const key = storageKey(productId, section)
   if (held?.key === key) return held.workbook
   const workbook = normalizeWorkbook(readAll()[key])
-  return workbook ?? createWorkbook()
+  if (workbook) return workbook
+  if (spreadsheetFixtureEnabled() && productId.trim().toUpperCase() === SPREADSHEET_FIXTURE_CODE) return fixtureWorkbook(requestedFixtureSize())
+  return createWorkbook()
 }
 
 export function saveProductSectionWorkbook(productId: string, section: string, workbook: EquipmentWorkbook): void {

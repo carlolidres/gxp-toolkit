@@ -159,7 +159,7 @@ export function VmpRecordDrawer({
     <Drawer
       open
       onClose={onClose}
-      width={480}
+      size={480}
       className="vmp-record-drawer"
       title={
         <div>

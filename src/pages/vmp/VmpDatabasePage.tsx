@@ -464,7 +464,7 @@ export function VmpDatabasePage() {
         {error ? <p className="vmp-form-error">{error}</p> : null}
 
         {loading ? (
-          <Spin tip="Loading masterlist records…" />
+          <Spin description="Loading masterlist records…" />
         ) : sortedRecords.length === 0 ? (
           <div className="vmp-empty-state">
             <Empty description="No records found. Create a record in Masterlist Form or adjust your filters.">

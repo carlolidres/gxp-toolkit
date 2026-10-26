@@ -43,7 +43,7 @@ export function VmpFieldOptionsPage() {
             <Select id="vmp-field-type" value={fieldType} onChange={(value) => setFieldType(value as VmpFieldType)} options={fieldTypes.map((type) => ({ value: type, label: type }))} />
           </div>
         </div>
-        {optionsLoading ? <Spin tip="Loading options…" /> : rows.length === 0 ? <Empty description="No user-defined options for this field type yet." /> : (
+        {optionsLoading ? <Spin description="Loading options…" /> : rows.length === 0 ? <Empty description="No user-defined options for this field type yet." /> : (
           <Table
             className="vrms-table"
             dataSource={rows}

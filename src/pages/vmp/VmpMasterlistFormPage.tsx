@@ -502,7 +502,7 @@ export function VmpMasterlistFormPage() {
   if (loading || !formRecord) {
     return (
       <VrmsPage eyebrow="Validation Master Plan" title="VMP / Masterlist Form" description="Create or update validation masterlist records.">
-        <Spin tip={editRecordId && !existing ? 'Record not found.' : 'Loading form…'} />
+        <Spin description={editRecordId && !existing ? 'Record not found.' : 'Loading form…'} />
       </VrmsPage>
     )
   }

@@ -239,7 +239,7 @@ export function ApqrLoading() {
   return (
     <div role="status" aria-live="polite">
       <Spin
-        tip="Loading APQR data…"
+        description="Loading APQR data…"
         indicator={<Loader2 className="anticon-spin" size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />}
       />
     </div>

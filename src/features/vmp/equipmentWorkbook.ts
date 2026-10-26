@@ -1234,6 +1234,34 @@ export function blankFilter(column: number, headerRow = 0): SheetFilter {
   return { column, headerRow, values: null, fill: null, fontColor: null }
 }
 
+/** Selection keeps the fill. The outline shows the selection. */
+export function paintedFill(fill: string | undefined, selected: boolean): string | undefined {
+  void selected
+  return fill || undefined
+}
+
+export function cellContentLayout(style?: CellStyle): {
+  textAlign: 'left' | 'center' | 'right'
+  justifyContent: 'flex-start' | 'center' | 'flex-end'
+  whiteSpace: 'pre-wrap' | 'nowrap'
+  overflow: 'visible' | 'hidden'
+  textOverflow: 'clip' | 'ellipsis'
+  writingMode?: 'vertical-rl'
+  transform?: string
+} {
+  const angle = style?.rotate ?? 0
+  const wrap = style?.wrapMode === 'wrap' || Boolean(style?.wrap)
+  return {
+    textAlign: style?.align === 'center' || style?.align === 'right' ? style.align : 'left',
+    justifyContent: style?.valign === 'top' ? 'flex-start' : style?.valign === 'bottom' ? 'flex-end' : 'center',
+    whiteSpace: wrap ? 'pre-wrap' : 'nowrap',
+    overflow: style?.wrapMode === 'overflow' ? 'visible' : 'hidden',
+    textOverflow: wrap || style?.wrapMode === 'overflow' || style?.wrapMode === 'clip' ? 'clip' : 'ellipsis',
+    writingMode: angle === 90 || angle === -90 ? 'vertical-rl' : undefined,
+    transform: angle && Math.abs(angle) !== 90 ? `rotate(${angle}deg)` : undefined,
+  }
+}
+
 function cellStyleVisible(style: CellStyle): boolean {
   return Boolean(
     style.bold || style.italic || style.underline || style.strike || style.align || style.valign || style.wrap || style.wrapMode ||
@@ -1370,6 +1398,13 @@ export function findNextCell(sheet: EquipmentSheet, query: string, row: number, 
     .sort((left, right) => left.row - right.row || left.column - right.column)
   if (!spots.length) return null
   return spots.find((spot) => spot.row > row || (spot.row === row && spot.column > column)) ?? spots[0]
+}
+
+export function formulaForRange(name: string, row1: number, col1: number, row2: number, col2: number): string {
+  const start = addressLabel(Math.min(row1, row2), Math.min(col1, col2))
+  const end = addressLabel(Math.max(row1, row2), Math.max(col1, col2))
+  const ref = start === end ? start : `${start}:${end}`
+  return name === 'ROUND' ? `=ROUND(${ref},2)` : `=${name}(${ref})`
 }
 
 export function autoSumFormula(sheet: EquipmentSheet, row: number, column: number): string {

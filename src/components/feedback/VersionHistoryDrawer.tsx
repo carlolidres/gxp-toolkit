@@ -32,7 +32,7 @@ export function VersionHistoryDrawer({
     <Drawer
       open={isOpen}
       onClose={onClose}
-      width={420}
+      size={420}
       title={
         <div className="version-drawer-heading">
           <Text type="secondary" className="version-drawer-eyebrow">

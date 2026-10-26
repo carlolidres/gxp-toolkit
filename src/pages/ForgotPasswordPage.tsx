@@ -41,7 +41,7 @@ export function ForgotPasswordPage() {
     return (
       <div className="flex min-h-screen items-center justify-center" role="status" aria-live="polite">
         <Spin
-          tip="Restoring session…"
+          description="Restoring session…"
           indicator={<Loader2 className="anticon-spin" size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />}
         />
       </div>
@@ -94,7 +94,7 @@ export function ForgotPasswordPage() {
       </section>
 
       <section className="login-panel">
-        <Card className={AUTH_CARD_CLASS} bordered>
+        <Card className={AUTH_CARD_CLASS} variant="outlined">
           <form onSubmit={handleSubmit} aria-labelledby="forgot-title">
             <header className="gxp-auth-header">
               <span className="eyebrow">Forgot password</span>

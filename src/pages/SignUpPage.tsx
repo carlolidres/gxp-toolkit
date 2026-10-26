@@ -106,7 +106,7 @@ export function SignUpPage() {
 
       <section className="login-panel">
         <div className="login-panel-stack">
-        <Card className={AUTH_CARD_CLASS} bordered>
+        <Card className={AUTH_CARD_CLASS} variant="outlined">
           <form onSubmit={handleSubmit} aria-labelledby="signup-title">
             <header className="gxp-auth-header">
               <span className="eyebrow">Create account</span>

@@ -134,7 +134,7 @@ export function MessagesModal({
       open={isOpen}
       onClose={onClose}
       title={title}
-      width={drawerWidth}
+      size={drawerWidth}
       className="messages-drawer"
       destroyOnHidden
       maskClosable={false}

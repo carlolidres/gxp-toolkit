@@ -42,7 +42,7 @@ export function ApqrNotificationsModal({
         {hasDcWarnings || missingControllerLoading ? (
           <section className="apqr-notifications-section" aria-label="Document Controller">
             <h3 className="apqr-notifications-section-title">Document Controller</h3>
-            {missingControllerLoading ? <Spin tip="Loading Document Controller warnings…" /> : null}
+            {missingControllerLoading ? <Spin description="Loading Document Controller warnings…" /> : null}
             {!missingControllerLoading && hasDcWarnings ? (
               <Alert
                 type="warning"
@@ -86,7 +86,7 @@ export function ApqrNotificationsModal({
               </p>
             )}
 
-            {loading ? <Spin tip="Loading APQR reminders…" /> : null}
+            {loading ? <Spin description="Loading APQR reminders…" /> : null}
 
             {!loading && inSeason && summary.items.length === 0 ? (
               <Empty description="No pending APQR scheduling actions for your assigned clients this season." />

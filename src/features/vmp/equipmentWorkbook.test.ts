@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   addSheet,
+  applyCellStyle,
+  cellContentLayout,
   columnLabel,
   copySheet,
   createSheet,
@@ -11,6 +13,7 @@ import {
   displayCell,
   EXCEL_COLS,
   EXCEL_ROWS,
+  formulaForRange,
   hideSheet,
   axisIndexes,
   clampScroll,
@@ -24,6 +27,7 @@ import {
   normalizeWorkbook,
   offsetAt,
   parseA1,
+  paintedFill,
   pasteText,
   removeDuplicateRows,
   renameSheet,
@@ -45,6 +49,31 @@ import {
 import { loadEquipmentWorkbook, saveEquipmentWorkbook } from './equipmentWorkbookStorage'
 
 describe('equipment workbook', () => {
+  it('keeps a fill color on a selected cell', () => {
+    let sheet = createSheet('Sheet1', 4, 4)
+    sheet = applyCellStyle(sheet, 0, 0, 0, 0, { fill: '#e53935' })
+    expect(sheet.styles?.['0:0']?.fill).toBe('#e53935')
+    expect(paintedFill('#e53935', true)).toBe('#e53935')
+    expect(paintedFill('#e53935', false)).toBe('#e53935')
+    expect(paintedFill('', true)).toBeUndefined()
+  })
+
+  it('aligns cell text left, center, and right', () => {
+    expect(cellContentLayout().textAlign).toBe('left')
+    expect(cellContentLayout({ align: 'center' }).textAlign).toBe('center')
+    expect(cellContentLayout({ align: 'right' }).textAlign).toBe('right')
+    expect(cellContentLayout({ valign: 'top' }).justifyContent).toBe('flex-start')
+    expect(cellContentLayout({ valign: 'bottom' }).justifyContent).toBe('flex-end')
+    expect(cellContentLayout({ wrapMode: 'wrap' }).whiteSpace).toBe('pre-wrap')
+    expect(cellContentLayout({ wrapMode: 'overflow' }).overflow).toBe('visible')
+    expect(cellContentLayout({ rotate: 90 }).writingMode).toBe('vertical-rl')
+  })
+
+  it('builds a formula for the selected cells', () => {
+    expect(formulaForRange('AVERAGE', 0, 0, 2, 0)).toBe('=AVERAGE(A1:A3)')
+    expect(formulaForRange('ROUND', 1, 1, 1, 1)).toBe('=ROUND(B2,2)')
+  })
+
   it('labels columns the way a spreadsheet does', () => {
     expect(columnLabel(0)).toBe('A')
     expect(columnLabel(25)).toBe('Z')
@@ -180,6 +209,27 @@ describe('equipment workbook', () => {
     expect(sheetToCsv(imported)).toContain("'=1+1")
     expect(displayCell(setCellValue(createSheet('Data'), 0, 0, '=ROUND(1.236,2)'), 0, 0)).toBe('1.24')
     expect(displayCell(setCellValue(createSheet('Data'), 0, 0, '=STDEV.S(1,2,3)'), 0, 0)).toBe('1')
+  })
+
+  it('evaluates each implemented formula and rejects a dollar absolute reference', () => {
+    let sheet = setCellValue(createSheet('Data'), 0, 0, '2')
+    sheet = setCellValue(sheet, 1, 0, '4')
+    sheet = setCellValue(sheet, 2, 0, '6')
+    const shown = (formula: string) => displayCell(setCellValue(sheet, 3, 0, formula), 3, 0)
+    expect(shown('=SUM(A1:A3)')).toBe('12')
+    expect(shown('=$A$1')).toBe('#ERROR!')
+    expect(shown('=AVERAGE(A1:A3)')).toBe('4')
+    expect(shown('=MIN(A1:A3)')).toBe('2')
+    expect(shown('=MAX(A1:A3)')).toBe('6')
+    expect(shown('=COUNT(A1:A3)')).toBe('3')
+    expect(shown('=COUNTA(A1:A3)')).toBe('3')
+    expect(shown('=ABS(-8)')).toBe('8')
+    expect(shown('=ROUND(1.236,2)')).toBe('1.24')
+    expect(shown('=STDEV(1,2,3)')).toBe('1')
+    expect(shown('=STDEV.S(1,2,3)')).toBe('1')
+    expect(shown('=VAR(1,2,3)')).toBe('1')
+    expect(shown('=VAR.S(1,2,3)')).toBe('1')
+    expect(shown('=A1+A2*2')).toBe('10')
   })
 
   it('shows currency without changing the stored value or a leading-zero identifier', () => {

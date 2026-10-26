@@ -252,7 +252,7 @@ export function UserManagementPage() {
       <div className="page">
         <div className="flex min-h-[240px] flex-col items-center justify-center gap-3" role="status" aria-live="polite">
           <Spin
-            tip="Loading users…"
+            description="Loading users…"
             indicator={<Loader2 className="anticon-spin" size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />}
           />
         </div>

@@ -65,7 +65,7 @@ export function CpvPage({
 export function CpvLoading({ label = 'Loading CPV data…' }: { label?: string }) {
   return (
     <div role="status" aria-live="polite">
-      <Spin tip={label} indicator={<Loader2 className="anticon-spin" size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />} />
+      <Spin description={label} indicator={<Loader2 className="anticon-spin" size={iconSize.lg} strokeWidth={iconStroke} aria-hidden />} />
     </div>
   )
 }

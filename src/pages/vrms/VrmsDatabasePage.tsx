@@ -114,7 +114,7 @@ export function VrmsDatabasePage() {
   if (loading && !appData) {
     return (
       <div className="page">
-        <Spin tip="Loading database…" />
+        <Spin description="Loading database…" />
       </div>
     )
   }

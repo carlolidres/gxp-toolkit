@@ -25,6 +25,8 @@ interface ImportMetaEnv {
   readonly VITE_PAYMONGO_CHECKOUT_ENABLED?: string
   /** CPV module — production default false. Local dev shows CPV unless set false. */
   readonly VITE_ENABLE_CPV?: string
+  /** Test-only catalog product. Leave unset outside the spreadsheet Playwright run. */
+  readonly VITE_SPREADSHEET_FIXTURE?: string
 }
 
 interface ImportMeta {

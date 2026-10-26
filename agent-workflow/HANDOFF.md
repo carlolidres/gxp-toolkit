@@ -1,6 +1,6 @@
 # Current Handoff
 
-Last Updated: `2026-10-25`
+Last Updated: `2026-10-26`
 Version: `v43+paymongo-wip`
 Branch: `feature/paymongo-integration`
 Commit: uncommitted (restore tag `pre-paymongo-integration`)
@@ -12,9 +12,13 @@ Deployment:
 
 ## Current Status
 
+**Spreadsheet performance baseline (2026-10-26):** Playwright can open an isolated product, `ZZ-SHEET-FIXTURE`, only when `VITE_SPREADSHEET_FIXTURE=true`. That flag is off for normal dev and production, and the fixture does not write real product records. `npm run test:spreadsheet` passed 24 tests. `npm run test:spreadsheet:e2e` measured small, medium, and large sheets in Chromium. The visible grid stays at 468 cells. Scroll bursts still produce long tasks up to 294ms. A CSS-variable scroll path made the median frame interval slower and was reverted. Formula evaluation, undo snapshots, and localStorage were not changed. Details are in `SPREADSHEET_PERFORMANCE_BASELINE.md` and `SPREADSHEET_OPTIMIZATION_REPORT.md`.
+
+**Product profile window and sheet toolbar (2026-10-26):** a product name on the CPV list opens that product’s profile in a new window. The sign-in copy still goes with it. Archiving from that window tells the list to refresh. The formatting toolbar’s color, fill, border, merge, alignment, wrap, rotation, and function controls apply to the selection; the arrow beside each one opens the rest of the choices. Left, center, and right move the text inside the cell. A fill color stays visible on the selected cell. The login card no longer shows Forgot password beside the password field. Browser click-through is NOT_RUN.
+
 **CPV product archive (2026-10-25):** the product profile header has Archive. A reason is required. The product status becomes Retired, the sheet stays saved and becomes view-only, and the product leaves the current product list. Choose Archived in the status filter to see it again. Browser click-through is NOT_RUN.
 
-**Spreadsheet scroll (2026-10-25):** the product-profile sheet no longer lays out a 1.7-million-by-12-million-pixel scroll box. Wheel, keyboard, name box, and the thin scrollbar move through the same Excel-sized grid, and only the visible cells are painted. Formula results are reused until the sheet changes. A failed browser save stays “Not saved” and is kept in the tab until storage accepts it. This is browser JSON, not a GxP audit trail. The product profile title, menus, and toolbar are unchanged. Every profile section uses this sheet. Browser frame-rate measurement is NOT_RUN.
+**Spreadsheet scroll (2026-10-25):** the product-profile sheet no longer lays out a 1.7-million-by-12-million-pixel scroll box. Wheel, keyboard, name box, and the thin scrollbar move through the same Excel-sized grid, and only the visible cells are painted. Formula results are reused until the sheet changes. A failed browser save stays “Not saved” and is kept in the tab until storage accepts it. This is browser JSON, not a GxP audit trail. The product profile title and menus stay as they were. Every profile section uses this sheet. Browser frame-rate measurement is NOT_RUN.
 
 **CPV product list (2026-10-24):** `#/cpv/products` is the record table. The All Products bar is a compact Excel-style toolbar: title, live count, product search, status filter, and CSV Export. Product name, code, client, department, batch size, reports, hold-time, and CPP monitoring still open their existing editors. A product profile header is one line, `Product Name (CODE)`. File, Edit, View, Insert, Format, and Data open above the formatting toolbar and close on a second click, an outside click, or Escape. Browser click-through is NOT_RUN.
 
@@ -22,7 +26,7 @@ Deployment:
 
 **CPV client (2026-10-11):** a client name on the sheet is underlined and opens the APQR client for that product: code, name, account manager, package, and QA, Technical, and Regulatory contacts. Each contact role is a compact card with name, title, and email on one row, plus Add and remove. Save writes the APQR client record, so every product that uses that client shows the same details. A blank code or name is rejected. A code already used by another client is rejected.
 
-**CPV product name (2026-10-10):** a product name on the sheet opens a full-page popup of `#/cpv/products/{product code}/profile/raw-material`. The Open in new tab icon sits in the header beside Log out, opens that same profile in a new tab (this tab’s sign-in is copied) and closes the popup. Escape dismisses the popup. The header shows that product’s name and code. The left menu is Raw Material, Packaging Material, In-process Control, Analytical Report, Stability, Holding-Time, Other Data, Deviation Report, and Product Complaints. Each item keeps its own sheet for that product code. The product-code editor stays an in-page dialog.
+**CPV product name (2026-10-26):** a product name on the sheet opens `#/cpv/products/{product code}/profile/raw-material` in a new window. This tab’s sign-in is copied into that window. The header shows that product’s name and code. The left menu is Raw Material, Packaging Material, In-process Control, Analytical Report, Stability, Holding-Time, Other Data, Deviation Report, and Product Complaints. Each item keeps its own sheet for that product code. The product-code editor stays an in-page dialog.
 
 **APQR dashboard (2026-10-04):** the dashboard header, metric cards, panels, work queue, and delivery summary use a quieter card layout. Metric cards stay filters. Records, Scheduler, and Clients navigation is unchanged.
 
