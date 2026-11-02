@@ -1252,7 +1252,9 @@ export function EquipmentSpreadsheet({
     }
     if (command === 'export-xlsx') {
       void workbookToXlsx(workbook).then((bytes) => {
-        const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        const copy = new ArrayBuffer(bytes.byteLength)
+        new Uint8Array(copy).set(bytes)
+        const blob = new Blob([copy], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
@@ -3363,7 +3365,7 @@ function IpcLineChart({ source, column, usl, lsl }: { source: EquipmentSheet | n
   const [hidden, setHidden] = useState<number[]>([])
   const full = source ? ipcRunChart(source, column, usl, lsl) : null
   const visibleColumns = (full?.series ?? []).map((item) => item.column).filter((item) => !hidden.includes(item))
-  const chart = full && hidden.length ? ipcRunChart(source, column, usl, lsl, visibleColumns) : full
+  const chart = source && full && hidden.length ? ipcRunChart(source, column, usl, lsl, visibleColumns) : full
   const width = 480
   const height = 250
   const pad = { left: 46, right: 16, top: 16, bottom: 36 }

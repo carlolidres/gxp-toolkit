@@ -46,7 +46,7 @@ describe('product profile', () => {
     expect(unused.cells['4:1']).toBeUndefined()
     expect(unused.cells['2:1']).toBeUndefined()
     expect(unused.styles['4:1']?.fill).toBe('#c5c8ce')
-    saveProductSectionWorkbook('ZZ-SYNC', 'equipment', { sheets: [used], activeSheetId: used.id })
+    saveProductSectionWorkbook('ZZ-SYNC', 'equipment', { ...createWorkbook(), sheets: [used], activeSheetId: used.id })
     syncEquipmentProfiles('Fluidized Bed Dryer #1-WSG- 120CD (IL-0181)', 'Dryer Renamed (IL-0181)')
     const synced = loadProductSectionWorkbook('ZZ-SYNC', 'equipment').sheets[0]
     expect(synced.cells['4:0']).toBe('Dryer Renamed (IL-0181)')

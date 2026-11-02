@@ -119,6 +119,7 @@ export function EquipmentReportPage() {
   }
 
   function save() {
+    if (!saved) return
     const missing = details.parts.find((part) => !part.name.trim() || part.htc == null || !part.htcJustification.trim())
     if (missing) {
       setNotice('Each hard-to-clean part needs a name, an HTC rating, and a justification.')

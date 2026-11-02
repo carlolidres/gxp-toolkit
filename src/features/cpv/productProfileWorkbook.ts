@@ -1585,7 +1585,8 @@ export function profileSuppliers(sheet: EquipmentSheet): { name: string; address
   const found = new Map<string, { name: string; address: string }>()
   const consider = (raw?: string) => {
     const entry = readStoredMaterial(raw)
-    const name = entry?.supplierName.trim() ?? ''
+    if (!entry) return
+    const name = entry.supplierName.trim()
     if (!name || removedSupplierNames(sheet).has(name.toLowerCase())) return
     const address = entry.supplierAddress.trim()
     const current = found.get(name.toLowerCase())
@@ -2116,7 +2117,7 @@ function paintNotApplicable(sheet: EquipmentSheet, cells: Record<string, string>
   return { cells: nextCells, styles: nextStyles }
 }
 
-function inheritNotApplicable(sheet: EquipmentSheet, row: number, cells: Record<string, string>, styles: Record<string, CellStyle>, snippets: Record<string, string>): { cells: Record<string, string>; styles: Record<string, CellStyle>; snippets: Record<string, string> } {
+function inheritNotApplicable(row: number, cells: Record<string, string>, styles: Record<string, CellStyle>, snippets: Record<string, string>): { cells: Record<string, string>; styles: Record<string, CellStyle>; snippets: Record<string, string> } {
   if (row <= FIRST_BATCH_ROW) return { cells, styles, snippets }
   const nextCells = { ...cells }
   const nextStyles = { ...styles }
@@ -2200,7 +2201,6 @@ export function writeProfileBatch(sheet: EquipmentSheet, row: number, entry: Pro
   const next = ensureSize(sheet, row + 1, sheet.columnCount)
   const key = `${row}:0`
   const drafted = inheritNotApplicable(
-    next,
     row,
     { ...next.cells, [key]: uniqueBatchNo },
     { ...next.styles, [key]: { ...next.styles[key], ...CENTERED } },
@@ -2258,7 +2258,7 @@ export function writeProfileHeader(sheet: EquipmentSheet, entry: ProfileMaterial
   const description = entry.description.trim().toUpperCase()
   if (!description) throw new Error('Material Description is required.')
   const itemCode = entry.itemCode.trim()
-  const cells = { ...sheet.cells, '0:1': description }
+  const cells: Record<string, string> = { ...sheet.cells, '0:1': description }
   const itemRows = new Set(profileBatchRows(sheet, cells))
   itemRows.add(FIRST_BATCH_ROW)
   for (const batchRow of itemRows) {
@@ -2449,6 +2449,7 @@ export function loadProductSectionWorkbook(productId: string, section: string): 
 }
 
 export function writeProfileEquipmentCell(productId: string, sheetId: string, row: number, column: number, value: string): void {
+  void column
   const workbook = loadProductSectionWorkbook(productId, EQUIPMENT_SECTION)
   const target = workbook.sheets.find((sheet) => sheet.id === sheetId) ?? workbook.sheets[0]
   if (!target) return
