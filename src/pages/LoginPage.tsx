@@ -30,6 +30,14 @@ import {
 } from './auth-form-shared'
 import './login-page.css'
 
+function pathAfterLogin(state: unknown): string {
+  if (typeof state !== 'object' || !state || !('from' in state)) return '/'
+  const from = (state as { from?: { pathname?: string; search?: string; hash?: string } }).from
+  const pathname = from?.pathname
+  if (!pathname || pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password') return '/'
+  return `${pathname}${from.search ?? ''}${from.hash ?? ''}`
+}
+
 function readEmailFromState(state: unknown): string {
   if (typeof state === 'object' && state && 'email' in state) {
     const value = (state as { email?: unknown }).email
@@ -69,9 +77,11 @@ export function LoginPage() {
     )
   }
 
+  const nextPath = pathAfterLogin(location.state)
+
   if (isAuthenticated) {
     if (user?.mustChangePassword) return <Navigate to="/reset-password" replace />
-    return <Navigate to="/" replace />
+    return <Navigate to={nextPath} replace />
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -86,7 +96,7 @@ export function LoginPage() {
         password: String(data.get('password')),
         role: usesSupabase ? undefined : (String(data.get('role')) as import('../types/auth').UserRole),
       })
-      navigate(sessionUser.mustChangePassword ? '/reset-password' : '/')
+      navigate(sessionUser.mustChangePassword ? '/reset-password' : nextPath)
     } catch (err) {
       setError(getAuthErrorMessage(err, 'Sign in failed.'))
     } finally {

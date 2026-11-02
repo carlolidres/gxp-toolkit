@@ -1,8 +1,12 @@
+import { ChevronDown } from 'lucide-react'
+
 type MenuItem = { label: string; command?: string; children?: MenuItem[]; disabled?: boolean }
 
 const FILE_MENU: MenuItem[] = [
   { label: 'Import CSV', command: 'import-csv' },
   { label: 'Download CSV', command: 'export-csv' },
+  { label: 'Import Excel', command: 'import-xlsx' },
+  { label: 'Download Excel', command: 'export-xlsx' },
 ]
 
 const EDIT_MENU: MenuItem[] = [
@@ -248,6 +252,7 @@ export function SheetMenuBar({
   canUnmerge,
   onOpen,
   onCommand,
+  showToolbar,
 }: {
   readOnly: boolean
   openMenu: string | null
@@ -256,6 +261,7 @@ export function SheetMenuBar({
   canUnmerge: boolean
   onOpen: (name: string | null) => void
   onCommand: (command: string) => void
+  showToolbar?: () => void
 }) {
   return (
     <div className="eq-app-menus" role="menubar" aria-label="Spreadsheet menus">
@@ -281,6 +287,11 @@ export function SheetMenuBar({
           ) : null}
         </div>
       ))}
+      {showToolbar ? (
+        <button type="button" className="eq-toolbar-show" title="Show toolbar" aria-label="Show toolbar" onClick={showToolbar}>
+          <ChevronDown size={16} />
+        </button>
+      ) : null}
     </div>
   )
 }
@@ -327,7 +338,7 @@ function MenuList({ items, readOnly, onCommand }: { items: MenuItem[]; readOnly:
   return (
     <>
       {items.map((item) => {
-        const locked = Boolean(readOnly && item.command && item.command !== 'copy' && item.command !== 'find' && item.command !== 'export-csv' && item.command !== 'column-stats' && item.command !== 'link-range' && item.command !== 'undo' && item.command !== 'redo')
+        const locked = Boolean(readOnly && item.command && item.command !== 'copy' && item.command !== 'find' && item.command !== 'export-csv' && item.command !== 'export-xlsx' && item.command !== 'column-stats' && item.command !== 'link-range' && item.command !== 'undo' && item.command !== 'redo')
         const disabled = Boolean(item.disabled || locked)
         return (
           <div key={item.label} className="eq-drop-item">

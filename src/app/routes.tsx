@@ -24,7 +24,10 @@ import { VrmsDatabasePage } from '../pages/vrms/VrmsDatabasePage'
 import { VrmsAuditPage } from '../pages/vrms/VrmsAuditPage'
 import { VrmsRegistryPage } from '../pages/vrms/VrmsRegistryPage'
 import { EquipmentProfilePage } from '../pages/vmp/EquipmentProfilePage'
+import { EquipmentMasterlistPage } from '../pages/vmp/EquipmentMasterlistPage'
+import { EquipmentReportPage } from '../pages/vmp/EquipmentReportPage'
 import { VmpModulePage } from '../pages/vmp/VmpModulePage'
+import { VmpAuditPage } from '../pages/vmp/VmpAuditPage'
 import { VmpMasterlistFormPage } from '../pages/vmp/VmpMasterlistFormPage'
 import { VmpDatabasePage } from '../pages/vmp/VmpDatabasePage'
 import { VmpFieldOptionsPage } from '../pages/vmp/VmpFieldOptionsPage'
@@ -130,6 +133,22 @@ export function AppRoutes() {
           }
         />
         <Route
+          path="vmp/equipment"
+          element={
+            <MenuPermissionRoute menuId="vmp-equipment">
+              <EquipmentMasterlistPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
+          path="vmp/equipment/report"
+          element={
+            <MenuPermissionRoute menuId="vmp-equipment">
+              <EquipmentReportPage />
+            </MenuPermissionRoute>
+          }
+        />
+        <Route
           path="vmp/masterlist"
           element={
             <MenuPermissionRoute menuId="vmp-masterlist">
@@ -181,7 +200,7 @@ export function AppRoutes() {
           path="vmp/audit"
           element={
             <MenuPermissionRoute menuId="vmp-audit">
-              <VmpModulePage module="Audit Trail" />
+              <VmpAuditPage />
             </MenuPermissionRoute>
           }
         />

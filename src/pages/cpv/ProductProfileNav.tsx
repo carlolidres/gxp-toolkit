@@ -10,6 +10,7 @@ import {
   PanelLeft,
   Settings,
   TriangleAlert,
+  Wrench,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { Button } from 'antd'
@@ -20,6 +21,7 @@ import { iconSize, iconStroke } from '../../theme/iconSizes'
 const ICONS: Record<ProductProfileSectionId, LucideIcon> = {
   'raw-material': Layers,
   'packaging-material': Box,
+  equipment: Wrench,
   'in-process-control': Settings,
   'analytical-report': FileText,
   stability: FlaskConical,

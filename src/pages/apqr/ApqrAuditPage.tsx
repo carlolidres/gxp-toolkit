@@ -1,19 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Card, Input } from 'antd'
 
-import { ApqrError, ApqrIcon, ApqrLoading, ApqrPage } from '../../components/apqr/ApqrComponents'
+import { ApqrError, ApqrIcon, ApqrLoading } from '../../components/apqr/ApqrComponents'
+import { useApqrActorSync } from '../../features/apqr/apqrAudit'
 import { formatAuditTimestamp, listApqrAuditEvents } from '../../features/apqr/apqrService'
 import type { ApqrAuditEvent } from '../../features/apqr/apqrAudit'
 import { useApqrLoad } from '../../features/apqr/useApqrData'
 
-const AUDIT_PAGE_PROPS = {
-  icon: 'history',
-  headerClassName: 'apqr-page-header--audit',
-  title: 'Audit Trail',
-  description: 'Plain-English history of APQR changes.',
-} as const
-
 export function ApqrAuditPage() {
+  useApqrActorSync()
   const audit = useApqrLoad(() => listApqrAuditEvents())
   const [search, setSearch] = useState('')
 
@@ -36,14 +31,14 @@ export function ApqrAuditPage() {
 
   if (audit.loading) {
     return (
-      <ApqrPage {...AUDIT_PAGE_PROPS}>
+      <div className="page apqr-page">
         <ApqrLoading />
-      </ApqrPage>
+      </div>
     )
   }
 
   return (
-    <ApqrPage {...AUDIT_PAGE_PROPS}>
+    <div className="page apqr-page">
       {audit.error ? <ApqrError message={audit.error} /> : null}
 
       <Card className="panel apqr-audit-panel" aria-labelledby="apqr-audit-list-title">
@@ -106,7 +101,7 @@ export function ApqrAuditPage() {
           ) : null}
         </div>
       </Card>
-    </ApqrPage>
+    </div>
   )
 }
 

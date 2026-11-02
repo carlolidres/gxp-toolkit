@@ -1,6 +1,18 @@
+export const EQUIPMENT_PROCESS_FORMS = [
+  { form: 'Dry Products', steps: ['Granulation', 'Compression', 'Coating', 'Blistering', 'Stripping', 'Alu-alu', 'Bottling', 'Sachet Filling'] },
+  { form: 'Liquid Product', steps: ['Manufacturing', 'Filling/Packaging'] },
+  { form: 'Softgel', steps: ['Mixing', 'Capsule Base', 'Encapsulation', 'Bottling', 'Stripping', 'Blistering', 'Alu-alu'] },
+  { form: 'Creams and Ointment, Cosmetics, Topicals', steps: ['Manufacturing', 'Filling/Packaging'] },
+] as const
+
+export function equipmentSheetName(step: string): string {
+  return step.trim().replace(/\//g, '-')
+}
+
 export const PRODUCT_PROFILE_SECTIONS = [
   { id: 'raw-material', label: 'Raw Material' },
   { id: 'packaging-material', label: 'Packaging Material' },
+  { id: 'equipment', label: 'Equipment' },
   { id: 'in-process-control', label: 'In-process Control' },
   { id: 'analytical-report', label: 'Analytical Report' },
   { id: 'stability', label: 'Stability' },

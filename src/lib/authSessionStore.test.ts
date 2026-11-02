@@ -4,6 +4,7 @@ import { SESSION_USER_KEY } from '../config/sessionPolicy'
 import {
   clearAuthSessionStorage,
   consumeLoginFlash,
+  readSessionUserJson,
   setLoginFlash,
   writeSessionUserJson,
 } from './authSessionStore'
@@ -25,6 +26,13 @@ describe('authSessionStore', () => {
     expect(sessionStorage.getItem(SESSION_USER_KEY)).toBeNull()
     expect(sessionStorage.getItem('sb-test-auth-token')).toBeNull()
     expect(localStorage.getItem(SESSION_USER_KEY)).toBeNull()
+  })
+
+  it('restores the signed-in session in a new tab', () => {
+    writeSessionUserJson('{"id":"u1"}')
+    sessionStorage.removeItem(SESSION_USER_KEY)
+    expect(readSessionUserJson()).toBe('{"id":"u1"}')
+    expect(sessionStorage.getItem(SESSION_USER_KEY)).toBe('{"id":"u1"}')
   })
 
   it('consumes login flash once', () => {

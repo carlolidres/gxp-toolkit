@@ -1,4 +1,15 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { Tooltip } from 'antd'
+import { LineChart, PanelRightClose, PanelRightOpen } from 'lucide-react'
+
+import { addEquipmentBreakerRow, addEquipmentEntryRow, addIpcDataSheet, addIpcSeriesColumn, addProfileMaterial, applyEquipmentProcess, applyIpcDecimals, commitProfileBatch, equipmentColumnBatch, equipmentProcessKind, equipmentRowInUse, equipmentSourceBatches, forgetSheetHistory, IPC_PARAMETER_LABELS, commitIpcParameter, ipcNelsonSignals, ipcRowHeaderLabel, ipcRunChart, ipcRunObservation, ipcResultText, isEquipmentBreakerRow, listSheetHistory, markEquipmentBatch, markPackagingItemNotApplicable, markProfileItemNotApplicable, packagingColumnBatch, packagingSupplierChoices, presentEquipmentSheet, profileGridLimits, profileItemNotApplicable, profileSuppliers, readProfileBatch, readProfileHeader, readProfilePackaging, refreshEquipmentWorkbook, refreshIpcWorkbook, refreshPackagingWorkbook, rememberSheetHistory, removeEquipmentBatch, removeEquipmentProfileRow, removeProfileMaterial, removeProfileSupplier, restorePackagingItem, restoreProfileItemCode, saveRawProfileBatch, writeEquipmentName, writePackagingControlNos, writeProfileControlNos, writeProfileHeader, writeProfilePackaging, type ProfileBatchEntry, type ProfileMaterialEntry, type ProfilePackagingEntry, type ProfilePoEntry, type SheetHistoryEntry } from '../../features/cpv/productProfileWorkbook'
+import { appendCpvAudit } from '../../features/cpv/cpvAudit'
+import { ProfilePrintDialog } from './ProfilePrintDialog'
+import { EQUIPMENT_PROCESS_FORMS } from '../../features/cpv/productProfile'
+import { workbookToXlsx, xlsxToWorkbook } from '../../features/vmp/workbookXlsx'
+import { AUXILIARY_SHEET, MASTERLIST_SHEET, equipmentRecordFromSheet, loadEquipmentMasterlist, saveEquipmentReturn } from '../../features/vmp/equipmentMasterlist'
+import { equipmentProfileLabel } from '../../features/vmp/equipmentReport'
 
 import {
   activeSheet,
@@ -19,8 +30,6 @@ import {
   deleteRow,
   displayCell,
   extractUnique,
-  EXCEL_COLS,
-  EXCEL_ROWS,
   findNextCell,
   formulaForRange,
   highlightMatches,
@@ -40,6 +49,7 @@ import {
   rearrangeRows,
   removeDuplicateRows,
   renameSheet,
+  deleteSheet,
   setCellValue,
   setSheetFilter,
   sheetToCsv,
@@ -131,6 +141,15 @@ export function EquipmentSpreadsheet({
   editBlock,
   onRecordCell,
   renderCell,
+  profileLayout = false,
+  profileReport,
+  hideSheetTabs = false,
+  hideFormulaBar = false,
+  allowNewSheet = true,
+  onEquipment,
+  onOpenRecord,
+  recordSearch,
+  onRecordSearch,
 }: {
   workbook: EquipmentWorkbook
   readOnly: boolean
@@ -140,6 +159,15 @@ export function EquipmentSpreadsheet({
   editBlock?: (row: number, column: number) => string | null
   onRecordCell?: (row: number, column: number) => void
   renderCell?: (row: number, column: number, shown: string) => ReactNode | null
+  profileLayout?: boolean
+  profileReport?: { section: string; client: string; productName: string; productCode: string }
+  hideSheetTabs?: boolean
+  hideFormulaBar?: boolean
+  allowNewSheet?: boolean
+  onEquipment?: (row: number) => void
+  onOpenRecord?: (row: number, column: number) => void
+  recordSearch?: string
+  onRecordSearch?: (value: string) => void
 }) {
   useEffect(() => {
     if (import.meta.env.VITE_SPREADSHEET_FIXTURE !== 'true') return
@@ -154,6 +182,13 @@ export function EquipmentSpreadsheet({
   const undoRef = useRef<EquipmentWorkbook[]>([])
   const redoRef = useRef<EquipmentWorkbook[]>([])
   const drag = useRef(false)
+  const navigate = useNavigate()
+  const location = useLocation()
+  useEffect(() => {
+    function stopDrag() { drag.current = false }
+    window.addEventListener('mouseup', stopDrag)
+    return () => window.removeEventListener('mouseup', stopDrag)
+  }, [])
   const [selection, setSelection] = useState<Selection>({ anchorRow: 0, anchorCol: 0, focusRow: 0, focusCol: 0 })
   const [editing, setEditing] = useState<{ row: number; column: number; draft: string } | null>(null)
   const [menu, setMenu] = useState<MenuState | null>(null)
@@ -167,11 +202,34 @@ export function EquipmentSpreadsheet({
   const [find, setFind] = useState<{ query: string; matchCase: boolean } | null>(null)
   const [formulaDraft, setFormulaDraft] = useState<string | null>(null)
   const csvRef = useRef<HTMLInputElement>(null)
+  const xlsxRef = useRef<HTMLInputElement>(null)
   const imageRef = useRef<HTMLInputElement>(null)
   const clipRef = useRef<{ raws: string[][]; values: string[][]; styles: Array<Array<CellStyle | undefined>> } | null>(null)
   const paintRef = useRef<{ style: CellStyle; repeat: boolean } | null>(null)
   const [printOpen, setPrintOpen] = useState(false)
+  const [batchOpen, setBatchOpen] = useState(false)
+  const [batchInitial, setBatchInitial] = useState<ProfileBatchEntry | null>(null)
+  const [packagingRow, setPackagingRow] = useState<number | null>(null)
+  const [equipmentPick, setEquipmentPick] = useState<{ row: number; column: number } | null>(null)
+  const [equipmentAddAt, setEquipmentAddAt] = useState<{ top: number; left: number } | null>(null)
+  const [equipmentUse, setEquipmentUse] = useState<{ row: number; column: number } | null>(null)
+  const [equipmentHold, setEquipmentHold] = useState('')
+  const [ipcColumn, setIpcColumn] = useState<number | null>(null)
+  const [ipcDraft, setIpcDraft] = useState<string[]>([])
+  const [ipcAddAt, setIpcAddAt] = useState<{ top: number; left: number } | null>(null)
+  const [ipcPanelOpen, setIpcPanelOpen] = useState(true)
+  const [deleteAsk, setDeleteAsk] = useState<{ kind: 'row' | 'column'; index: number } | null>(null)
+  const [deleteReason, setDeleteReason] = useState('')
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [history, setHistory] = useState<SheetHistoryEntry[]>([])
+  const [batchTarget, setBatchTarget] = useState<number | null>(null)
+  const [materialOpen, setMaterialOpen] = useState(false)
+  const [materialMode, setMaterialMode] = useState<'header' | 'columns'>('header')
+  const [controlTarget, setControlTarget] = useState<{ row: number; column: number } | null>(null)
+  const [itemTarget, setItemTarget] = useState<{ row: number; column: number } | null>(null)
   const [appMenu, setAppMenu] = useState<string | null>(null)
+  const [toolbarHidden, setToolbarHidden] = useState(false)
+  const [equipmentPromptDismissed, setEquipmentPromptDismissed] = useState<string[]>([])
   const [slicerOn, setSlicerOn] = useState(false)
   const [emojiOn, setEmojiOn] = useState(false)
   const [statsText, setStatsText] = useState<string | null>(null)
@@ -186,30 +244,38 @@ export function EquipmentSpreadsheet({
   const zoomRef = useRef(zoom)
   zoomRef.current = zoom
 
+  const profileLimits = profileLayout ? profileGridLimits(sheet) : null
+  const packagingLayout = profileReport?.section === 'packaging-material'
+  const equipmentLayout = profileReport?.section === 'equipment'
+  const ipcLayout = profileReport?.section === 'in-process-control'
+  const rowLimit = profileLimits?.rows ?? sheet.rowCount
+  const colLimit = profileLimits?.columns ?? sheet.columnCount
   const rowSizeList = useMemo(
     () => sheet.rowHeights.map((height, row) => (isRowFilteredOut(sheet, row) ? 0 : height)),
     [sheet],
   )
   const rowMarks = useMemo(
-    () => sizeMarks(rowSizeList, sheet.rowSizes, DEFAULT_ROW_HEIGHT, EXCEL_ROWS),
-    [rowSizeList, sheet.rowSizes],
+    () => sizeMarks(rowSizeList, sheet.rowSizes, DEFAULT_ROW_HEIGHT, rowLimit),
+    [rowSizeList, sheet.rowSizes, rowLimit],
   )
   const colMarks = useMemo(
-    () => sizeMarks(sheet.columnWidths, sheet.colSizes, DEFAULT_COL_WIDTH, EXCEL_COLS),
-    [sheet.columnWidths, sheet.colSizes],
+    () => sizeMarks(sheet.columnWidths, sheet.colSizes, DEFAULT_COL_WIDTH, colLimit),
+    [sheet.columnWidths, sheet.colSizes, colLimit],
   )
-  const gridWidth = offsetAt(colMarks, EXCEL_COLS, DEFAULT_COL_WIDTH)
-  const gridHeight = offsetAt(rowMarks, EXCEL_ROWS, DEFAULT_ROW_HEIGHT)
+  const gridWidth = offsetAt(colMarks, colLimit, DEFAULT_COL_WIDTH)
+  const gridHeight = offsetAt(rowMarks, rowLimit, DEFAULT_ROW_HEIGHT)
   gridWidthRef.current = gridWidth
   gridHeightRef.current = gridHeight
   const logicalLeft = scroll.left
   const logicalTop = scroll.top
-  const cols = visibleIndexes(colMarks, logicalLeft, scroll.width, DEFAULT_COL_WIDTH, EXCEL_COLS)
-  const rows = visibleIndexes(rowMarks, logicalTop, scroll.height, DEFAULT_ROW_HEIGHT, EXCEL_ROWS)
+  const cols = visibleIndexes(colMarks, logicalLeft, scroll.width, DEFAULT_COL_WIDTH, colLimit)
+  const rows = visibleIndexes(rowMarks, logicalTop, scroll.height, DEFAULT_ROW_HEIGHT, rowLimit)
   const rowStart = (row: number) => offsetAt(rowMarks, row, DEFAULT_ROW_HEIGHT)
   const colStart = (column: number) => offsetAt(colMarks, column, DEFAULT_COL_WIDTH)
   const rowSize = (row: number) => (row < rowSizeList.length ? rowSizeList[row] : axisSize(sheet.rowHeights, sheet.rowSizes, row, DEFAULT_ROW_HEIGHT))
   const colSize = (column: number) => axisSize(sheet.columnWidths, sheet.colSizes, column, DEFAULT_COL_WIDTH)
+  const lastSelectableRow = profileLayout ? rowLimit - 1 : sheet.rowCount - 1
+  const lastSelectableCol = profileLayout ? colLimit - 1 : sheet.columnCount - 1
   const placeY = (row: number, frozen: boolean) => (frozen ? rowStart(row) : rowStart(row) - logicalTop)
   const placeX = (column: number, frozen: boolean) => (frozen ? colStart(column) : colStart(column) - logicalLeft)
   const vThumb = thumbMetrics(gridHeight, scroll.height, logicalTop, scroll.height)
@@ -422,6 +488,49 @@ export function EquipmentSpreadsheet({
     }
   }
 
+  function historyKey() {
+    return profileReport ? `${profileReport.productCode}:${profileReport.section}` : 'workbook'
+  }
+
+  function askDelete(kind: 'row' | 'column', index: number) {
+    setMenu(null)
+    setAppMenu(null)
+    setDeleteReason('')
+    setDeleteAsk({ kind, index })
+  }
+
+  function confirmDelete() {
+    if (!deleteAsk || !deleteReason.trim()) return
+    const reason = deleteReason.trim()
+    const { kind, index } = deleteAsk
+    const key = historyKey()
+    const batch = kind === 'column' && equipmentLayout ? sheet.cells[`0:${index}`]?.trim() ?? '' : ''
+    const label = kind === 'row' ? `Row ${index + 1}` : (batch || columnLabel(index))
+    rememberSheetHistory(key, label, reason, workbook)
+    setHistory(listSheetHistory(key))
+    guard(() => {
+      if (kind === 'row' && equipmentLayout) changeGrouped((item) => removeEquipmentProfileRow(item, index), { action: 'ROW_DELETED', range: label, oldValue: null, newValue: reason })
+      else if (kind === 'column' && equipmentLayout && batch && profileReport?.productCode) apply(removeEquipmentBatch(workbook, profileReport.productCode, batch), { action: 'COLUMN_DELETED', range: label, oldValue: batch, newValue: reason })
+      else if (kind === 'row') changeGrouped((item) => deleteRow(item, index), { action: 'ROW_DELETED', range: label, oldValue: null, newValue: reason })
+      else changeGrouped((item) => deleteColumn(item, index), { action: 'COLUMN_DELETED', range: label, oldValue: null, newValue: reason })
+      if (profileReport) {
+        appendCpvAudit({
+          action_type: 'delete',
+          product_id: profileReport.productCode,
+          module: profileReport.section,
+          record_type: 'spreadsheet',
+          record_id: key,
+          record_label: label,
+          field_name: kind,
+          old_value: label,
+          new_value: 'Deleted',
+          reason,
+        })
+      }
+    })
+    setDeleteAsk(null)
+  }
+
   function raw(row: number, column: number) {
     return sheet.cells[`${row}:${column}`] ?? ''
   }
@@ -475,14 +584,27 @@ export function EquipmentSpreadsheet({
       onError(`Enter one of: ${allowed.join(', ')}`)
       return
     }
+    if (ipcLayout && column >= 2 && row >= 5) {
+      const number = ipcResultText(value)
+      if (number === null) {
+        onError('Enter a number.')
+        return
+      }
+      value = number
+    }
     const previous = raw(row, column)
     if (previous === value) return
+    const headerRows = equipmentProcessKind(sheet.name).packaging ? 5 : 4
+    const shaped = equipmentLayout && (isEquipmentBreakerRow(sheet, row) || row === headerRows - 1) ? value.toUpperCase() : value
     try {
-      changeGrouped((item) => setCellValue(item, row, column, value), {
+      changeGrouped((item) => {
+        const written = setCellValue(item, row, column, shaped)
+        return equipmentLayout && item.snippets?.['profile-section'] === 'equipment' ? presentEquipmentSheet(written) : written
+      }, {
         action: 'CELL_UPDATED',
         range: addressLabel(row, column),
         oldValue: previous || null,
-        newValue: value || null,
+        newValue: shaped || null,
       })
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Worksheet action failed.')
@@ -491,6 +613,10 @@ export function EquipmentSpreadsheet({
 
   function commitEdit(next?: { row: number; column: number }) {
     if (!editing) return
+    if (ipcLayout && editing.column >= 2 && editing.row >= 5 && ipcResultText(editing.draft) === null) {
+      onError('Enter a number.')
+      return
+    }
     writeCell(editing.row, editing.column, editing.draft)
     setEditing(null)
     if (next) setSelection({ anchorRow: next.row, anchorCol: next.column, focusRow: next.row, focusCol: next.column })
@@ -499,8 +625,8 @@ export function EquipmentSpreadsheet({
 
   function move(rowDelta: number, colDelta: number, extend: boolean) {
     setSelection((current) => {
-      const row = Math.max(0, Math.min(EXCEL_ROWS - 1, current.focusRow + rowDelta))
-      const column = Math.max(0, Math.min(EXCEL_COLS - 1, current.focusCol + colDelta))
+      const row = Math.max(0, Math.min(rowLimit - 1, current.focusRow + rowDelta))
+      const column = Math.max(0, Math.min(colLimit - 1, current.focusCol + colDelta))
       return extend
         ? { ...current, focusRow: row, focusCol: column }
         : { anchorRow: row, anchorCol: column, focusRow: row, focusCol: column }
@@ -848,11 +974,11 @@ export function EquipmentSpreadsheet({
       return true
     }
     if (command === 'delete-row') {
-      guard(() => changeGrouped((item) => deleteRow(item, selection.focusRow), { action: 'ROW_DELETED', range: `Row ${selection.focusRow + 1}`, oldValue: null, newValue: 'Deleted' }))
+      askDelete('row', selection.focusRow)
       return true
     }
     if (command === 'delete-col') {
-      guard(() => changeGrouped((item) => deleteColumn(item, column), { action: 'COLUMN_DELETED', range: columnLabel(column), oldValue: null, newValue: 'Deleted' }))
+      askDelete('column', column)
       return true
     }
     if (command === 'add-sheet') {
@@ -862,7 +988,7 @@ export function EquipmentSpreadsheet({
     if (command.startsWith('fn-')) {
       const name = command.slice(3)
       const multi = box.r1 !== box.r2 || box.c1 !== box.c2
-      const row = multi ? Math.min(EXCEL_ROWS - 1, box.r2 + 1) : selection.focusRow
+      const row = multi ? Math.min(rowLimit - 1, box.r2 + 1) : selection.focusRow
       const columnForFormula = multi ? box.c1 : selection.focusCol
       const formula = name === 'SUM' && !multi
         ? autoSumFormula(sheet, selection.focusRow, selection.focusCol)
@@ -952,6 +1078,13 @@ export function EquipmentSpreadsheet({
       return true
     }
     if (command === 'decimals-inc' || command === 'decimals-dec') {
+      if (ipcLayout && selection.focusCol >= 2 && selection.focusRow >= 5) {
+        const stored = Number(sheet.snippets?.[`ipc-decimals:${selection.focusCol}`] ?? sheet.styles?.[key]?.decimals ?? 0)
+        const current = Number.isFinite(stored) ? stored : 0
+        const decimals = command.endsWith('inc') ? Math.min(10, current + 1) : Math.max(0, current - 1)
+        guard(() => changeGrouped((item) => applyIpcDecimals(item, selection.focusCol, decimals), sheetAudit('Decimals')))
+        return true
+      }
       const current = sheet.styles?.[key]?.decimals ?? 0
       const decimals = command.endsWith('inc') ? Math.min(10, current + 1) : Math.max(0, current - 1)
       const format = sheet.styles?.[key]?.format && sheet.styles[key].format !== 'general' && sheet.styles[key].format !== 'text' ? sheet.styles[key].format : 'number'
@@ -1117,6 +1250,22 @@ export function EquipmentSpreadsheet({
       csvRef.current?.click()
       return
     }
+    if (command === 'export-xlsx') {
+      void workbookToXlsx(workbook).then((bytes) => {
+        const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `${workbook.name || 'Equipment'}.xlsx`
+        link.click()
+        URL.revokeObjectURL(url)
+      }).catch(() => onError('The Excel file could not be created.'))
+      return
+    }
+    if (command === 'import-xlsx') {
+      xlsxRef.current?.click()
+      return
+    }
     if (command.startsWith('zoom-')) {
       setZoom(Number(command.slice(5)))
       return
@@ -1203,6 +1352,112 @@ export function EquipmentSpreadsheet({
         changeGrouped((item) => ({ ...item, showFormulaBar: item.showFormulaBar === false }), { action: 'CELL_UPDATED', range: null, oldValue: null, newValue: 'Formula bar' })
       }
     })
+  }
+
+  function openBatch(initial: ProfileBatchEntry | null, row: number | null) {
+    setEditing(null)
+    setBatchInitial(initial)
+    setBatchTarget(row)
+    setBatchOpen(true)
+  }
+
+  function openProfileEntry(row: number, column: number): boolean {
+    if (!profileLayout || readOnly) return false
+    const productCode = profileReport?.productCode ?? ''
+    if (equipmentLayout) {
+      const headerRows = equipmentProcessKind(sheet.name).packaging ? 5 : 4
+      if (column === 0 && row >= headerRows && !isEquipmentBreakerRow(sheet, row)) {
+        setEditing(null)
+        setEquipmentPick({ row, column })
+        return true
+      }
+      if (column >= 1 && row >= headerRows && !isEquipmentBreakerRow(sheet, row)) {
+        setEditing(null)
+        if (!sheet.cells[`${row}:0`]?.trim()) {
+          onError('Identify the equipment before this batch cell can be used.')
+          return true
+        }
+        setEquipmentUse({ row, column })
+        return true
+      }
+      const valueRows = equipmentProcessKind(sheet.name).packaging ? 3 : 2
+      if (column >= 1 && row < valueRows && column < (profileLimits?.columns ?? 0)) {
+        openBatch(equipmentColumnBatch(productCode, sheet.name, column), null)
+        return true
+      }
+      return false
+    }
+    if (packagingLayout) {
+      if (row <= 2 && column >= 1 && column < (profileLimits?.columns ?? 0)) {
+        openBatch(packagingColumnBatch(productCode, sheet.name, column), null)
+        return true
+      }
+      if (column === 0 && row >= 4) {
+        setEditing(null)
+        setPackagingRow(row)
+        return true
+      }
+      const columns = profileLimits?.columns ?? 0
+      if (row >= 4 && column >= 1 && column < columns && column % 2 === 1) {
+        setEditing(null)
+        setItemTarget({ row, column })
+        return true
+      }
+      if (row >= 4 && column >= 2 && column < columns && column % 2 === 0) {
+        setEditing(null)
+        if (profileItemNotApplicable(sheet, row, column - 1)) setItemTarget({ row, column: column - 1 })
+        else setControlTarget({ row, column })
+        return true
+      }
+      return false
+    }
+    if (ipcLayout) {
+      if (column >= 2 && row < 3) {
+        setEditing(null)
+        setIpcDraft(IPC_PARAMETER_LABELS.map((_, index) => sheet.cells[`${index}:2`] ?? ''))
+        setIpcColumn(2)
+        return true
+      }
+      if (row >= 5 && column <= 1) {
+        const unique = String(sheet.cells[`${row}:0`] ?? '').trim()
+        const found = equipmentSourceBatches(productCode).find((item) => item.uniqueBatchNo.trim().toLowerCase() === unique.toLowerCase()) ?? null
+        openBatch(found ?? (unique ? {
+          uniqueBatchNo: unique,
+          moControlNo: '',
+          poControlNo: '',
+          productCode: '',
+          sku: '',
+          mfgDate: '',
+          expDate: '',
+          fgReleasedDate: '',
+        } : null), null)
+        return true
+      }
+      return false
+    }
+    if (column === 0 && row >= 2) {
+      openBatch(readProfileBatch(sheet, row), row)
+      return true
+    }
+    if (row === 0 && column === 1) {
+      setEditing(null)
+      setMaterialMode('header')
+      setMaterialOpen(true)
+      return true
+    }
+    const columns = profileLimits?.columns ?? 0
+    if (row >= 2 && column >= 1 && column % 2 === 1 && column < columns) {
+      setEditing(null)
+      setItemTarget({ row, column })
+      return true
+    }
+    if (column >= 2 && column % 2 === 0 && row >= 2 && column < columns) {
+      setEditing(null)
+      if (profileItemNotApplicable(sheet, row, column - 1)) setItemTarget({ row, column: column - 1 })
+      else setControlTarget({ row, column })
+      return true
+    }
+    return false
   }
 
   function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
@@ -1301,6 +1556,12 @@ export function EquipmentSpreadsheet({
       const enterDelta = key === 'Enter' && event.shiftKey ? -1 : rowDelta
       move(key === 'Enter' ? enterDelta : rowDelta, colDelta, event.shiftKey && key !== 'Tab' && key !== 'Enter')
       return
+    }
+    if (key === 'F2' || (key.length === 1 && !meta && !event.altKey)) {
+      if (openProfileEntry(selection.focusRow, selection.focusCol)) {
+        event.preventDefault()
+        return
+      }
     }
     if (key === 'F2') {
       event.preventDefault()
@@ -1463,6 +1724,7 @@ export function EquipmentSpreadsheet({
             background: paintedFill(style?.fill, covers(selection, row, column)),
             color: style?.color,
             fontSize: style?.fontSize,
+            cursor: (equipmentLayout && (((column === 0 && row >= (equipmentProcessKind(sheet.name).packaging ? 5 : 4) && !isEquipmentBreakerRow(sheet, row)) || (column >= 1 && row >= (equipmentProcessKind(sheet.name).packaging ? 5 : 4) && !isEquipmentBreakerRow(sheet, row) && Boolean(sheet.cells[`${row}:0`]?.trim()))) || (column >= 1 && row < (equipmentProcessKind(sheet.name).packaging ? 3 : 2)))) || (packagingLayout && ((row <= 2 && column >= 1) || row >= 4) && column < (profileLimits?.columns ?? 0)) || (ipcLayout && ((column >= 2 && row < 3) || (row >= 5 && column <= 1))) || (profileLimits && !packagingLayout && !equipmentLayout && !ipcLayout && ((column === 0 && row >= 2) || (row === 0 && column === 1) || (row >= 2 && column >= 1 && column < profileLimits.columns))) ? 'pointer' : undefined,
             borderTop: style?.borderTop ? `1px ${style.borderStyle ?? 'solid'} ${style.borderColor ?? '#202124'}` : undefined,
             borderRight: style?.borderRight ? `1px ${style.borderStyle ?? 'solid'} ${style.borderColor ?? '#202124'}` : undefined,
             borderBottom: style?.borderBottom ? `1px ${style.borderStyle ?? 'solid'} ${style.borderColor ?? '#202124'}` : undefined,
@@ -1475,6 +1737,12 @@ export function EquipmentSpreadsheet({
               return
             }
             if (event.button !== 0) return
+            if (!event.shiftKey && openProfileEntry(row, column)) {
+              drag.current = false
+              setSelection({ anchorRow: row, anchorCol: column, focusRow: row, focusCol: column })
+              gridRef.current?.focus()
+              return
+            }
             const painted = paintRef.current
             if (painted) {
               guard(() => changeGrouped((item) => applyCellStyle(item, row, column, row, column, painted.style), {
@@ -1485,6 +1753,14 @@ export function EquipmentSpreadsheet({
               }))
               if (!painted.repeat) paintRef.current = null
             }
+            if (!event.shiftKey && onOpenRecord) {
+              drag.current = false
+              onOpenRecord(row, column)
+              setEditing(null)
+              setSelection({ anchorRow: row, anchorCol: column, focusRow: row, focusCol: column })
+              gridRef.current?.focus()
+              return
+            }
             drag.current = true
             setEditing(null)
             setSelection((current) =>
@@ -1494,10 +1770,19 @@ export function EquipmentSpreadsheet({
             )
             gridRef.current?.focus()
           }}
-          onMouseEnter={() => {
+          onMouseEnter={(event) => {
+            if (event.buttons !== 1) {
+              drag.current = false
+              return
+            }
             if (drag.current) setSelection((current) => ({ ...current, focusRow: row, focusCol: column }))
           }}
           onDoubleClick={() => {
+            if (openProfileEntry(row, column)) return
+            if (onOpenRecord) {
+              onOpenRecord(row, column)
+              return
+            }
             if (denial(row, column)) {
               openRecord(row, column)
               return
@@ -1518,10 +1803,10 @@ export function EquipmentSpreadsheet({
               onKeyDown={(event) => {
                 if (event.key === 'Enter') {
                   event.preventDefault()
-                  commitEdit({ row: Math.min(EXCEL_ROWS - 1, row + (event.shiftKey ? -1 : 1)), column })
+                  commitEdit({ row: Math.min(rowLimit - 1, row + (event.shiftKey ? -1 : 1)), column })
                 } else if (event.key === 'Tab') {
                   event.preventDefault()
-                  commitEdit({ row, column: Math.min(EXCEL_COLS - 1, column + (event.shiftKey ? -1 : 1)) })
+                  commitEdit({ row, column: Math.min(colLimit - 1, column + (event.shiftKey ? -1 : 1)) })
                 } else if (event.key === 'Escape') {
                   event.preventDefault()
                   setEditing(null)
@@ -1563,7 +1848,12 @@ export function EquipmentSpreadsheet({
             </span>
           ) : (
             <span className="eq-cell-value" style={valueStyle(layout)}>
-              {shown}
+              {packagingLayout && column === 0 && row >= 4 && shown.includes('\n') ? (
+                <>
+                  <span style={{ display: 'block', fontWeight: 700 }}>{shown.slice(0, shown.indexOf('\n'))}</span>
+                  <span style={{ display: 'block', fontWeight: 400 }}>{shown.slice(shown.indexOf('\n') + 1)}</span>
+                </>
+              ) : shown}
               {filterHere ? (
                 <select
                   className="eq-filter"
@@ -1588,8 +1878,26 @@ export function EquipmentSpreadsheet({
     }),
   )
 
+  function leaveForEquipment(list: string, record?: ReturnType<typeof equipmentRecordFromSheet>) {
+    const productCode = profileReport?.productCode ?? ''
+    if (!productCode || !equipmentPick) return
+    saveEquipmentReturn({
+      returnTo: `${location.pathname}${location.search}`,
+      productCode,
+      sheetId: sheet.id,
+      row: equipmentPick.row,
+      column: equipmentPick.column,
+    })
+    if (!record) {
+      navigate(`/vmp/equipment?register=1&list=${encodeURIComponent(list)}`)
+      return
+    }
+    const next = new URLSearchParams({ edit: '1', list, department: record.department, no: record.sourceNo })
+    navigate(`/vmp/equipment?${next.toString()}`)
+  }
+
   return (
-    <div className={`eq-sheet${sheet.showGridlines === false ? ' is-plain' : ''}${sheet.showHeadings === false ? ' is-headless' : ''}`} onMouseUp={() => { drag.current = false }}>
+    <div className={`eq-sheet${sheet.showGridlines === false ? ' is-plain' : ''}${sheet.showHeadings === false ? ' is-headless' : ''}${ipcLayout && sheet.snippets?.['ipc-run-column'] ? ` has-ipc-panel${ipcPanelOpen ? '' : ' is-ipc-collapsed'}` : ''}`} onMouseUp={() => { drag.current = false }}>
       <SheetMenuBar
         readOnly={readOnly}
         openMenu={appMenu}
@@ -1598,6 +1906,7 @@ export function EquipmentSpreadsheet({
         canUnmerge={mergeState.canUnmerge}
         onOpen={setAppMenu}
         onCommand={runCommand}
+        showToolbar={toolbarHidden ? () => setToolbarHidden(false) : undefined}
       />
       <SheetRibbon
         readOnly={readOnly}
@@ -1608,8 +1917,28 @@ export function EquipmentSpreadsheet({
         canMergeVertical={mergeState.canMergeVertical}
         canUnmerge={mergeState.canUnmerge}
         onCommand={runCommand}
+        collapsed={toolbarHidden}
+        onCollapsedChange={setToolbarHidden}
+        onEquipment={onEquipment ? () => onEquipment(selection.focusRow) : undefined}
+        recordSearch={recordSearch}
+        onRecordSearch={onRecordSearch}
+        onHistory={() => {
+          setHistory(listSheetHistory(historyKey()))
+          setHistoryOpen(true)
+        }}
       />
-      {printOpen ? (
+      {printOpen && profileLayout ? (
+        <ProfilePrintDialog
+          sheet={sheet}
+          section={profileReport?.section ?? 'raw-material'}
+          client={profileReport?.client ?? ''}
+          productName={profileReport?.productName ?? ''}
+          productCode={profileReport?.productCode ?? ''}
+          onClose={() => setPrintOpen(false)}
+          onError={onError}
+        />
+      ) : null}
+      {printOpen && !profileLayout ? (
         <form
           className="eq-find"
           onSubmit={(event) => {
@@ -1663,6 +1992,21 @@ export function EquipmentSpreadsheet({
         </form>
       ) : null}
       <input
+        ref={xlsxRef}
+        type="file"
+        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        hidden
+        aria-label="Import Excel"
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          event.target.value = ''
+          if (!file) return
+          void file.arrayBuffer().then((buffer) => xlsxToWorkbook(buffer)).then((next) => {
+            guard(() => onChange(next, { action: 'CELL_UPDATED', range: 'A1', oldValue: null, newValue: 'Imported Excel' }))
+          }).catch(() => onError('The Excel file could not be read.'))
+        }}
+      />
+      <input
         ref={csvRef}
         type="file"
         accept=".csv,text/csv"
@@ -1704,7 +2048,7 @@ export function EquipmentSpreadsheet({
           reader.readAsDataURL(file)
         }}
       />
-      {sheet.showFormulaBar === false ? null : (
+      {hideFormulaBar || sheet.showFormulaBar === false ? null : (
         <div className="eq-formula">
           <input
             key={`${selection.focusRow}:${selection.focusCol}`}
@@ -1716,6 +2060,10 @@ export function EquipmentSpreadsheet({
               const parsed = parseA1(sheet.namedRanges?.[event.currentTarget.value.trim()] ?? event.currentTarget.value)
               if (!parsed) {
                 onError('Enter a cell such as A1 or a range such as A1:C10.')
+                return
+              }
+              if (profileLayout && (parsed.row >= rowLimit || parsed.column >= colLimit || parsed.row2 >= rowLimit || parsed.column2 >= colLimit)) {
+                onError('That cell is outside this sheet.')
                 return
               }
               setSelection({ anchorRow: parsed.row, anchorCol: parsed.column, focusRow: parsed.row2, focusCol: parsed.column2 })
@@ -1847,7 +2195,7 @@ export function EquipmentSpreadsheet({
           type="button"
           className="eq-corner"
           aria-label="Select all cells"
-          onClick={() => setSelection({ anchorRow: 0, anchorCol: 0, focusRow: sheet.rowCount - 1, focusCol: sheet.columnCount - 1 })}
+          onClick={() => setSelection({ anchorRow: 0, anchorCol: 0, focusRow: lastSelectableRow, focusCol: lastSelectableCol })}
         />
         <div className="eq-col-headers" ref={colHeaderRef}>
           <div className="eq-axis">
@@ -1860,7 +2208,7 @@ export function EquipmentSpreadsheet({
                 onMouseDown={(event) => setSelection({
                   anchorRow: 0,
                   anchorCol: event.shiftKey ? selection.anchorCol : column,
-                  focusRow: sheet.rowCount - 1,
+                  focusRow: lastSelectableRow,
                   focusCol: column,
                 })}
                 onContextMenu={(event) => openMenu(event, { row: 0, column, target: 'column' })}
@@ -1883,6 +2231,45 @@ export function EquipmentSpreadsheet({
                 />
               </button>
             ))}
+            {profileLayout && !readOnly && (packagingLayout || equipmentLayout) ? (
+              <button
+                type="button"
+                className="eq-profile-add eq-profile-pin"
+                aria-label="Add batch column"
+                style={{ top: 3, left: placeX(colLimit - 1, false) + colSize(colLimit - 1) + 4 }}
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={() => openBatch(null, null)}
+              >
+                +
+              </button>
+            ) : null}
+            {profileLayout && !readOnly && ipcLayout ? (
+              <button
+                type="button"
+                className="eq-profile-add eq-profile-pin eq-ipc-series-add"
+                aria-label="Add series column"
+                style={{ top: 3, left: placeX(colLimit - 1, false) + colSize(colLimit - 1) + 4 }}
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={() => guard(() => apply(
+                  { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? addIpcSeriesColumn(item) : item)) },
+                  { action: 'CELL_UPDATED', range: null, oldValue: null, newValue: 'IPC series' },
+                ))}
+              >
+                +
+              </button>
+            ) : null}
+            {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout ? (
+              <button
+                type="button"
+                className="eq-profile-add eq-profile-pin"
+                aria-label="Add material columns"
+                style={{ top: 3, left: placeX(colLimit - 1, false) + colSize(colLimit - 1) + 4 }}
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={() => { setMaterialMode('columns'); setMaterialOpen(true) }}
+              >
+                +
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -1894,19 +2281,71 @@ export function EquipmentSpreadsheet({
                 type="button"
                 key={row}
                 className="eq-row-header"
+                aria-label={ipcLayout && !sheet.snippets?.['ipc-chart'] ? (ipcRowHeaderLabel(row) ? `Batch ${ipcRowHeaderLabel(row)}` : 'Header') : `Row ${row + 1}`}
                 style={{ top: placeY(row, row < (sheet.freezeRows || 0)), height: rowSize(row), zIndex: row < (sheet.freezeRows || 0) ? 2 : undefined }}
                 onMouseDown={(event) => setSelection({
                   anchorRow: event.shiftKey ? selection.anchorRow : row,
                   anchorCol: 0,
                   focusRow: row,
-                  focusCol: sheet.columnCount - 1,
+                  focusCol: lastSelectableCol,
                 })}
                 onContextMenu={(event) => openMenu(event, { row, column: 0, target: 'row' })}
               >
-                {row + 1}
+                {ipcLayout && !sheet.snippets?.['ipc-chart'] ? ipcRowHeaderLabel(row) : row + 1}
                 <span className="eq-resize row" onMouseDown={(event) => event.stopPropagation()} onPointerDown={(event) => startResize(event, 'row', row)} />
               </button>
             ))}
+            {profileLayout && !readOnly && equipmentLayout ? (
+              <button
+                type="button"
+                className="eq-profile-add eq-profile-pin"
+                aria-label="Add equipment row"
+                style={{ top: placeY(rowLimit - 1, rowLimit - 1 < (sheet.freezeRows || 0)) + rowSize(rowLimit - 1) + 4, left: 12 }}
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  const rect = event.currentTarget.getBoundingClientRect()
+                  setEquipmentAddAt({ top: rect.bottom + 4, left: rect.left })
+                }}
+              >
+                +
+              </button>
+            ) : null}
+            {profileLayout && !readOnly && packagingLayout ? (
+              <button
+                type="button"
+                className="eq-profile-add eq-profile-pin"
+                aria-label="Add packaging material row"
+                style={{ top: placeY(rowLimit - 1, rowLimit - 1 < (sheet.freezeRows || 0)) + rowSize(rowLimit - 1) + 4, left: 12 }}
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={() => setPackagingRow(rowLimit)}
+              >
+                +
+              </button>
+            ) : null}
+            {profileLayout && !readOnly && ipcLayout ? (
+              <button
+                type="button"
+                className="eq-profile-add eq-profile-pin"
+                aria-label="Add batch row"
+                style={{ top: placeY(rowLimit - 1, false) + rowSize(rowLimit - 1) + 4, left: 12 }}
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={() => openBatch(null, null)}
+              >
+                +
+              </button>
+            ) : null}
+            {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout ? (
+              <button
+                type="button"
+                className="eq-profile-add eq-profile-pin"
+                aria-label="Add batch row"
+                style={{ top: placeY(rowLimit - 1, false) + rowSize(rowLimit - 1) + 4, left: 12 }}
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={() => openBatch(null, null)}
+              >
+                +
+              </button>
+            ) : null}
           </div>
         </div>
         <div
@@ -1938,6 +2377,34 @@ export function EquipmentSpreadsheet({
           <div className="eq-canvas">
             {cells}
           </div>
+          {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout ? (
+            <>
+              {Array.from({ length: (colLimit - 3) / 2 }, (_, index) => {
+                const column = 3 + index * 2
+                const label = `${columnLabel(column)} and ${columnLabel(column + 1)}`
+                return (
+                  <button
+                    key={column}
+                    type="button"
+                    className="eq-profile-add"
+                    aria-label={`Delete columns ${label}`}
+                    title={`Delete columns ${label}`}
+                    style={{
+                      top: placeY(0, false) + 1,
+                      left: placeX(column + 1, false) + colSize(column + 1) - 22,
+                    }}
+                    onMouseDown={(event) => event.stopPropagation()}
+                    onClick={() => guard(() => apply(
+                      { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? removeProfileMaterial(sheet, column) : item)) },
+                      { action: 'CELL_UPDATED', range: label, oldValue: sheet.cells[`1:${column}`] ?? null, newValue: '' },
+                    ))}
+                  >
+                    ×
+                  </button>
+                )
+              })}
+            </>
+          ) : null}
           {vThumb ? (
             <div className="eq-vbar" onPointerDown={(event) => pageTrack('y', event)}>
               <div className="eq-thumb" style={{ height: vThumb.size, transform: `translateY(${vThumb.pos}px)` }} onPointerDown={(event) => dragThumb('y', event)} />
@@ -1951,9 +2418,9 @@ export function EquipmentSpreadsheet({
         </div>
       </div>
       <div className="eq-footer">
-        <button type="button" className="eq-tab-nav" aria-label="Previous worksheet" onClick={() => tabsRef.current?.scrollBy({ left: -160, behavior: 'smooth' })}>‹</button>
-        <button type="button" className="eq-tab-nav" aria-label="Next worksheet" onClick={() => tabsRef.current?.scrollBy({ left: 160, behavior: 'smooth' })}>›</button>
-        <div className="eq-tabs" ref={tabsRef} role="tablist" aria-label="Worksheets">
+        {hideSheetTabs ? null : <button type="button" className="eq-tab-nav" aria-label="Previous worksheet" onClick={() => tabsRef.current?.scrollBy({ left: -160, behavior: 'smooth' })}>‹</button>}
+        {hideSheetTabs ? null : <button type="button" className="eq-tab-nav" aria-label="Next worksheet" onClick={() => tabsRef.current?.scrollBy({ left: 160, behavior: 'smooth' })}>›</button>}
+        {hideSheetTabs ? null : <div className="eq-tabs" ref={tabsRef} role="tablist" aria-label="Worksheets">
           {visibleSheets(workbook).map((item) => (
             <button
               type="button"
@@ -1975,7 +2442,7 @@ export function EquipmentSpreadsheet({
                 onChange({ ...workbook, activeSheetId: item.id }, null)
               }}
               onDoubleClick={() => {
-                if (readOnly) return
+                if (readOnly || !allowNewSheet || ipcLayout) return
                 setSelectedIds([item.id])
                 setRenaming({ id: item.id, name: item.name })
               }}
@@ -2015,8 +2482,20 @@ export function EquipmentSpreadsheet({
               ) : item.name}
             </button>
           ))}
-        </div>
-        <button type="button" className="eq-tab-add" aria-label="Add worksheet" onClick={() => runWorkbook(() => addSheet(workbook), { action: 'SHEET_CREATED', range: null, oldValue: null, newValue: 'New sheet' })}>+</button>
+        </div>}
+        {hideSheetTabs || !allowNewSheet ? null : ipcLayout ? (
+          <button
+            type="button"
+            className="eq-tab-add"
+            aria-label="Add worksheet"
+            onClick={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect()
+              setIpcAddAt({ top: Math.max(8, rect.top - 40), left: rect.left })
+            }}
+          >
+            +
+          </button>
+        ) : <button type="button" className="eq-tab-add" aria-label="Add worksheet" onClick={() => runWorkbook(() => addSheet(workbook), { action: 'SHEET_CREATED', range: null, oldValue: null, newValue: 'New sheet' })}>+</button>}
         {selectedIds.length > 1 ? <span className="eq-group-note">{selectedIds.length} sheets grouped. Click a sheet to ungroup.</span> : null}
         {notice ? <span className="eq-group-note">{notice}</span> : null}
         <span className="eq-status">{selectionSummary(sheet, selection)}</span>
@@ -2031,14 +2510,14 @@ export function EquipmentSpreadsheet({
             <>
               <button type="button" onClick={() => guard(() => { changeGrouped((item) => insertRow(item, menu.row), { action: 'ROW_INSERTED', range: `Row ${menu.row + 1}`, oldValue: null, newValue: 'Inserted above' }); setMenu(null) })}>Insert row above</button>
               <button type="button" onClick={() => guard(() => { changeGrouped((item) => insertRow(item, menu.row + 1), { action: 'ROW_INSERTED', range: `Row ${menu.row + 2}`, oldValue: null, newValue: 'Inserted below' }); setMenu(null) })}>Insert row below</button>
-              <button type="button" onClick={() => guard(() => { changeGrouped((item) => deleteRow(item, menu.row), { action: 'ROW_DELETED', range: `Row ${menu.row + 1}`, oldValue: null, newValue: 'Deleted' }); setMenu(null) })}>Delete row</button>
+              <button type="button" onClick={() => askDelete('row', menu.row)}>Delete row</button>
             </>
           ) : null}
           {menu.target === 'column' ? (
             <>
               <button type="button" onClick={() => guard(() => { changeGrouped((item) => insertColumn(item, menu.column), { action: 'COLUMN_INSERTED', range: columnLabel(menu.column), oldValue: null, newValue: 'Inserted left' }); setMenu(null) })}>Insert column left</button>
               <button type="button" onClick={() => guard(() => { changeGrouped((item) => insertColumn(item, menu.column + 1), { action: 'COLUMN_INSERTED', range: columnLabel(menu.column + 1), oldValue: null, newValue: 'Inserted right' }); setMenu(null) })}>Insert column right</button>
-              <button type="button" onClick={() => guard(() => { changeGrouped((item) => deleteColumn(item, menu.column), { action: 'COLUMN_DELETED', range: columnLabel(menu.column), oldValue: null, newValue: 'Deleted' }); setMenu(null) })}>Delete column</button>
+              <button type="button" onClick={() => askDelete('column', menu.column)}>Delete column</button>
             </>
           ) : null}
         </div>
@@ -2053,8 +2532,9 @@ export function EquipmentSpreadsheet({
           onClose={() => setSheetMenu(null)}
           onApply={applySheet}
           onRename={(sheetId) => {
-            const target = workbook.sheets.find((item) => item.id === sheetId)
             setSheetMenu(null)
+            if (ipcLayout) return
+            const target = workbook.sheets.find((item) => item.id === sheetId)
             if (target) setRenaming({ id: target.id, name: target.name })
           }}
           onSelectAll={() => {
@@ -2078,6 +2558,921 @@ export function EquipmentSpreadsheet({
         onClose={() => setSheetDialog(null)}
         onApply={applySheet}
       />
+      {ipcAddAt ? (
+        <>
+          <div className="eq-profile-backdrop" onClick={() => setIpcAddAt(null)} />
+          <div className="eq-equipment-add-menu" role="menu" style={{ top: ipcAddAt.top, left: ipcAddAt.left }}>
+            <button type="button" onClick={() => {
+              setIpcAddAt(null)
+              const productCode = profileReport?.productCode ?? ''
+              guard(() => apply(addIpcDataSheet(workbook, productCode), { action: 'SHEET_CREATED', range: null, oldValue: null, newValue: 'Insert parameter' }))
+            }}>Insert Parameter</button>
+          </div>
+        </>
+      ) : null}
+      {equipmentAddAt ? (
+        <>
+          <div className="eq-profile-backdrop" onClick={() => setEquipmentAddAt(null)} />
+          <div className="eq-equipment-add-menu" role="menu" style={{ top: equipmentAddAt.top, left: equipmentAddAt.left }}>
+            <button type="button" onClick={() => {
+              setEquipmentAddAt(null)
+              guard(() => apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? addEquipmentEntryRow(sheet) : item)) },
+                { action: 'CELL_UPDATED', range: null, oldValue: null, newValue: 'Equipment row' },
+              ))
+            }}>Equipment row</button>
+            <button type="button" onClick={() => {
+              setEquipmentAddAt(null)
+              guard(() => apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? addEquipmentBreakerRow(sheet) : item)) },
+                { action: 'CELL_UPDATED', range: null, oldValue: null, newValue: 'Breaker row' },
+              ))
+            }}>Breaker row</button>
+          </div>
+        </>
+      ) : null}
+      {ipcColumn !== null ? (
+        <form className="eq-profile-dialog" role="dialog" aria-label="IPC parameter" onSubmit={(event) => {
+          event.preventDefault()
+          const column = ipcColumn
+          guard(() => apply(
+            commitIpcParameter(workbook, sheet.id, column, ipcDraft),
+            { action: 'CELL_UPDATED', range: addressLabel(0, column), oldValue: null, newValue: ipcDraft.filter(Boolean).join(', ') || null },
+          ))
+          setIpcColumn(null)
+        }}>
+          <h2>IPC parameter</h2>
+          {IPC_PARAMETER_LABELS.map((label, index) => (
+            <label key={label}>
+              {label}
+              <input aria-label={label} value={ipcDraft[index] ?? ''} onChange={(event) => setIpcDraft((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} />
+            </label>
+          ))}
+          <div className="eq-profile-dialog-actions">
+            <button type="submit">OK</button>
+            <button type="button" onClick={() => setIpcColumn(null)}>Cancel</button>
+          </div>
+        </form>
+      ) : null}
+      {equipmentHold ? (
+        <form className="eq-profile-dialog" role="dialog" aria-label="Equipment already used" onSubmit={(event) => { event.preventDefault(); setEquipmentHold('') }}>
+          <h2>Add a new row</h2>
+          <p>{equipmentHold}</p>
+          <div className="eq-profile-dialog-actions">
+            <button type="submit">OK</button>
+          </div>
+        </form>
+      ) : null}
+      {equipmentUse ? (
+        <form className="eq-profile-dialog" role="dialog" aria-label="Equipment batch" onSubmit={(event) => event.preventDefault()}>
+          <h2>Is this equipment used for this batch?</h2>
+          <p>{sheet.cells[`${equipmentUse.row}:0`]}</p>
+          <p>{sheet.cells[`0:${equipmentUse.column}`] || 'This batch'}</p>
+          <div className="eq-profile-dialog-actions">
+            <button type="button" onClick={() => {
+              const target = equipmentUse
+              guard(() => apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => item.id === sheet.id ? markEquipmentBatch(item, target.row, target.column, true) : item) },
+                { action: 'CELL_UPDATED', range: addressLabel(target.row, target.column), oldValue: sheet.cells[`${target.row}:${target.column}`] ?? null, newValue: sheet.cells[`${target.row}:0`] ?? '' },
+              ))
+              setEquipmentUse(null)
+            }}>Yes</button>
+            <button type="button" onClick={() => {
+              const target = equipmentUse
+              guard(() => apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => item.id === sheet.id ? markEquipmentBatch(item, target.row, target.column, false) : item) },
+                { action: 'CELL_UPDATED', range: addressLabel(target.row, target.column), oldValue: sheet.cells[`${target.row}:${target.column}`] ?? null, newValue: '' },
+              ))
+              setEquipmentUse(null)
+            }}>No</button>
+            <button type="button" onClick={() => setEquipmentUse(null)}>Cancel</button>
+          </div>
+        </form>
+      ) : null}
+      {deleteAsk ? (
+        <form className="eq-profile-dialog" role="dialog" aria-label="Delete reason" onSubmit={(event) => { event.preventDefault(); confirmDelete() }}>
+          <h2>{deleteAsk.kind === 'row' ? 'Delete row' : 'Delete column'}</h2>
+          <label>
+            Reason
+            <input aria-label="Delete reason" value={deleteReason} onChange={(event) => setDeleteReason(event.target.value)} required />
+          </label>
+          <p>This reason is kept in the audit trail. The history control can restore this sheet.</p>
+          <div className="eq-profile-dialog-actions">
+            <button type="submit">Delete</button>
+            <button type="button" onClick={() => setDeleteAsk(null)}>Cancel</button>
+          </div>
+        </form>
+      ) : null}
+      {historyOpen ? (
+        <form className="eq-profile-dialog" role="dialog" aria-label="Sheet history" onSubmit={(event) => event.preventDefault()}>
+          <h2>History</h2>
+          {history.length ? (
+            <ul className="equipment-choice-list">
+              {history.map((entry) => (
+                <li key={entry.id}>
+                  <button type="button" onClick={() => {
+                    const key = historyKey()
+                    guard(() => apply(entry.workbook, { action: 'CELL_UPDATED', range: entry.label, oldValue: 'Deleted', newValue: 'Restored' }))
+                    forgetSheetHistory(key, entry.id)
+                    setHistory(listSheetHistory(key))
+                    if (profileReport) {
+                      appendCpvAudit({
+                        action_type: 'restore',
+                        product_id: profileReport.productCode,
+                        module: profileReport.section,
+                        record_type: 'spreadsheet',
+                        record_id: key,
+                        record_label: entry.label,
+                        old_value: 'Deleted',
+                        new_value: 'Restored',
+                        reason: entry.reason,
+                      })
+                    }
+                  }}>
+                    Restore {entry.label} — {entry.reason}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : <p>No deleted rows or columns to restore.</p>}
+          <div className="eq-profile-dialog-actions">
+            <button type="button" onClick={() => setHistoryOpen(false)}>Close</button>
+          </div>
+        </form>
+      ) : null}
+      {equipmentPick ? (
+        <EquipmentChoiceDialog
+          currentLabel={sheet.cells[`${equipmentPick.row}:${equipmentPick.column}`] ?? ''}
+          onCancel={() => setEquipmentPick(null)}
+          onRegister={(list) => leaveForEquipment(list)}
+          onEdit={(record, list) => leaveForEquipment(list, record)}
+          onChoose={(label) => {
+            const target = equipmentPick
+            const current = sheet.cells[`${target.row}:0`]?.trim() ?? ''
+            if (current && current.toLowerCase() !== label.trim().toLowerCase() && equipmentRowInUse(sheet, target.row)) {
+              setEquipmentPick(null)
+              setEquipmentHold('This equipment is already used by a batch. Add a new row for the alternate equipment.')
+              return
+            }
+            guard(() => apply(
+              { ...workbook, sheets: workbook.sheets.map((item) => item.id === sheet.id ? writeEquipmentName(item, target.row, label) : item) },
+              { action: 'CELL_UPDATED', range: addressLabel(target.row, target.column), oldValue: sheet.cells[`${target.row}:${target.column}`] ?? null, newValue: label },
+            ))
+            setEquipmentPick(null)
+          }}
+        />
+      ) : null}
+      {packagingRow !== null ? (
+        <ProfilePackagingDialog
+          key={packagingRow}
+          initial={readProfilePackaging(sheet, packagingRow) ?? undefined}
+          suppliers={packagingSupplierChoices(profileReport?.productCode ?? '', sheet)}
+          onCancel={() => setPackagingRow(null)}
+          onRemoveSupplier={(name) => {
+            try {
+              const next = removeProfileSupplier(sheet, name)
+              guard(() => apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? next : item)) },
+                { action: 'CELL_UPDATED', range: name.trim(), oldValue: name.trim(), newValue: null },
+              ))
+            } catch (err) {
+              onError(err instanceof Error ? err.message : 'The supplier could not be removed.')
+            }
+          }}
+          onSave={(entry) => {
+            try {
+              const next = writeProfilePackaging(sheet, packagingRow, entry)
+              guard(() => apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? next : item)) },
+                { action: 'CELL_UPDATED', range: entry.name.trim().toUpperCase(), oldValue: null, newValue: entry.name.trim().toUpperCase() },
+              ))
+              if (!readOnly) setPackagingRow(null)
+            } catch (err) {
+              onError(err instanceof Error ? err.message : 'The packaging material could not be added.')
+            }
+          }}
+        />
+      ) : null}
+      {equipmentLayout && /^sheet\d+$/i.test(sheet.name) && !equipmentPromptDismissed.includes(sheet.id) ? (
+        <EquipmentIdentifyDialog
+          onSave={(step) => {
+            const batches = equipmentSourceBatches(profileReport?.productCode ?? '')
+            guard(() => apply(applyEquipmentProcess(workbook, sheet.id, step, batches), { action: 'SHEET_RENAMED', range: step, oldValue: sheet.name, newValue: step }))
+          }}
+          onCancel={() => {
+            const others = workbook.sheets.filter((item) => item.id !== sheet.id && !item.hidden)
+            if (!others.length) {
+              setEquipmentPromptDismissed((current) => current.includes(sheet.id) ? current : [...current, sheet.id])
+              return
+            }
+            guard(() => apply(deleteSheet(workbook, sheet.id), { action: 'SHEET_DELETED', range: sheet.name, oldValue: sheet.name, newValue: null }))
+          }}
+        />
+      ) : null}
+      {batchOpen ? (
+        <ProfileBatchDialog
+          key={batchInitial?.uniqueBatchNo || (batchTarget ?? 'next')}
+          initial={batchInitial ?? undefined}
+          onCancel={() => setBatchOpen(false)}
+          onSave={(entry) => {
+            try {
+              const productCode = profileReport?.productCode ?? ''
+              const previous = batchInitial?.uniqueBatchNo ?? ''
+              if (packagingLayout || equipmentLayout || ipcLayout) saveRawProfileBatch(productCode, entry, previous)
+              const next = packagingLayout
+                ? refreshPackagingWorkbook(workbook, productCode)
+                : equipmentLayout
+                  ? refreshEquipmentWorkbook(workbook, productCode)
+                  : ipcLayout
+                    ? refreshIpcWorkbook(workbook, productCode)
+                    : commitProfileBatch(workbook, entry, batchTarget, previous)
+              guard(() => apply(
+                next,
+                { action: 'CELL_UPDATED', range: entry.uniqueBatchNo.trim(), oldValue: null, newValue: entry.uniqueBatchNo.trim() },
+              ))
+              if (!readOnly) setBatchOpen(false)
+            } catch (err) {
+              onError(err instanceof Error ? err.message : 'The batch could not be added.')
+            }
+          }}
+        />
+      ) : null}
+      {controlTarget ? (
+        <ProfileControlDialog
+          key={`${controlTarget.row}:${controlTarget.column}`}
+          initial={(sheet.cells[`${controlTarget.row}:${controlTarget.column}`] ?? '').split('\n').filter((item) => item.trim())}
+          onCancel={() => setControlTarget(null)}
+          onSave={(controlNos) => {
+            try {
+              const next = packagingLayout
+                ? writePackagingControlNos(sheet, controlTarget.row, controlNos, controlTarget.column)
+                : writeProfileControlNos(sheet, controlTarget.row, controlNos, controlTarget.column)
+              const shown = controlNos.map((item) => item.trim()).filter(Boolean).join('\n')
+              guard(() => apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? next : item)) },
+                { action: 'CELL_UPDATED', range: `${columnLabel(controlTarget.column)}${controlTarget.row + 1}`, oldValue: sheet.cells[`${controlTarget.row}:${controlTarget.column}`] ?? null, newValue: shown },
+              ))
+              if (!readOnly) setControlTarget(null)
+            } catch (err) {
+              onError(err instanceof Error ? err.message : 'The control numbers could not be saved.')
+            }
+          }}
+        />
+      ) : null}
+      {itemTarget ? (
+        <ProfileItemDialog
+          key={`${itemTarget.row}:${itemTarget.column}`}
+          itemCode={sheet.cells[`${itemTarget.row}:${itemTarget.column}`] ?? ''}
+          notApplicable={profileItemNotApplicable(sheet, itemTarget.row, itemTarget.column)}
+          onCancel={() => setItemTarget(null)}
+          onNotApplicable={() => {
+            try {
+              const next = packagingLayout
+                ? markPackagingItemNotApplicable(sheet, itemTarget.row, itemTarget.column)
+                : markProfileItemNotApplicable(sheet, itemTarget.row, itemTarget.column)
+              guard(() => apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? next : item)) },
+                { action: 'CELL_UPDATED', range: `${columnLabel(itemTarget.column)}${itemTarget.row + 1}`, oldValue: sheet.cells[`${itemTarget.row}:${itemTarget.column}`] ?? null, newValue: null },
+              ))
+              if (!readOnly) setItemTarget(null)
+            } catch (err) {
+              onError(err instanceof Error ? err.message : 'The item code could not be updated.')
+            }
+          }}
+          onRestore={() => {
+            try {
+              const next = packagingLayout
+                ? restorePackagingItem(sheet, itemTarget.row, itemTarget.column)
+                : restoreProfileItemCode(sheet, itemTarget.row, itemTarget.column)
+              const shown = next.cells[`${itemTarget.row}:${itemTarget.column}`] ?? ''
+              guard(() => apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? next : item)) },
+                { action: 'CELL_UPDATED', range: `${columnLabel(itemTarget.column)}${itemTarget.row + 1}`, oldValue: null, newValue: shown || null },
+              ))
+              if (!readOnly) setItemTarget(null)
+            } catch (err) {
+              onError(err instanceof Error ? err.message : 'The item code could not be updated.')
+            }
+          }}
+        />
+      ) : null}
+      {materialOpen ? (
+        <ProfileMaterialDialog
+          key={materialMode}
+          suppliers={profileSuppliers(sheet)}
+          initial={materialMode === 'header' ? readProfileHeader(sheet) ?? undefined : undefined}
+          onCancel={() => setMaterialOpen(false)}
+          onRemoveSupplier={(name) => {
+            try {
+              const next = removeProfileSupplier(sheet, name)
+              guard(() => apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? next : item)) },
+                { action: 'CELL_UPDATED', range: name.trim(), oldValue: name.trim(), newValue: null },
+              ))
+            } catch (err) {
+              onError(err instanceof Error ? err.message : 'The supplier could not be removed.')
+            }
+          }}
+          onSave={(entry) => {
+            try {
+              const next = materialMode === 'header' ? writeProfileHeader(sheet, entry) : addProfileMaterial(sheet, entry)
+              guard(() => apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? next : item)) },
+                { action: 'CELL_UPDATED', range: entry.description.trim().toUpperCase(), oldValue: null, newValue: entry.description.trim().toUpperCase() },
+              ))
+              if (!readOnly) setMaterialOpen(false)
+            } catch (err) {
+              onError(err instanceof Error ? err.message : 'The material could not be added.')
+            }
+          }}
+        />
+      ) : null}
+      {ipcLayout && sheet.snippets?.['ipc-run-column'] ? (
+        <aside className={`eq-ipc-panel${ipcPanelOpen ? '' : ' is-collapsed'}`} aria-label="Run chart">
+          <button
+            type="button"
+            className="eq-ipc-panel-toggle"
+            aria-expanded={ipcPanelOpen}
+            aria-label={ipcPanelOpen ? 'Collapse run chart' : 'Expand run chart'}
+            onClick={() => setIpcPanelOpen((open) => !open)}
+          >
+            {ipcPanelOpen ? <PanelRightClose size={16} aria-hidden /> : <PanelRightOpen size={16} aria-hidden />}
+          </button>
+          {ipcPanelOpen ? (
+            <IpcLineChart
+              source={sheet}
+              column={Number(sheet.snippets['ipc-run-column'])}
+              usl={Number(sheet.snippets['ipc-run-usl'])}
+              lsl={Number(sheet.snippets['ipc-run-lsl'])}
+            />
+          ) : null}
+        </aside>
+      ) : null}
+    </div>
+  )
+}
+
+function LabelHint({ label, hint }: { label: string; hint: string }) {
+  return (
+    <span className="eq-field-label">
+      {label}
+      <Tooltip title={hint}>
+        <button type="button" className="eq-field-info" aria-label={hint}>
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" strokeWidth="1.25" />
+            <circle cx="8" cy="4.7" r="0.8" fill="currentColor" />
+            <path d="M8 7.1v4.2" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+          </svg>
+        </button>
+      </Tooltip>
+    </span>
+  )
+}
+
+function EquipmentIdentifyDialog({ onSave, onCancel }: { onSave: (name: string) => void; onCancel: () => void }) {
+  const [form, setForm] = useState<(typeof EQUIPMENT_PROCESS_FORMS)[number]['form'] | ''>('')
+  const [step, setStep] = useState('')
+  const [error, setError] = useState('')
+  const steps = EQUIPMENT_PROCESS_FORMS.find((item) => item.form === form)?.steps ?? []
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!form || !step) {
+      setError('Choose the product type and the process for this sheet.')
+      return
+    }
+    onSave(step)
+  }
+  return (
+    <>
+      <div className="eq-profile-backdrop" />
+      <form className="eq-profile-dialog" role="dialog" aria-label="Identify sheet" onSubmit={submit}>
+        <h2>Identify this sheet</h2>
+        <label>
+          Product type
+          <select aria-label="Product type" value={form} required onChange={(event) => { setForm(event.target.value as typeof form); setStep('') }}>
+            <option value="">Select</option>
+            {EQUIPMENT_PROCESS_FORMS.map((item) => <option key={item.form} value={item.form}>{item.form}</option>)}
+          </select>
+        </label>
+        <label>
+          Process
+          <select aria-label="Process" value={step} required disabled={!form} onChange={(event) => setStep(event.target.value)}>
+            <option value="">Select</option>
+            {steps.map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
+        </label>
+        {error ? <p className="eq-banner">{error}</p> : null}
+        <div className="eq-profile-dialog-actions">
+          <button type="submit">Continue</button>
+          <button type="button" onClick={onCancel}>Cancel</button>
+        </div>
+      </form>
+    </>
+  )
+}
+
+function blankPo(): ProfilePoEntry {
+  return { poControlNo: '', productCode: '', sku: '' }
+}
+
+function initialOrders(initial?: ProfileBatchEntry): ProfilePoEntry[] {
+  if (initial?.orders?.length) return initial.orders.map((line) => ({ ...line }))
+  if (initial && (initial.poControlNo || initial.productCode || initial.sku)) {
+    return [{ poControlNo: initial.poControlNo, productCode: initial.productCode, sku: initial.sku }]
+  }
+  return [blankPo()]
+}
+
+function ProfileBatchDialog({ initial, onCancel, onSave }: { initial?: ProfileBatchEntry; onCancel: () => void; onSave: (entry: ProfileBatchEntry) => void }) {
+  const [entry, setEntry] = useState<ProfileBatchEntry>(initial ?? {
+    uniqueBatchNo: '',
+    moControlNo: '',
+    poControlNo: '',
+    productCode: '',
+    sku: '',
+    mfgDate: '',
+    expDate: '',
+    fgReleasedDate: '',
+  })
+  const [orders, setOrders] = useState<ProfilePoEntry[]>(initialOrders(initial))
+  const [error, setError] = useState('')
+  function updateOrder(index: number, patch: Partial<ProfilePoEntry>) {
+    setOrders(orders.map((line, lineIndex) => (lineIndex === index ? { ...line, ...patch } : line)))
+  }
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!entry.uniqueBatchNo.trim()) {
+      setError('Unique Batch No. is required.')
+      return
+    }
+    if (!entry.moControlNo.trim()) {
+      setError('MO Control No. is required.')
+      return
+    }
+    if (orders.some((line) => !line.poControlNo.trim() || !line.productCode.trim() || !line.sku.trim())) {
+      setError('PO Control No., Product Code, and SKU are required.')
+      return
+    }
+    const first = orders[0] ?? blankPo()
+    onSave({ ...entry, ...first, orders })
+  }
+  return (
+    <form className="eq-profile-dialog" role="dialog" aria-label="Add batch" onSubmit={submit} onKeyDown={(event) => { if (event.key === 'Escape') onCancel() }}>
+      <h2>Add batch</h2>
+      <label>
+        Unique Batch No.
+        <input aria-label="Unique Batch No." value={entry.uniqueBatchNo} required onChange={(event) => setEntry({ ...entry, uniqueBatchNo: event.target.value })} />
+      </label>
+      <label>
+        MO Control No.
+        <input aria-label="MO Control No." value={entry.moControlNo} required onChange={(event) => setEntry({ ...entry, moControlNo: event.target.value })} />
+      </label>
+      {orders.map((line, index) => (
+        <div className="eq-po-group" key={index}>
+          <label>
+            PO Control No.
+            <input aria-label={orders.length > 1 ? `PO Control No. ${index + 1}` : 'PO Control No.'} value={line.poControlNo} required onChange={(event) => updateOrder(index, { poControlNo: event.target.value })} />
+          </label>
+          <label>
+            <LabelHint label="Product Code" hint="Enter the Product Code from the specific PO." />
+            <input aria-label={orders.length > 1 ? `Product Code ${index + 1}` : 'Product Code'} value={line.productCode} required onChange={(event) => updateOrder(index, { productCode: event.target.value })} />
+          </label>
+          <label>
+            <LabelHint label="SKU" hint="The SKU is specific to its respective PO." />
+            <input aria-label={orders.length > 1 ? `SKU ${index + 1}` : 'SKU'} value={line.sku} required onChange={(event) => updateOrder(index, { sku: event.target.value })} />
+          </label>
+        </div>
+      ))}
+      <button type="button" onClick={() => setOrders([...orders, blankPo()])}>Add PO</button>
+      <label>
+        Mfg. Date (MMM YYYY)
+        <input aria-label="Mfg. Date" type="month" value={entry.mfgDate} onChange={(event) => setEntry({ ...entry, mfgDate: event.target.value })} />
+      </label>
+      <label>
+        Exp Date (MMM YYYY)
+        <input aria-label="Exp Date" type="month" value={entry.expDate} onChange={(event) => setEntry({ ...entry, expDate: event.target.value })} />
+      </label>
+      <label>
+        FG Released Date (DD MMM YYYY)
+        <input aria-label="FG Released Date" type="date" value={entry.fgReleasedDate} onChange={(event) => setEntry({ ...entry, fgReleasedDate: event.target.value })} />
+      </label>
+      {error ? <p className="eq-banner">{error}</p> : null}
+      <div className="eq-profile-dialog-actions">
+        <button type="submit">Add</button>
+        <button type="button" onClick={onCancel}>Cancel</button>
+      </div>
+    </form>
+  )
+}
+
+function ProfileControlDialog({ initial, onCancel, onSave }: { initial: string[]; onCancel: () => void; onSave: (controlNos: string[]) => void }) {
+  const [controlNos, setControlNos] = useState(initial.length ? initial : [''])
+  return (
+    <form className="eq-profile-dialog" role="dialog" aria-label="Control numbers" onSubmit={(event) => { event.preventDefault(); onSave(controlNos) }} onKeyDown={(event) => { if (event.key === 'Escape') onCancel() }}>
+      <h2>Control No.</h2>
+      {controlNos.map((value, index) => (
+        <label key={index}>
+          Control No.
+          <input
+            aria-label={`Control No. ${index + 1}`}
+            value={value}
+            onChange={(event) => setControlNos(controlNos.map((item, itemIndex) => (itemIndex === index ? event.target.value : item)))}
+          />
+        </label>
+      ))}
+      <button type="button" onClick={() => setControlNos([...controlNos, ''])}>Add control no.</button>
+      <div className="eq-profile-dialog-actions">
+        <button type="submit">Add</button>
+        <button type="button" onClick={onCancel}>Cancel</button>
+      </div>
+    </form>
+  )
+}
+
+function ProfileItemDialog({ itemCode, notApplicable, onCancel, onNotApplicable, onRestore }: { itemCode: string; notApplicable: boolean; onCancel: () => void; onNotApplicable: () => void; onRestore: () => void }) {
+  return (
+    <form className="eq-profile-dialog" role="dialog" aria-label="Item code" onSubmit={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === 'Escape') onCancel() }}>
+      <h2>Item code</h2>
+      <p>{notApplicable ? 'Not applicable' : itemCode || 'No item code'}</p>
+      <div className="eq-profile-dialog-actions">
+        {notApplicable ? <button type="button" onClick={onRestore}>Use item code</button> : <button type="button" onClick={onNotApplicable}>Not applicable</button>}
+        <button type="button" onClick={onCancel}>Cancel</button>
+      </div>
+    </form>
+  )
+}
+
+function EquipmentChoiceDialog({
+  currentLabel,
+  onCancel,
+  onChoose,
+  onRegister,
+  onEdit,
+}: {
+  currentLabel: string
+  onCancel: () => void
+  onChoose: (label: string) => void
+  onRegister: (list: string) => void
+  onEdit: (record: ReturnType<typeof equipmentRecordFromSheet>, list: string) => void
+}) {
+  const workbook = useMemo(() => loadEquipmentMasterlist(), [])
+  const [list, setList] = useState(MASTERLIST_SHEET)
+  const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState<ReturnType<typeof equipmentRecordFromSheet> | null>(null)
+  const sheet = workbook.sheets.find((item) => item.name === list) ?? workbook.sheets[0]
+  const choices = useMemo(() => {
+    if (!sheet) return []
+    const rows: ReturnType<typeof equipmentRecordFromSheet>[] = []
+    for (let row = 0; row < sheet.rowCount; row += 1) {
+      const record = equipmentRecordFromSheet(sheet, row)
+      if (!record.equipment || !record.sourceNo) continue
+      rows.push(record)
+    }
+    const text = query.trim().toLowerCase()
+    return rows.filter((row) => !text || row.equipment.toLowerCase().includes(text) || row.ilTag.toLowerCase().includes(text) || row.department.toLowerCase().includes(text))
+  }, [sheet, query])
+  useEffect(() => {
+    if (!sheet || !currentLabel) return
+    for (let row = 0; row < sheet.rowCount; row += 1) {
+      const record = equipmentRecordFromSheet(sheet, row)
+      if (record.equipment && equipmentProfileLabel(record.equipment, record.ilTag) === currentLabel) {
+        setSelected(record)
+        return
+      }
+    }
+    setSelected(null)
+  }, [currentLabel, list, sheet])
+  return (
+    <form className="eq-profile-dialog" role="dialog" aria-label="Select equipment" onSubmit={(event) => { event.preventDefault(); if (selected) onChoose(equipmentProfileLabel(selected.equipment, selected.ilTag)) }} onKeyDown={(event) => { if (event.key === 'Escape') onCancel() }}>
+      <h2>Select equipment</h2>
+      <label>
+        Identify
+        <select aria-label="Identify" value={list} onChange={(event) => setList(event.target.value)}>
+          <option value={MASTERLIST_SHEET}>Main Equipment</option>
+          <option value={AUXILIARY_SHEET}>Auxiliary</option>
+        </select>
+      </label>
+      <label>
+        Search
+        <input aria-label="Search masterlist" value={query} onChange={(event) => setQuery(event.target.value)} />
+      </label>
+      <ul className="equipment-choice-list">
+        {choices.map((row) => (
+          <li key={`${row.department}:${row.sourceNo}:${row.ilTag}`}>
+            <button type="button" className={selected?.department === row.department && selected.sourceNo === row.sourceNo ? 'is-selected' : undefined} aria-pressed={selected?.department === row.department && selected.sourceNo === row.sourceNo} onClick={() => setSelected(row)}>
+              {equipmentProfileLabel(row.equipment, row.ilTag)} — {row.department}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {!choices.length ? <p>No equipment matches this search.</p> : null}
+      <div className="eq-profile-dialog-actions">
+        <button type="submit" disabled={!selected}>OK</button>
+        <button type="button" disabled={!selected} onClick={() => { if (selected) onEdit(selected, list) }}>Edit</button>
+        <button type="button" onClick={() => onRegister(list)}>Register new equipment</button>
+        <button type="button" onClick={() => onChoose('')}>Clear</button>
+        <button type="button" onClick={onCancel}>Cancel</button>
+      </div>
+    </form>
+  )
+}
+
+function ProfilePackagingDialog({ initial, suppliers, onCancel, onRemoveSupplier, onSave }: { initial?: ProfilePackagingEntry; suppliers: { name: string; address: string }[]; onCancel: () => void; onRemoveSupplier: (name: string) => void; onSave: (entry: ProfilePackagingEntry) => void }) {
+  const [name, setName] = useState(initial?.name ?? '')
+  const [description, setDescription] = useState(initial?.description ?? '')
+  const [itemNo, setItemNo] = useState(initial?.itemNo ?? '')
+  const [subItemNo, setSubItemNo] = useState(initial?.subItemNo ?? '')
+  const [supplierName, setSupplierName] = useState(initial?.supplierName ?? '')
+  const [supplierAddress, setSupplierAddress] = useState(initial?.supplierAddress ?? '')
+  const [supplierOpen, setSupplierOpen] = useState(false)
+  const [error, setError] = useState('')
+  const supplierMatches = suppliers.filter((item) => item.name.toLowerCase().includes(supplierName.trim().toLowerCase()))
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!name.trim()) {
+      setError('Packaging Material is required.')
+      return
+    }
+    onSave({ name, description, itemNo, subItemNo, supplierName, supplierAddress })
+  }
+  return (
+    <form className="eq-profile-dialog" role="dialog" aria-label="Packaging material" onSubmit={submit} onKeyDown={(event) => { if (event.key === 'Escape') onCancel() }}>
+      <h2>Packaging material</h2>
+      <label>
+        Packaging Material
+        <textarea aria-label="Packaging Material" value={name} required rows={4} onChange={(event) => setName(event.target.value.toUpperCase())} />
+      </label>
+      <label>
+        Description
+        <textarea aria-label="Description" value={description} rows={4} onChange={(event) => setDescription(event.target.value.toUpperCase())} />
+      </label>
+      <label>
+        Item No.
+        <input aria-label="Item No." value={itemNo} onChange={(event) => setItemNo(event.target.value)} />
+      </label>
+      <label>
+        Sub Item No.
+        <input aria-label="Sub Item No." value={subItemNo} onChange={(event) => setSubItemNo(event.target.value)} />
+      </label>
+      <label>
+        Supplier&apos;s Name
+        <input
+          aria-label="Supplier's Name"
+          value={supplierName}
+          onFocus={() => setSupplierOpen(true)}
+          onBlur={() => setSupplierOpen(false)}
+          onChange={(event) => {
+            const nextName = event.target.value
+            setSupplierName(nextName)
+            setSupplierOpen(true)
+            const match = suppliers.find((item) => item.name.toLowerCase() === nextName.trim().toLowerCase())
+            if (match?.address) setSupplierAddress(match.address)
+          }}
+        />
+        {supplierOpen && supplierMatches.length ? (
+          <ul className="eq-supplier-menu" onMouseDown={(event) => event.preventDefault()}>
+            {supplierMatches.map((item) => (
+              <li key={item.name}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSupplierName(item.name)
+                    if (item.address) setSupplierAddress(item.address)
+                    setSupplierOpen(false)
+                  }}
+                >
+                  {item.name}
+                </button>
+                <button type="button" aria-label={`Delete supplier ${item.name}`} onClick={() => onRemoveSupplier(item.name)}>×</button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </label>
+      <label>
+        Supplier&apos;s Address
+        <input aria-label="Supplier's Address" value={supplierAddress} onChange={(event) => setSupplierAddress(event.target.value)} />
+      </label>
+      {error ? <p className="eq-banner">{error}</p> : null}
+      <div className="eq-profile-dialog-actions">
+        <button type="submit">Add</button>
+        <button type="button" onClick={onCancel}>Cancel</button>
+      </div>
+    </form>
+  )
+}
+
+function ProfileMaterialDialog({ initial, suppliers, onCancel, onRemoveSupplier, onSave }: { initial?: ProfileMaterialEntry; suppliers: { name: string; address: string }[]; onCancel: () => void; onRemoveSupplier: (name: string) => void; onSave: (entry: ProfileMaterialEntry) => void }) {
+  const [description, setDescription] = useState(initial?.description ?? '')
+  const [supplierName, setSupplierName] = useState(initial?.supplierName ?? '')
+  const [supplierAddress, setSupplierAddress] = useState(initial?.supplierAddress ?? '')
+  const [itemCode, setItemCode] = useState(initial?.itemCode ?? '')
+  const [supplierOpen, setSupplierOpen] = useState(false)
+  const [error, setError] = useState('')
+  const supplierMatches = suppliers.filter((item) => item.name.toLowerCase().includes(supplierName.trim().toLowerCase()))
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!description.trim()) {
+      setError('Material Description is required.')
+      return
+    }
+    onSave({ description, supplierName, supplierAddress, itemCode, controlNos: [] })
+  }
+  return (
+    <form className="eq-profile-dialog" role="dialog" aria-label="Add material" onSubmit={submit} onKeyDown={(event) => { if (event.key === 'Escape') onCancel() }}>
+      <h2>Add material</h2>
+      <label>
+        Material Description
+        <input aria-label="Material Description" value={description} required onChange={(event) => setDescription(event.target.value.toUpperCase())} />
+      </label>
+      <label>
+        Supplier&apos;s Name
+        <input
+          aria-label="Supplier's Name"
+          value={supplierName}
+          onFocus={() => setSupplierOpen(true)}
+          onBlur={() => setSupplierOpen(false)}
+          onChange={(event) => {
+            const name = event.target.value
+            setSupplierName(name)
+            setSupplierOpen(true)
+            const match = suppliers.find((item) => item.name.toLowerCase() === name.trim().toLowerCase())
+            if (match?.address) setSupplierAddress(match.address)
+          }}
+        />
+        {supplierOpen && supplierMatches.length ? (
+          <ul className="eq-supplier-menu" onMouseDown={(event) => event.preventDefault()}>
+            {supplierMatches.map((item) => (
+              <li key={item.name}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSupplierName(item.name)
+                    if (item.address) setSupplierAddress(item.address)
+                    setSupplierOpen(false)
+                  }}
+                >
+                  {item.name}
+                </button>
+                <button type="button" aria-label={`Delete supplier ${item.name}`} onClick={() => onRemoveSupplier(item.name)}>×</button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </label>
+      <label>
+        Supplier&apos;s Address
+        <input aria-label="Supplier's Address" value={supplierAddress} onChange={(event) => setSupplierAddress(event.target.value)} />
+      </label>
+      <label>
+        Item Code
+        <input aria-label="Item Code" value={itemCode} onChange={(event) => setItemCode(event.target.value)} />
+      </label>
+      {error ? <p className="eq-banner">{error}</p> : null}
+      <div className="eq-profile-dialog-actions">
+        <button type="submit">Add</button>
+        <button type="button" onClick={onCancel}>Cancel</button>
+      </div>
+    </form>
+  )
+}
+
+function chartNumber(value: number): string {
+  if (!Number.isFinite(value)) return ''
+  return String(Math.round(value * 10000) / 10000)
+}
+
+function chartDecimal(value: number | null, places: number): string {
+  if (value == null || !Number.isFinite(value)) return '—'
+  return value.toFixed(places)
+}
+
+function observationRows(values: number[]): string[][] {
+  const observation = ipcRunObservation(values)
+  if (!observation) return []
+  return [
+    ['Number of runs about median', String(observation.runsAboutMedian), 'Number of runs up or down', chartDecimal(observation.runsUpDown, 0)],
+    ['Expected number of runs', chartDecimal(observation.expectedRunsAboutMedian, 1), 'Expected number of runs', chartDecimal(observation.expectedRunsUpDown, 1)],
+    ['Longest run about median', String(observation.longestRunAboutMedian), 'Longest run up or down', chartDecimal(observation.longestRunUpDown, 0)],
+    ['Approx P-value for clustering', chartDecimal(observation.clusteringP, 3), 'Approx P-value for trends', chartDecimal(observation.trendsP, 3)],
+    ['Approx P-value for mixtures', chartDecimal(observation.mixturesP, 3), 'Approx P-value for oscillation', chartDecimal(observation.oscillationP, 3)],
+  ]
+}
+
+function IpcLineChart({ source, column, usl, lsl }: { source: EquipmentSheet | null; column: number; usl: number; lsl: number }) {
+  const [hidden, setHidden] = useState<number[]>([])
+  const full = source ? ipcRunChart(source, column, usl, lsl) : null
+  const visibleColumns = (full?.series ?? []).map((item) => item.column).filter((item) => !hidden.includes(item))
+  const chart = full && hidden.length ? ipcRunChart(source, column, usl, lsl, visibleColumns) : full
+  const width = 480
+  const height = 250
+  const pad = { left: 46, right: 16, top: 16, bottom: 36 }
+  const plotWidth = width - pad.left - pad.right
+  const plotHeight = height - pad.top - pad.bottom
+  const batches = chart?.batches ?? []
+  const xAt = (batch: number) => {
+    if (batches.length <= 1) return pad.left + plotWidth / 2
+    const index = batches.indexOf(batch)
+    return pad.left + (index / (batches.length - 1)) * plotWidth
+  }
+  const yAt = (value: number) => {
+    if (!chart) return pad.top
+    const span = chart.yMax - chart.yMin || 1
+    return pad.top + (1 - (value - chart.yMin) / span) * plotHeight
+  }
+  const seriesColors = ['#1a73e8', '#188038', '#e37400', '#9334e6', '#c5221f', '#007b83']
+  const series = (full?.series.length ? full.series : chart ? [{ column, name: chart.title || 'Series', points: chart.points, ucl: chart.ucl, lcl: chart.lcl }] : [])
+    .map((item, index) => ({ ...item, color: seriesColors[index % seriesColors.length], shown: !hidden.includes(item.column) }))
+  const shown = series.filter((item) => item.shown)
+  const sole = shown.length === 1 ? shown[0] : null
+  const guides = chart ? [
+    { name: 'USL', value: usl, color: '#c5221f' },
+    { name: 'LSL', value: lsl, color: '#c5221f' },
+    { name: 'Median', value: chart.median, color: '#5f6368' },
+    ...(sole?.ucl != null && sole.lcl != null ? [
+      { name: 'UCL', value: sole.ucl, color: '#e37400' },
+      { name: 'LCL', value: sole.lcl, color: '#e37400' },
+    ] : []),
+  ] : []
+  return (
+    <div className="eq-ipc-chart flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4">
+      <div className="flex items-start gap-2 pr-8">
+        <LineChart size={18} aria-hidden className="text-sky-700" />
+        <div className="min-w-0">
+          <h2 className="m-0 text-sm font-semibold leading-5 text-slate-900">{chart?.title || 'Line graph'}</h2>
+          {chart?.specification ? <p className="m-0 mt-0.5 text-xs leading-4 text-slate-600">{chart.specification}</p> : null}
+        </div>
+      </div>
+      {chart ? (
+        <dl className="m-0 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[11px] leading-4">
+          {guides.map((guide) => (
+            <div key={guide.name} className="flex items-baseline gap-1">
+              <dt className="font-medium uppercase tracking-wide" style={{ color: guide.color }}>{guide.name}</dt>
+              <dd className="m-0 font-semibold text-slate-900">{chartNumber(guide.value)}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {chart ? (
+        <svg className="h-auto w-full shrink-0" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Run chart of ${chart.title}`}>
+          {chart.ticks.map((tick) => (
+            <line key={tick} x1={pad.left} y1={yAt(tick)} x2={width - pad.right} y2={yAt(tick)} stroke="#e6ebf0" />
+          ))}
+          <line x1={pad.left} y1={pad.top} x2={pad.left} y2={height - pad.bottom} stroke="#1d2430" />
+          <line x1={pad.left} y1={height - pad.bottom} x2={width - pad.right} y2={height - pad.bottom} stroke="#1d2430" />
+          {chart.ticks.map((tick) => (
+            <text key={`label-${tick}`} x={pad.left - 8} y={yAt(tick) + 3} textAnchor="end" fontSize="11" fill="#3c4450">{chartNumber(tick)}</text>
+          ))}
+          {guides.map((guide) => (
+            <line key={guide.name} x1={pad.left} y1={yAt(guide.value)} x2={width - pad.right} y2={yAt(guide.value)} stroke={guide.color} strokeDasharray={guide.name === 'Median' ? '2 3' : '5 3'} />
+          ))}
+          {shown.map((item) => item.points.length ? (
+            <path key={`line-${item.column}`} d={item.points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${xAt(point.batch)} ${yAt(point.value)}`).join(' ')} fill="none" stroke={item.color} strokeWidth="2" />
+          ) : null)}
+          {shown.flatMap((item) => item.points.map((point) => <circle key={`${item.column}-${point.batch}`} cx={xAt(point.batch)} cy={yAt(point.value)} r="3.5" fill="#fff" stroke={item.color} strokeWidth="2" />))}
+          {batches.map((batch) => <text key={batch} x={xAt(batch)} y={height - 14} textAnchor="middle" fontSize="11" fill="#3c4450">{batch}</text>)}
+        </svg>
+      ) : <p className="m-0 text-sm text-slate-600">Enter numeric results to plot this line graph.</p>}
+      {series.length ? (
+        <ul className="eq-ipc-legend" aria-label="Chart legend">
+          {series.map((item) => (
+            <li key={item.column}>
+              <label className={item.shown ? undefined : 'is-off'}>
+                <input
+                  type="checkbox"
+                  checked={item.shown}
+                  aria-label={`Show ${item.name} on the chart`}
+                  onChange={() => setHidden((current) => current.includes(item.column) ? current.filter((value) => value !== item.column) : [...current, item.column])}
+                />
+                <span className="eq-ipc-swatch" style={{ background: item.color }} />
+                {item.name}
+              </label>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {series.map((item) => {
+        const values = item.points.map((point) => point.value)
+        const rows = observationRows(values)
+        const patterns = ipcNelsonSignals(values)
+        return (
+          <section key={item.column} aria-label={`Observation for ${item.name}`} className="eq-ipc-observation">
+            <h3 style={{ color: item.color }}>{item.name}</h3>
+            {item.ucl != null && item.lcl != null ? <p className="eq-ipc-limits">UCL {chartNumber(item.ucl)} · LCL {chartNumber(item.lcl)}</p> : null}
+            {rows.length ? rows.flatMap((row) => [0, 1].map((side) => (
+              <p key={`${item.column}-${side}-${row[side * 2]}`}>
+                <span>{row[side * 2]}</span>
+                <span>{row[side * 2 + 1]}</span>
+              </p>
+            ))) : <p className="eq-ipc-limits">Enter results to analyze this series.</p>}
+            <div className="eq-ipc-patterns" aria-label={`Pattern tests for ${item.name}`}>
+              {values.length < 2 ? <p>Not enough results</p> : patterns.length ? patterns.map((signal) => (
+                <span key={signal.test}>Test {signal.test} · {signal.pattern}</span>
+              )) : <p>No pattern</p>}
+            </div>
+          </section>
+        )
+      })}
     </div>
   )
 }

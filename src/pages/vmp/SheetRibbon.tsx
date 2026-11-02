@@ -6,9 +6,11 @@ import {
   AlignVerticalJustifyCenter,
   Bold,
   ChevronDown,
+  ChevronUp,
   DollarSign,
   Filter,
   Grid2x2,
+  History,
   Italic,
   Link2,
   Minus,
@@ -24,6 +26,7 @@ import {
   TableCellsMerge,
   Undo2,
   WrapText,
+  Wrench,
 } from 'lucide-react'
 import type { CellStyle } from '../../features/vmp/equipmentWorkbook'
 
@@ -91,6 +94,12 @@ export function SheetRibbon({
   canMergeVertical,
   canUnmerge,
   onCommand,
+  collapsed = false,
+  onCollapsedChange,
+  onEquipment,
+  recordSearch,
+  onRecordSearch,
+  onHistory,
 }: {
   readOnly: boolean
   zoom: number
@@ -100,8 +109,19 @@ export function SheetRibbon({
   canMergeVertical: boolean
   canUnmerge: boolean
   onCommand: (command: string) => void
+  collapsed?: boolean
+  onCollapsedChange?: (collapsed: boolean) => void
+  onEquipment?: () => void
+  recordSearch?: string
+  onRecordSearch?: (value: string) => void
+  onHistory?: () => void
 }) {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsedState, setCollapsedState] = useState(false)
+  const hidden = onCollapsedChange ? collapsed : collapsedState
+  function setCollapsed(next: boolean) {
+    setCollapsedState(next)
+    onCollapsedChange?.(next)
+  }
   const [open, setOpen] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [fontQuery, setFontQuery] = useState('')
@@ -139,32 +159,31 @@ export function SheetRibbon({
     onCommand(command)
   }
 
-  if (collapsed) {
-    return (
-      <div className="eq-gtoolbar is-collapsed">
-        <button type="button" title="Show toolbar" onClick={() => setCollapsed(false)}>Show toolbar</button>
-      </div>
-    )
-  }
+  if (hidden) return null
 
   return (
     <div className="eq-gtoolbar" ref={root} role="toolbar" aria-label="Formatting toolbar">
       <div className="eq-gsearch">
         <Search size={14} />
         <input
-          aria-label="Search menus"
-          placeholder="Menus"
-          value={query}
-          onFocus={() => setOpen('search')}
+          aria-label={onRecordSearch ? 'Search equipment' : 'Search menus'}
+          placeholder={onRecordSearch ? 'Search' : 'Menus'}
+          value={onRecordSearch ? recordSearch ?? '' : query}
+          onFocus={() => { if (!onRecordSearch) setOpen('search') }}
           onChange={(event) => {
+            if (onRecordSearch) {
+              onRecordSearch(event.target.value)
+              return
+            }
             setQuery(event.target.value)
             setOpen('search')
           }}
           onKeyDown={(event) => {
+            if (onRecordSearch) return
             if (event.key === 'Enter' && matches[0]) run(matches[0].id)
           }}
         />
-        {open === 'search' ? (
+        {!onRecordSearch && open === 'search' ? (
           <div className="eq-gpop" role="listbox">
             {matches.map((item) => (
               <button key={item.id} type="button" onClick={() => { setQuery(''); run(item.id) }}>
@@ -273,7 +292,9 @@ export function SheetRibbon({
           <button key={name} type="button" onClick={() => run(`fn-${name}`)}>{name}</button>
         ))}
       </Drop>
-      <button type="button" className="eq-gmore" title="Hide toolbar" onClick={() => setCollapsed(true)}><ChevronDown size={16} /></button>
+      {onEquipment ? <button type="button" title="Equipment" aria-label="Equipment" disabled={readOnly} onClick={onEquipment}><Wrench size={16} /></button> : null}
+      {onHistory ? <button type="button" className="eq-gmore" title="History" aria-label="History" onClick={onHistory}><History size={16} /></button> : null}
+      <button type="button" className="eq-gmore" title="Hide toolbar" onClick={() => setCollapsed(true)}><ChevronUp size={16} /></button>
     </div>
   )
 }

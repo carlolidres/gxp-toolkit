@@ -12,6 +12,7 @@ import {
 } from '../lib/authBootstrap'
 import {
   clearAuthSessionStorage,
+  discardCachedUser,
   readSessionUserJson,
   writeSessionUserJson,
 } from '../lib/authSessionStore'
@@ -567,7 +568,7 @@ export const authService = {
       return JSON.parse(value) as AuthUser
     } catch {
       console.warn('[auth] Ignoring invalid cached session user JSON')
-      sessionStorage.removeItem(SESSION_USER_KEY)
+      discardCachedUser()
       return null
     }
   },

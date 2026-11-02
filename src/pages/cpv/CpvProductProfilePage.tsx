@@ -7,6 +7,7 @@ import { uniqueApqrProducts } from '../../features/cpv/apqrProductCatalog'
 import { CPV_PRODUCT_ARCHIVED } from '../../features/cpv/cpvLinks'
 import { ensureCpvProductFromApqr, listCpvProducts, reloadCpvStoreFromSession, retireCpvProduct } from '../../features/cpv/cpvService'
 import { isProductProfileSection, productProfilePath, type ProductProfileSectionId } from '../../features/cpv/productProfile'
+import { SPREADSHEET_FIXTURE_CODE } from '../../features/cpv/spreadsheetTestFixture'
 import { loadProductSectionWorkbook, productSectionHeld, saveProductSectionWorkbook } from '../../features/cpv/productProfileWorkbook'
 import { useCpvLoad } from '../../features/cpv/useCpvData'
 import type { CpvProduct } from '../../features/cpv/types'
@@ -196,6 +197,13 @@ export function CpvProductProfilePage() {
           }, 400)
         }}
         onError={setSheetError}
+        profileLayout={productCode.trim().toUpperCase() !== SPREADSHEET_FIXTURE_CODE}
+        profileReport={{
+          section,
+          client: record.client_owner ?? '',
+          productName: record.product_name,
+          productCode: record.product_code,
+        }}
       />
     </div>
   )

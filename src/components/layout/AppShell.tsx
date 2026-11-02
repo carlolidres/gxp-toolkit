@@ -35,7 +35,7 @@ import { useFeedbackMessages } from '../../hooks/useFeedbackMessages'
 import { useApqrNotifications } from '../../hooks/useApqrNotifications'
 import { useMissingDocumentControllerWarnings } from '../../hooks/useMissingDocumentControllerWarnings'
 import { useEdocInbox } from '../../features/edoc/useEdocData'
-import { CPV_PROFILE_OPEN_TAB } from '../../features/cpv/cpvLinks'
+import { cpvProductWindowHref } from '../../features/cpv/cpvLinks'
 import { matchProductProfile } from '../../features/cpv/productProfile'
 import { ProductProfileNav, ProductProfileRail } from '../../pages/cpv/ProductProfileNav'
 import { SidebarHoverChrome } from './SidebarHoverChrome'
@@ -98,7 +98,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
   const productProfile = matchProductProfile(location.pathname)
-  const profileInFrame = Boolean(productProfile) && window.parent !== window
 
   // Keep sidebar inbox badge current after sign/complete (AppShell stays mounted across routes).
   useEffect(() => {
@@ -320,15 +319,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                   icon={<LogOut size={iconSize.md} strokeWidth={iconStroke} aria-hidden />}
                 />
               </Tooltip>
-              {profileInFrame ? (
+              {productProfile ? (
                 <Tooltip title="Open in new tab">
                   <Button
                     type="text"
                     className="topbar-icon-circle"
                     aria-label="Open in new tab"
-                    onClick={() => {
-                      window.parent.postMessage({ type: CPV_PROFILE_OPEN_TAB }, window.location.origin)
-                    }}
+                    href={cpvProductWindowHref(productProfile.productCode, productProfile.section)}
+                    target="_blank"
                     icon={<ExternalLink size={iconSize.md} strokeWidth={iconStroke} aria-hidden />}
                   />
                 </Tooltip>
