@@ -293,6 +293,49 @@ export function writeAxisSize(
   return { dense, extra: map }
 }
 
+function measuredTextWidth(text: string, fontSize = 13): number {
+  const longest = text.split('\n').reduce((max, line) => Math.max(max, line.length), 0)
+  const unit = Math.max(7, fontSize * 0.62)
+  return Math.ceil(longest * unit) + fontSize + 18
+}
+
+export function fitColumnsToContent(sheet: EquipmentSheet, onlyColumn?: number): EquipmentSheet {
+  const merges = sheet.merges ?? []
+  const own = new Map<number, number>()
+  const share = new Map<number, number>()
+  const touch = (column: number) => onlyColumn == null || column === onlyColumn
+  for (const [key, value] of Object.entries(sheet.cells ?? {})) {
+    if (!String(value ?? '').trim()) continue
+    const [row, column] = key.split(':').map(Number)
+    if (!Number.isInteger(row) || !Number.isInteger(column) || column < 0) continue
+    if (!touch(column) && !(merges.some((item) => item.c2 > item.c1 && column === item.c1 && row >= item.r1 && row <= item.r2))) continue
+    const merge = merges.find((item) => row >= item.r1 && row <= item.r2 && column >= item.c1 && column <= item.c2)
+    if (merge && (row !== merge.r1 || column !== merge.c1)) continue
+    const style = sheet.styles?.[key]
+    const rotated = style?.rotate === 90 || style?.rotate === -90
+    const width = rotated ? 56 : Math.max(64, Math.min(320, measuredTextWidth(displayCell(sheet, row, column), style?.fontSize)))
+    if (merge && merge.c2 > merge.c1) {
+      const each = Math.max(64, Math.min(480, Math.ceil(width / (merge.c2 - merge.c1 + 1))))
+      for (let index = merge.c1; index <= merge.c2; index += 1) {
+        if (!touch(index)) continue
+        share.set(index, Math.max(share.get(index) ?? 0, each))
+      }
+    } else if (touch(column)) {
+      own.set(column, Math.max(own.get(column) ?? 0, width))
+    }
+  }
+  let dense = sheet.columnWidths.slice()
+  let extra = { ...(sheet.colSizes ?? {}) }
+  for (const column of new Set<number>([...own.keys(), ...share.keys()])) {
+    const width = Math.max(own.get(column) ?? 0, share.get(column) ?? 0)
+    if (width < 48) continue
+    const written = writeAxisSize(dense, extra, column, width, DEFAULT_COL_WIDTH)
+    dense = written.dense
+    extra = written.extra
+  }
+  return { ...sheet, columnWidths: dense, colSizes: Object.keys(extra).length ? extra : undefined }
+}
+
 export function offsetAt(marks: SizeMark[], index: number, fallback: number): number {
   let extra = 0
   for (const [at, size] of marks) {

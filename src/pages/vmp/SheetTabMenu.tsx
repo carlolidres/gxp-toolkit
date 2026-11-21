@@ -72,6 +72,7 @@ export function SheetTabMenu({
   onClose,
   onApply,
   onRename,
+  renameLabel = 'Rename',
   onSelectAll,
   onOpen,
   onNotice,
@@ -85,6 +86,7 @@ export function SheetTabMenu({
   onClose: () => void
   onApply: (build: () => EquipmentWorkbook, audit: SheetMenuAudit) => void
   onRename: (sheetId: string) => void
+  renameLabel?: string
   onSelectAll: () => void
   onOpen: (kind: SheetDialogKind, sheetId: string) => void
   onNotice: (message: string) => void
@@ -111,7 +113,7 @@ export function SheetTabMenu({
         onApply(() => deleteSheet(workbook, sheetId), { action: 'SHEET_DELETED', range: sheet.name, oldValue: sheet.name, newValue: null })
       },
     },
-    { id: 'rename', label: 'Rename', icon: <Pencil size={14} aria-hidden />, disabled: readOnly, onSelect: () => onRename(sheetId) },
+    { id: 'rename', label: renameLabel, icon: <Pencil size={14} aria-hidden />, disabled: readOnly, onSelect: () => onRename(sheetId) },
     { id: 'move', label: 'Move or Copy...', disabled: readOnly, onSelect: () => onOpen('move', sheetId) },
     { id: 'code', label: 'View Code', icon: <Code2 size={14} aria-hidden />, onSelect: () => onOpen('code', sheetId) },
     {

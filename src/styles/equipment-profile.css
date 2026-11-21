@@ -215,6 +215,11 @@
   cursor: pointer;
 }
 
+.eq-col-header.is-frozen,
+.eq-cell.is-frozen-col {
+  box-shadow: 3px 0 0 #167d83;
+}
+
 .eq-body {
   flex: 1 1 auto;
   min-height: 0;
@@ -310,7 +315,7 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font: 13px/24px 'Segoe UI', sans-serif;
+  font: 13px/1.15 'Segoe UI', sans-serif;
   color: #1d2430;
   background: #fff;
   user-select: none;
@@ -320,6 +325,7 @@
   display: block;
   width: 100%;
   min-width: 0;
+  line-height: 1.15;
 }
 
 .eq-cell.is-selected {
@@ -341,7 +347,7 @@
   height: 100%;
   border: 0;
   padding: 0 6px;
-  font: 13px/24px 'Segoe UI', sans-serif;
+  font: 13px/1.15 'Segoe UI', sans-serif;
   outline: none;
   background: #fff;
 }
@@ -1091,6 +1097,13 @@
 .eq-ipc-panel.is-collapsed {
   width: 40px;
   overflow: hidden;
+  opacity: 0.1;
+  transition: opacity 160ms ease;
+}
+
+.eq-ipc-panel.is-collapsed:hover,
+.eq-ipc-panel.is-collapsed:focus-within {
+  opacity: 1;
 }
 
 .eq-sheet.has-ipc-panel:not(.is-ipc-collapsed) .eq-ipc-series-add {
@@ -1101,7 +1114,7 @@
   min-width: 340px;
 }
 
-.eq-ipc-chart > svg[role="img"] {
+.eq-ipc-chart svg[role="img"] {
   flex: 0 0 auto;
   width: 100%;
   height: auto;
@@ -1291,6 +1304,100 @@
 .eq-profile-dialog h2 {
   margin: 0;
   font-size: 16px;
+}
+
+.eq-profile-dialog.eq-batch-dialog {
+  width: min(560px, calc(100vw - 32px));
+  gap: 12px;
+  padding: 20px 20px 16px;
+  border: 1px solid #d7dee7;
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.16);
+}
+
+.eq-profile-dialog.eq-batch-dialog h2 {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+}
+
+.eq-profile-dialog.eq-batch-dialog input,
+.eq-profile-dialog.eq-batch-dialog select,
+.eq-profile-dialog.eq-batch-dialog textarea {
+  min-height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font: inherit;
+  color: #0f172a;
+  background: #fff;
+}
+
+.eq-profile-dialog.eq-batch-dialog textarea {
+  min-height: 88px;
+}
+
+.eq-profile-dialog.eq-batch-dialog input:focus,
+.eq-profile-dialog.eq-batch-dialog textarea:focus {
+  outline: 2px solid #167d83;
+  outline-offset: 1px;
+  border-color: #167d83;
+}
+
+.eq-batch-dialog .eq-batch-add,
+.eq-batch-dialog .eq-batch-save,
+.eq-batch-dialog .eq-batch-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font: 600 13px/1 inherit;
+  cursor: pointer;
+}
+
+.eq-batch-dialog .eq-batch-add,
+.eq-batch-dialog .eq-batch-cancel {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+}
+
+.eq-batch-dialog .eq-batch-add {
+  width: fit-content;
+}
+
+.eq-batch-dialog .eq-batch-save {
+  border: 1px solid #0f766e;
+  background: #0f766e;
+  color: #fff;
+}
+
+.eq-batch-dialog .eq-batch-add:hover,
+.eq-batch-dialog .eq-batch-cancel:hover,
+.eq-batch-dialog .eq-batch-save:hover {
+  filter: brightness(0.97);
+}
+
+.eq-batch-dialog .eq-batch-add:focus-visible,
+.eq-batch-dialog .eq-batch-cancel:focus-visible,
+.eq-batch-dialog .eq-batch-save:focus-visible {
+  outline: 2px solid #167d83;
+  outline-offset: 2px;
+}
+
+.eq-batch-dialog .eq-profile-dialog-actions {
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.eq-batch-dialog .lucide {
+  width: 16px;
+  height: 16px;
+  flex: none;
 }
 
 .eq-profile-dialog label {

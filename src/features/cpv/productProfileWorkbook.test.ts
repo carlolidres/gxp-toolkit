@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { buildDatabaseRows } from '../apqr/apqrService'
 import { axisSize, createWorkbook, DEFAULT_ROW_HEIGHT, displayCell, setCellValue, sheetNameError } from '../vmp/equipmentWorkbook'
 import { matchProductProfile, productProfilePath, EQUIPMENT_PROCESS_FORMS, equipmentSheetName } from './productProfile'
-import { addEquipmentBreakerRow, addEquipmentEntryRow, addProfileBatch, addProfileMaterial, applyEquipmentProcess, applyIpcDecimals, commitProfileBatch, equipmentColumnBatch, equipmentSourceBatches, addIpcChartSheet, addIpcSeriesColumn, attachIpcRunChart, ipcParameters, ipcResultText, ipcNelsonSignals, ipcRowHeaderLabel, ipcRunChart, ipcRunObservation, isEquipmentBreakerRow, loadProductSectionWorkbook, markEquipmentBatch, markProfileItemNotApplicable, packagingColumnBatch, profileGridLimits, profileSuppliers, removeProfileMaterial, removeProfileSupplier, refreshIpcWorkbook, restoreProfileItemCode, saveProductSectionWorkbook, syncEquipmentProfiles, writeEquipmentName, writeIpcParameter, writeProfileBatch, writeProfileControlNos, writeProfileEquipmentCell, writeProfileHeader, writeProfilePackaging, markPackagingItemNotApplicable, restorePackagingItem, writePackagingControlNos, saveRawProfileBatch, refreshPackagingSheet } from './productProfileWorkbook'
+import { addEquipmentBreakerRow, addEquipmentEntryRow, addProfileBatch, addProfileMaterial, applyEquipmentProcess, applyIpcDecimals, commitProfileBatch, equipmentColumnBatch, equipmentSourceBatches, addAnalyticalParameterColumn, analyticalRunChart, addIpcChartSheet, addIpcSeriesColumn, attachIpcRunChart, ipcParameters, ipcResultText, ipcNelsonSignals, ipcRowHeaderLabel, ipcRunChart, ipcRunObservation, isEquipmentBreakerRow, loadProductSectionWorkbook, markEquipmentBatch, markProfileItemNotApplicable, nameAnalyticalStage, packagingColumnBatch, refreshAnalyticalWorkbook, profileGridLimits, profileSuppliers, removeProfileMaterial, removeProfileSupplier, refreshIpcWorkbook, restoreProfileItemCode, saveProductSectionWorkbook, syncEquipmentProfiles, writeAnalyticalParameter, writeEquipmentName, writeIpcParameter, writeProfileBatch, writeProfileControlNos, writeProfileEquipmentCell, writeProfileHeader, writeProfilePackaging, markPackagingItemNotApplicable, restorePackagingItem, writePackagingControlNos, saveRawProfileBatch, refreshPackagingSheet } from './productProfileWorkbook'
 import { fixtureWorkbook, SPREADSHEET_FIXTURE_CODE } from './spreadsheetTestFixture'
 
 describe('product profile', () => {
@@ -124,11 +124,101 @@ describe('product profile', () => {
       { r1: 0, c1: 1, r2: 0, c2: 2 },
     ]))
     expect(loadProductSectionWorkbook('ABES', 'stability').sheets[0].cells['0:1']).toBe('DESCRIPTION')
+    const analyticalRaw = commitProfileBatch(loadProductSectionWorkbook('DQIE', 'raw-material'), {
+      uniqueBatchNo: '2025DQIE-2',
+      moControlNo: '25MDW-209',
+      poControlNo: '25DQIEP-2',
+      productCode: '',
+      sku: '',
+      mfgDate: '01 Jan 2025',
+      expDate: '',
+      fgReleasedDate: '',
+      referenceProcedure: 'In-process moisture is checked before sizing and recorded against the approved control procedure for this batch.',
+      batchSize: '100 kg',
+    }, null)
+    saveProductSectionWorkbook('DQIE', 'raw-material', analyticalRaw)
+    const analytical = loadProductSectionWorkbook('DQIE', 'analytical-report').sheets[0]
+    expect(analytical.cells['0:0']).toBe('Control No.')
+    expect(analytical.cells['0:1']).toBe('Unique Batch')
+    expect(analytical.cells['0:2']).toBe('Reference Control Procedure')
+    expect(analytical.cells['0:3']).toBe('Batch Size')
+    expect(analytical.cells['0:4']).toBe('Mfg. Date')
+    expect(analytical.cells['0:5']).toBe('[Parameter]')
+    expect(analytical.cells['1:0']).toBe('Specification')
+    expect(analytical.cells['1:5']).toBe('[Specification]')
+    expect(analytical.cells['2:5']).toBe('[Unit of Measurement]')
+    expect(analytical.styles['1:0']).toMatchObject({ rotate: 90, bold: true })
+    expect(analytical.merges).toEqual(expect.arrayContaining([{ r1: 1, c1: 0, r2: 2, c2: 0 }]))
+    expect(analytical.cells['3:0']).toBe('25MDW-209')
+    expect(analytical.cells['3:1']).toBe('2025DQIE-2')
+    expect(analytical.cells['3:2']).toContain('approved control procedure')
+    expect(analytical.cells['3:3']).toBe('100 kg')
+    expect(analytical.cells['3:4']).toBe('01 Jan 2025')
+    expect(analytical.rowHeights[3]).toBeGreaterThan(24)
+    expect(analytical.columnWidths[0]).toBeLessThan(150)
+    const written = writeAnalyticalParameter(analytical, 5, {
+      parameter: 'Assay',
+      specification: 'NLT 95.0% and NMT 105.0% of the labeled amount. '.repeat(40),
+      unit: '%',
+    })
+    expect(written.cells['0:5']).toBe('Assay')
+    expect(written.cells['2:5']).toBe('%')
+    expect(written.styles['1:5']?.fontSize).toBeLessThan(13)
+    expect(addAnalyticalParameterColumn(written).cells['0:6']).toBe('[Parameter]')
+    const afterfill = refreshAnalyticalWorkbook(nameAnalyticalStage({ ...createWorkbook(), sheets: [analytical], activeSheetId: analytical.id }, analytical.id, 'Afterfill'), 'DQIE')
+    expect(afterfill.sheets[0].cells['3:0']).toBe('25DQIEP-2')
+    const other = refreshAnalyticalWorkbook(nameAnalyticalStage(afterfill, analytical.id, 'Blister check', 'po'), 'DQIE')
+    expect(other.sheets[0].cells['3:0']).toBe('25DQIEP-2')
+    const staged = nameAnalyticalStage({ ...createWorkbook(), sheets: [analytical], activeSheetId: analytical.id }, analytical.id, 'Bulk')
+    expect(staged.sheets[0].name).toBe('Bulk')
+    const specified = nameAnalyticalStage(staged, analytical.id, 'Blister check')
+    expect(specified.sheets[0].name).toBe('Blister check')
+    expect(specified.sheets[0].snippets?.['analytical-stage']).toBe('Blister check')
     const book = fixtureWorkbook('small')
     expect(displayCell(book.sheets[0], 2, 0)).toBe('5')
     expect(book.sheets.map((sheet) => sheet.name)).toEqual(['Data', 'Notes'])
     expect(Object.keys(fixtureWorkbook('medium').sheets[0].cells)).toHaveLength(503)
     expect(Object.keys(fixtureWorkbook('large').sheets[0].cells)).toHaveLength(5003)
+  })
+
+  it('defaults later analytical batches to the first details and charts a quantitative parameter', () => {
+    localStorage.clear()
+    const first = {
+      uniqueBatchNo: '2025DQIE-2',
+      moControlNo: '25MDW-209',
+      poControlNo: '25DQIEP-2',
+      productCode: '',
+      sku: '',
+      mfgDate: '2025-06',
+      expDate: '',
+      fgReleasedDate: '',
+      referenceProcedure: 'VV-QUAL-25691',
+      batchSize: '800,000 loz',
+    }
+    const second = { ...first, uniqueBatchNo: '2025DQIE-3', moControlNo: '25MDW-210', mfgDate: '', referenceProcedure: '', batchSize: '' }
+    let raw = commitProfileBatch(loadProductSectionWorkbook('DQIE', 'raw-material'), first, null)
+    raw = commitProfileBatch(raw, second, null)
+    saveProductSectionWorkbook('DQIE', 'raw-material', raw)
+    const sheet = loadProductSectionWorkbook('DQIE', 'analytical-report').sheets[0]
+    expect(sheet.cells['4:2']).toBe('VV-QUAL-25691')
+    expect(sheet.cells['4:3']).toBe('800,000 loz')
+    expect(sheet.cells['4:4']).toBe('Jun 2025')
+    raw = commitProfileBatch(raw, { ...second, batchSize: '10 kg' }, null)
+    saveProductSectionWorkbook('DQIE', 'raw-material', raw)
+    const own = loadProductSectionWorkbook('DQIE', 'analytical-report').sheets[0]
+    expect(own.cells['4:3']).toBe('10 kg')
+    expect(own.cells['4:2']).toBe('VV-QUAL-25691')
+    const measured = writeAnalyticalParameter(own, 5, {
+      parameter: 'Thickness',
+      specification: '3.70 - 4.10 mm',
+      unit: 'mm',
+      kind: 'quantitative',
+      usl: '4.10',
+      lsl: '3.70',
+    })
+    measured.cells['3:5'] = '4.07'
+    expect(analyticalRunChart(measured, 5)?.points.map((point) => point.value)).toEqual([4.07])
+    expect(analyticalRunChart(measured, 5)?.title).toBe('Thickness')
   })
 
   it('adds a batch number and a material group without showing the extra fields', () => {

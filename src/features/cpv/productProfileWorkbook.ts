@@ -1,4 +1,4 @@
-import { addSheet, assertSheetAction, axisSize, copySheet, createWorkbook, DEFAULT_COL_WIDTH, DEFAULT_ROW_HEIGHT, ensureSize, normalizeWorkbook, renameSheet, setCellValue, SHEET_NAME_MAX, sheetNameError, writeAxisSize, type CellStyle, type EquipmentSheet, type EquipmentWorkbook, type MergeRange } from '../vmp/equipmentWorkbook'
+import { addSheet, assertSheetAction, axisSize, copySheet, createWorkbook, DEFAULT_COL_WIDTH, DEFAULT_ROW_HEIGHT, ensureSize, fitColumnsToContent, normalizeWorkbook, renameSheet, setCellValue, SHEET_NAME_MAX, sheetNameError, writeAxisSize, type CellStyle, type EquipmentSheet, type EquipmentWorkbook, type MergeRange } from '../vmp/equipmentWorkbook'
 import { equipmentRecordFromSheet, isMainEquipmentSheet, loadEquipmentMasterlist } from '../vmp/equipmentMasterlist'
 import { equipmentProfileLabel } from '../vmp/equipmentReport'
 import { fixtureWorkbook, SPREADSHEET_FIXTURE_CODE, spreadsheetFixtureEnabled } from './spreadsheetTestFixture'
@@ -20,6 +20,14 @@ const FIRST_BATCH_ROW = 2
 const PACKAGING_SECTION = 'packaging-material'
 const EQUIPMENT_SECTION = 'equipment'
 const IPC_SECTION = 'in-process-control'
+const ANALYTICAL_SECTION = 'analytical-report'
+const ANALYTICAL_STAGE = 'analytical-stage'
+const ANALYTICAL_CONTROL = 'analytical-control'
+const ANALYTICAL_KIND = 'analytical-kind:'
+const ANALYTICAL_USL = 'analytical-usl:'
+const ANALYTICAL_LSL = 'analytical-lsl:'
+const ANALYTICAL_HEADER_ROWS = 3
+export const ANALYTICAL_STAGES = ['Bulk', 'Compressed', 'Cores', 'Coated', 'Afterfill'] as const
 const IPC_HEADER_ROWS = 5
 const IPC_DECIMALS = 'ipc-decimals:'
 const IPC_CHART = 'ipc-chart'
@@ -60,6 +68,8 @@ export type ProfileBatchEntry = {
   mfgDate: string
   expDate: string
   fgReleasedDate: string
+  referenceProcedure?: string
+  batchSize?: string
 }
 
 export type ProfilePackagingEntry = {
@@ -188,6 +198,331 @@ function stampProfileHeader(sheet: EquipmentSheet): EquipmentSheet {
       { r1: 0, c1: 1, r2: 0, c2: 2 },
     ],
   }
+}
+
+function analyticalControlText(batch: ProfileBatchEntry, stage: string, source: string): string {
+  const named = stage.trim().toLowerCase()
+  if (named === 'afterfill') return batch.poControlNo.trim()
+  if (ANALYTICAL_STAGES.some((item) => item.toLowerCase() === named)) return batch.moControlNo.trim()
+  return source === 'po' ? batch.poControlNo.trim() : batch.moControlNo.trim()
+}
+
+function analyticalMonth(value: string): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(value.trim())
+  if (!match) return value.trim()
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1))
+  return new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(date)
+}
+
+function analyticalTextSize(text: string, width: number, height: number, wrapped: boolean): number {
+  const clean = text.trim()
+  if (!clean) return 13
+  const innerW = Math.max(24, width - 16)
+  const innerH = Math.max(14, height - 6)
+  for (let size = 13; size >= 8; size -= 1) {
+    const unit = Math.max(5.5, size * 0.56)
+    if (!wrapped) {
+      if (clean.length * unit <= innerW && size + 4 <= innerH) return size
+      continue
+    }
+    const chars = Math.max(4, Math.floor(innerW / unit))
+    const lines = clean.split('\n').reduce((count, line) => count + Math.max(1, Math.ceil(line.length / chars)), 0)
+    if (lines * (size + 3) <= innerH) return size
+  }
+  return 8
+}
+
+function analyticalFonts(sheet: EquipmentSheet): Record<string, CellStyle> {
+  const styles = { ...(sheet.styles ?? {}) }
+  for (const [key, value] of Object.entries(sheet.cells ?? {})) {
+    const text = String(value ?? '').trim()
+    if (!text) continue
+    const [row, column] = key.split(':').map(Number)
+    const specification = column >= 5 && row === 1
+    if (!specification) continue
+    const width = axisSize(sheet.columnWidths, sheet.colSizes, column, DEFAULT_COL_WIDTH)
+    const height = axisSize(sheet.rowHeights, sheet.rowSizes, row, DEFAULT_ROW_HEIGHT)
+    const size = analyticalTextSize(text, width, height, true)
+    if (size < 13) styles[key] = { ...styles[key], fontSize: size }
+  }
+  return styles
+}
+
+function analyticalBodyHeights(sheet: EquipmentSheet): number[] {
+  const heights = sheet.rowHeights.slice()
+  const width = axisSize(sheet.columnWidths, sheet.colSizes, 2, DEFAULT_COL_WIDTH)
+  const innerW = Math.max(24, width - 16)
+  for (const [key, value] of Object.entries(sheet.cells ?? {})) {
+    const text = String(value ?? '').trim()
+    const [row, column] = key.split(':').map(Number)
+    if (column !== 2 || row < ANALYTICAL_HEADER_ROWS || !text) continue
+    const size = sheet.styles?.[key]?.fontSize ?? 13
+    const unit = Math.max(5.5, size * 0.56)
+    const chars = Math.max(4, Math.floor(innerW / unit))
+    const lines = text.split('\n').reduce((count, line) => count + Math.max(1, Math.ceil(line.length / chars)), 0)
+    while (heights.length <= row) heights.push(DEFAULT_ROW_HEIGHT)
+    heights[row] = Math.max(DEFAULT_ROW_HEIGHT, lines * Math.round(size * 1.15) + 8)
+  }
+  return heights
+}
+
+function finishAnalytical(sheet: EquipmentSheet): EquipmentSheet {
+  const fitted = fitColumnsToContent(sheet)
+  const styles = analyticalFonts(fitted)
+  const styled = { ...fitted, styles, rowHeights: analyticalBodyHeights({ ...fitted, styles }) }
+  return { ...styled, styles: borderProfile(styled, styled.cells, styles) }
+}
+
+function stampAnalyticalHeader(sheet: EquipmentSheet, batches: ProfileBatchEntry[]): EquipmentSheet {
+  const cells = { ...sheet.cells }
+  const styles = { ...(sheet.styles ?? {}) }
+  cells['0:0'] = 'Control No.'
+  cells['0:1'] = 'Unique Batch'
+  cells['0:2'] = 'Reference Control Procedure'
+  cells['0:3'] = 'Batch Size'
+  cells['0:4'] = 'Mfg. Date'
+  cells['1:0'] = 'Specification'
+  let lastColumn = 5
+  for (const key of Object.keys(cells)) {
+    const column = Number(key.split(':')[1])
+    if (column > lastColumn) lastColumn = column
+  }
+  const placeholders = ['[Parameter]', '[Specification]', '[Unit of Measurement]']
+  for (let column = 5; column <= lastColumn; column += 1) {
+    placeholders.forEach((placeholder, row) => {
+      const key = `${row}:${column}`
+      const text = String(cells[key] ?? '').trim()
+      if (!text || text === placeholder) cells[key] = placeholder
+    })
+    styles[`0:${column}`] = { ...styles[`0:${column}`], ...BOLD, wrap: true }
+    styles[`1:${column}`] = { ...styles[`1:${column}`], ...CENTERED, bold: false, wrap: true }
+    styles[`2:${column}`] = { ...styles[`2:${column}`], ...CENTERED, bold: false, wrap: true }
+  }
+  for (const column of [1, 2, 3, 4]) {
+    delete cells[`1:${column}`]
+    delete cells[`2:${column}`]
+  }
+  for (let column = 0; column < 5; column += 1) {
+    styles[`0:${column}`] = { ...styles[`0:${column}`], ...BOLD, wrap: true }
+  }
+  styles['1:0'] = { ...BOLD, rotate: 90, wrap: false }
+  const located = new Map<string, number>()
+  let nextRow = ANALYTICAL_HEADER_ROWS
+  for (const [key, value] of Object.entries(cells)) {
+    const [dataRow, column] = key.split(':').map(Number)
+    if (column !== 1 || dataRow < ANALYTICAL_HEADER_ROWS) continue
+    const text = String(value ?? '').trim()
+    if (text) located.set(text.toLowerCase(), dataRow)
+    nextRow = Math.max(nextRow, dataRow + 1)
+  }
+  const stage = String(sheet.snippets?.[ANALYTICAL_STAGE] ?? '')
+  const source = String(sheet.snippets?.[ANALYTICAL_CONTROL] ?? '')
+  for (const batch of batches) {
+    const unique = batch.uniqueBatchNo.trim()
+    if (!unique) continue
+    const key = unique.toLowerCase()
+    const row = located.get(key) ?? nextRow
+    if (!located.has(key)) {
+      located.set(key, row)
+      nextRow += 1
+    }
+    cells[`${row}:0`] = analyticalControlText(batch, stage, source)
+    cells[`${row}:1`] = unique
+    const procedure = (batch.referenceProcedure ?? '').trim()
+    const size = (batch.batchSize ?? '').trim()
+    const mfg = analyticalMonth(batch.mfgDate)
+    if (procedure) cells[`${row}:2`] = procedure
+    if (size) cells[`${row}:3`] = size
+    if (mfg) cells[`${row}:4`] = mfg
+    for (const column of [0, 1, 3, 4]) styles[`${row}:${column}`] = { ...styles[`${row}:${column}`], ...CENTERED, bold: false }
+    styles[`${row}:2`] = { ...styles[`${row}:2`], ...CENTERED, bold: false, wrap: true }
+  }
+  const orderedRows = [...located.values()].sort((left, right) => left - right)
+  const firstDataRow = orderedRows[0]
+  if (firstDataRow != null) {
+    const defaults = [2, 3, 4].map((column) => String(cells[`${firstDataRow}:${column}`] ?? '').trim())
+    for (const row of orderedRows.slice(1)) {
+      defaults.forEach((value, index) => {
+        const column = index + 2
+        if (!value || String(cells[`${row}:${column}`] ?? '').trim()) return
+        cells[`${row}:${column}`] = value
+        styles[`${row}:${column}`] = column === 2
+          ? { ...styles[`${row}:${column}`], ...CENTERED, bold: false, wrap: true }
+          : { ...styles[`${row}:${column}`], ...CENTERED, bold: false }
+      })
+    }
+  }
+  const rowHeights = sheet.rowHeights.slice()
+  ;[36, 188, 32].forEach((height, index) => {
+    while (rowHeights.length <= index) rowHeights.push(DEFAULT_ROW_HEIGHT)
+    rowHeights[index] = height
+  })
+  const snippets = { ...(sheet.snippets ?? {}), [SECTION_SNIPPET]: ANALYTICAL_SECTION }
+  return finishAnalytical({
+    ...sheet,
+    cells,
+    styles,
+    rowHeights,
+    snippets,
+    freezeRows: ANALYTICAL_HEADER_ROWS,
+    freezeCols: 0,
+    merges: [
+      ...(sheet.merges ?? []).filter((merge) => merge.r1 > 2),
+      ...[0, 1, 2, 3, 4].map((column) => ({ r1: 1, c1: column, r2: 2, c2: column })),
+    ],
+  })
+}
+
+export function addAnalyticalParameterColumn(sheet: EquipmentSheet): EquipmentSheet {
+  const cells = { ...sheet.cells }
+  let column = 5
+  for (const key of Object.keys(cells)) {
+    const [row, col] = key.split(':').map(Number)
+    if (row <= 2 && col >= column) column = col + 1
+  }
+  cells[`0:${column}`] = '[Parameter]'
+  cells[`1:${column}`] = '[Specification]'
+  cells[`2:${column}`] = '[Unit of Measurement]'
+  const styles = { ...(sheet.styles ?? {}) }
+  styles[`0:${column}`] = { ...BOLD, wrap: true }
+  styles[`1:${column}`] = { ...CENTERED, wrap: true }
+  styles[`2:${column}`] = { ...CENTERED, wrap: true }
+  return finishAnalytical({
+    ...sheet,
+    cells,
+    styles,
+    snippets: { ...(sheet.snippets ?? {}), [SECTION_SNIPPET]: ANALYTICAL_SECTION },
+    freezeRows: ANALYTICAL_HEADER_ROWS,
+  })
+}
+
+export type AnalyticalParameterValues = {
+  parameter: string
+  specification: string
+  unit: string
+  kind?: 'qualitative' | 'quantitative'
+  usl?: string
+  lsl?: string
+}
+
+export function analyticalParameters(sheet: EquipmentSheet): Array<{ column: number; name: string; specification: string; unit: string; kind: 'qualitative' | 'quantitative'; usl: string; lsl: string }> {
+  const columns = new Set<number>()
+  for (const key of Object.keys(sheet.cells ?? {})) {
+    const [row, column] = key.split(':').map(Number)
+    if (row <= 2 && column >= 5) columns.add(column)
+  }
+  return [...columns].sort((left, right) => left - right).map((column) => ({
+    column,
+    name: String(sheet.cells[`0:${column}`] ?? '').trim(),
+    specification: String(sheet.cells[`1:${column}`] ?? '').trim(),
+    unit: String(sheet.cells[`2:${column}`] ?? '').trim(),
+    kind: sheet.snippets?.[`${ANALYTICAL_KIND}${column}`] === 'quantitative' ? 'quantitative' : 'qualitative',
+    usl: sheet.snippets?.[`${ANALYTICAL_USL}${column}`] ?? '',
+    lsl: sheet.snippets?.[`${ANALYTICAL_LSL}${column}`] ?? '',
+  }))
+}
+
+export function analyticalRunChart(sheet: EquipmentSheet, column: number): IpcRunChart | null {
+  const parameter = analyticalParameters(sheet).find((item) => item.column === column)
+  if (!parameter || parameter.kind !== 'quantitative') return null
+  const usl = Number(parameter.usl)
+  const lsl = Number(parameter.lsl)
+  if (!Number.isFinite(usl) || !Number.isFinite(lsl)) return null
+  const rows = Object.keys(sheet.cells ?? {}).flatMap((key) => {
+    const [row, cellColumn] = key.split(':').map(Number)
+    return cellColumn === 1 && row >= ANALYTICAL_HEADER_ROWS && String(sheet.cells[key] ?? '').trim() ? [row] : []
+  }).sort((left, right) => left - right)
+  const points = rows.flatMap((row, index) => {
+    const text = String(sheet.cells[`${row}:${column}`] ?? '').trim()
+    const value = Number(text)
+    if (!text || !Number.isFinite(value)) return []
+    return [{ batch: index + 1, value }]
+  })
+  const values = points.map((point) => point.value)
+  const limits = values.length ? movingLimits(values) : null
+  const median = (usl + lsl) / 2
+  const series = [{
+    column,
+    name: parameter.name || 'Parameter',
+    points,
+    ucl: limits?.ucl ?? null,
+    lcl: limits?.lcl ?? null,
+  }]
+  const floor = lsl - Math.abs(lsl) * 0.05
+  const ceiling = usl + Math.abs(usl) * 0.05
+  const samples = [floor, ceiling, usl, lsl, median, ...values]
+  const low = Math.min(...samples)
+  const high = Math.max(...samples)
+  const axis = chartTicks(low === high ? low - 1 : low, low === high ? high + 1 : high)
+  return {
+    title: parameter.name || 'Parameter',
+    specification: parameter.specification,
+    median,
+    ucl: limits?.ucl ?? usl,
+    lcl: limits?.lcl ?? lsl,
+    yMin: axis.yMin,
+    yMax: axis.yMax,
+    ticks: axis.ticks,
+    batches: rows.map((_, index) => index + 1),
+    points,
+    series,
+  }
+}
+
+export function writeAnalyticalParameter(sheet: EquipmentSheet, column: number, values: AnalyticalParameterValues): EquipmentSheet {
+  if (column < 5) throw new Error('Choose a parameter column.')
+  const kind = values.kind === 'quantitative' ? 'quantitative' : 'qualitative'
+  const usl = (values.usl ?? '').trim()
+  const lsl = (values.lsl ?? '').trim()
+  if (kind === 'quantitative' && (!Number.isFinite(Number(usl)) || !Number.isFinite(Number(lsl)) || Number(usl) <= Number(lsl))) {
+    throw new Error('Enter a USL above the LSL for a quantitative parameter.')
+  }
+  const cells = { ...sheet.cells }
+  cells[`0:${column}`] = values.parameter.trim() || '[Parameter]'
+  cells[`1:${column}`] = values.specification.trim() || '[Specification]'
+  cells[`2:${column}`] = values.unit.trim() || '[Unit of Measurement]'
+  const styles = { ...(sheet.styles ?? {}) }
+  styles[`0:${column}`] = { ...styles[`0:${column}`], ...BOLD, wrap: true }
+  styles[`1:${column}`] = { ...styles[`1:${column}`], ...CENTERED, bold: false, wrap: true }
+  styles[`2:${column}`] = { ...styles[`2:${column}`], ...CENTERED, bold: false, wrap: true }
+  const snippets = { ...(sheet.snippets ?? {}), [SECTION_SNIPPET]: ANALYTICAL_SECTION, [`${ANALYTICAL_KIND}${column}`]: kind }
+  if (kind === 'quantitative') {
+    snippets[`${ANALYTICAL_USL}${column}`] = usl
+    snippets[`${ANALYTICAL_LSL}${column}`] = lsl
+  } else {
+    delete snippets[`${ANALYTICAL_USL}${column}`]
+    delete snippets[`${ANALYTICAL_LSL}${column}`]
+  }
+  return finishAnalytical({ ...sheet, cells, styles, snippets })
+}
+
+export function addAnalyticalSheet(workbook: EquipmentWorkbook, productId: string): EquipmentWorkbook {
+  const next = addSheet(workbook)
+  return {
+    ...next,
+    sheets: next.sheets.map((sheet) => sheet.id === next.activeSheetId ? stampAnalyticalHeader(sheet, rawMaterialBatches(productId)) : sheet),
+  }
+}
+
+export function nameAnalyticalStage(workbook: EquipmentWorkbook, sheetId: string, stage: string, control?: 'mo' | 'po'): EquipmentWorkbook {
+  const cleaned = stage.replace(/[\\/?*[\]:]/g, ' ').replace(/\s+/g, ' ').trim()
+  if (!cleaned) throw new Error('Enter a name for this sheet.')
+  const title = uniqueSheetTitle(workbook, sheetId, ipcSheetTitle(cleaned))
+  if (!title) throw new Error('A worksheet with that name already exists.')
+  const current = workbook.sheets.find((sheet) => sheet.id === sheetId)
+  const renamed = current && current.name === title ? workbook : renameSheet(workbook, sheetId, title)
+  const source = control === 'po' || cleaned.toLowerCase() === 'afterfill' ? 'po' : 'mo'
+  return {
+    ...renamed,
+    sheets: renamed.sheets.map((sheet) => sheet.id === sheetId ? {
+      ...sheet,
+      snippets: { ...(sheet.snippets ?? {}), [SECTION_SNIPPET]: ANALYTICAL_SECTION, [ANALYTICAL_STAGE]: cleaned, [ANALYTICAL_CONTROL]: source },
+    } : sheet),
+  }
+}
+
+export function refreshAnalyticalWorkbook(workbook: EquipmentWorkbook, productId: string): EquipmentWorkbook {
+  return { ...workbook, sheets: workbook.sheets.map((sheet) => stampAnalyticalHeader(sheet, rawMaterialBatches(productId))) }
 }
 
 function stampPackagingHeader(sheet: EquipmentSheet, batches: ProfileBatchEntry[]): EquipmentSheet {
@@ -759,15 +1094,6 @@ export function ipcParameters(sheet: EquipmentSheet): Array<{ column: number; na
   }]
 }
 
-function ipcHeaderColumns(cells: Record<string, string>): number[] {
-  const columns = new Set<number>()
-  for (const [key, value] of Object.entries(cells)) {
-    const [row, column] = key.split(':').map(Number)
-    if (row < IPC_HEADER_ROWS && column >= 2 && String(value ?? '').trim()) columns.add(column)
-  }
-  return [...columns].sort((left, right) => left - right)
-}
-
 function ipcWrappedLines(text: string, width: number): number {
   const maxChars = Math.max(8, Math.floor((width - 36) / 8))
   let lines = 0
@@ -792,32 +1118,28 @@ function ipcWrappedLines(text: string, width: number): number {
 }
 
 function fitIpcHeaders(sheet: EquipmentSheet): EquipmentSheet {
-  const columns = ipcHeaderColumns(sheet.cells ?? {})
-  if (!columns.length) return sheet
-  const columnWidths = sheet.columnWidths.slice()
-  const rowHeights = sheet.rowHeights.slice()
+  const fitted = fitColumnsToContent(sheet)
+  const rowHeights = fitted.rowHeights.slice()
   const needed = Array.from({ length: IPC_HEADER_ROWS }, () => DEFAULT_ROW_HEIGHT)
-  for (const column of columns) {
-    const lines = Array.from({ length: IPC_HEADER_ROWS }, (_, row) => String(sheet.cells[`${row}:${column}`] ?? ''))
-    const longest = lines.reduce((max, line) => Math.max(max, ...line.split('\n').map((part) => part.length)), 0)
-    const width = Math.max(120, Math.min(640, Math.ceil(longest * 8) + 36))
-    while (columnWidths.length <= column) columnWidths.push(DEFAULT_COL_WIDTH)
-    columnWidths[column] = width
-    lines.forEach((line, row) => {
-      needed[row] = Math.max(needed[row], ipcWrappedLines(line, width) * DEFAULT_ROW_HEIGHT)
-    })
-  }
-  const shared = columnWidths[2] ?? 120
-  const last = ipcSeriesLast({ ...sheet, columnWidths })
-  for (let column = 2; column <= last; column += 1) {
-    while (columnWidths.length <= column) columnWidths.push(shared)
-    columnWidths[column] = shared
+  const merges = fitted.merges ?? []
+  for (const [key, value] of Object.entries(fitted.cells ?? {})) {
+    const text = String(value ?? '')
+    if (!text.trim()) continue
+    const [row, column] = key.split(':').map(Number)
+    if (!Number.isInteger(row) || row < 0 || row >= IPC_HEADER_ROWS || !Number.isInteger(column)) continue
+    const merge = merges.find((item) => row >= item.r1 && row <= item.r2 && column >= item.c1 && column <= item.c2)
+    if (merge && (row !== merge.r1 || column !== merge.c1)) continue
+    let width = 0
+    for (let index = merge?.c1 ?? column; index <= (merge?.c2 ?? column); index += 1) {
+      width += axisSize(fitted.columnWidths, fitted.colSizes, index, DEFAULT_COL_WIDTH)
+    }
+    needed[row] = Math.max(needed[row], ipcWrappedLines(text, width) * DEFAULT_ROW_HEIGHT)
   }
   for (let row = 0; row < IPC_HEADER_ROWS; row += 1) {
     while (rowHeights.length <= row) rowHeights.push(DEFAULT_ROW_HEIGHT)
     rowHeights[row] = needed[row]
   }
-  return { ...sheet, columnWidths, rowHeights }
+  return { ...fitted, rowHeights }
 }
 
 function ipcSheetTitle(text: string): string {
@@ -1458,6 +1780,7 @@ function withProfileHeader(workbook: EquipmentWorkbook, section: string, product
   if (section === PACKAGING_SECTION) return refreshPackagingWorkbook(workbook, productId)
   if (section === EQUIPMENT_SECTION) return { ...workbook, sheets: workbook.sheets.map((sheet) => stampEquipmentHeader(sheet, rawMaterialBatches(productId))) }
   if (section === IPC_SECTION) return refreshIpcWorkbook(workbook, productId)
+  if (section === ANALYTICAL_SECTION) return refreshAnalyticalWorkbook(workbook, productId)
   if (section === 'raw-material') {
     const synced = ensureProfileSkuSheets(workbook, collectWorkbookBatches(workbook))
     return { ...synced, sheets: synced.sheets.map((sheet) => stampProfileHeader(sheet)) }
@@ -1489,6 +1812,18 @@ export function profileGridLimits(sheet: EquipmentSheet): { rows: number; column
     let columns = 3
     const seriesLast = Number(sheet.snippets?.[IPC_SERIES_LAST])
     if (Number.isInteger(seriesLast) && seriesLast >= 2) columns = Math.max(columns, seriesLast + 1)
+    for (const [key, value] of Object.entries(sheet.cells ?? {})) {
+      if (!String(value ?? '').trim()) continue
+      const [row, column] = key.split(':').map(Number)
+      if (!Number.isInteger(row) || !Number.isInteger(column)) continue
+      rows = Math.max(rows, row + 1)
+      columns = Math.max(columns, column + 1)
+    }
+    return { rows, columns }
+  }
+  if (sheet.snippets?.[SECTION_SNIPPET] === ANALYTICAL_SECTION) {
+    let rows = ANALYTICAL_HEADER_ROWS + 1
+    let columns = 6
     for (const [key, value] of Object.entries(sheet.cells ?? {})) {
       if (!String(value ?? '').trim()) continue
       const [row, column] = key.split(':').map(Number)
@@ -1636,6 +1971,8 @@ function withOrders(entry: ProfileBatchEntry): ProfileBatchEntry {
     mfgDate: entry.mfgDate ?? '',
     expDate: entry.expDate ?? '',
     fgReleasedDate: entry.fgReleasedDate ?? '',
+    referenceProcedure: entry.referenceProcedure ?? '',
+    batchSize: entry.batchSize ?? '',
   }
 }
 
@@ -1657,6 +1994,8 @@ function mergeBatch(current: ProfileBatchEntry, incoming: ProfileBatchEntry): Pr
     mfgDate: incoming.mfgDate || current.mfgDate,
     expDate: incoming.expDate || current.expDate,
     fgReleasedDate: incoming.fgReleasedDate || current.fgReleasedDate,
+    referenceProcedure: incoming.referenceProcedure ?? current.referenceProcedure,
+    batchSize: incoming.batchSize ?? current.batchSize,
     orders,
   })
 }
@@ -1784,6 +2123,8 @@ export function readProfileBatch(sheet: EquipmentSheet, row: number): ProfileBat
     mfgDate: String(parsed.mfgDate ?? ''),
     expDate: String(parsed.expDate ?? ''),
     fgReleasedDate: String(parsed.fgReleasedDate ?? ''),
+    referenceProcedure: String(parsed.referenceProcedure ?? ''),
+    batchSize: String(parsed.batchSize ?? ''),
   })
 }
 

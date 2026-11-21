@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Tooltip } from 'antd'
-import { LineChart, PanelRightClose, PanelRightOpen } from 'lucide-react'
+import { Modal, Tooltip } from 'antd'
+import { Activity, LineChart, PanelRightClose, PanelRightOpen, Plus } from 'lucide-react'
 
-import { addEquipmentBreakerRow, addEquipmentEntryRow, addIpcDataSheet, addIpcSeriesColumn, addProfileMaterial, applyEquipmentProcess, applyIpcDecimals, commitProfileBatch, equipmentColumnBatch, equipmentProcessKind, equipmentRowInUse, equipmentSourceBatches, forgetSheetHistory, IPC_PARAMETER_LABELS, commitIpcParameter, ipcNelsonSignals, ipcRowHeaderLabel, ipcRunChart, ipcRunObservation, ipcResultText, isEquipmentBreakerRow, listSheetHistory, markEquipmentBatch, markPackagingItemNotApplicable, markProfileItemNotApplicable, packagingColumnBatch, packagingSupplierChoices, presentEquipmentSheet, profileGridLimits, profileItemNotApplicable, profileSuppliers, readProfileBatch, readProfileHeader, readProfilePackaging, refreshEquipmentWorkbook, refreshIpcWorkbook, refreshPackagingWorkbook, rememberSheetHistory, removeEquipmentBatch, removeEquipmentProfileRow, removeProfileMaterial, removeProfileSupplier, restorePackagingItem, restoreProfileItemCode, saveRawProfileBatch, writeEquipmentName, writePackagingControlNos, writeProfileControlNos, writeProfileHeader, writeProfilePackaging, type ProfileBatchEntry, type ProfileMaterialEntry, type ProfilePackagingEntry, type ProfilePoEntry, type SheetHistoryEntry } from '../../features/cpv/productProfileWorkbook'
+import { addAnalyticalParameterColumn, addAnalyticalSheet, analyticalParameters, analyticalRunChart, addEquipmentBreakerRow, addEquipmentEntryRow, addIpcDataSheet, addIpcSeriesColumn, addProfileMaterial, ANALYTICAL_STAGES, applyEquipmentProcess, applyIpcDecimals, commitProfileBatch, equipmentColumnBatch, equipmentProcessKind, equipmentRowInUse, equipmentSourceBatches, forgetSheetHistory, IPC_PARAMETER_LABELS, commitIpcParameter, ipcNelsonSignals, ipcRowHeaderLabel, ipcRunChart, ipcRunObservation, ipcResultText, isEquipmentBreakerRow, listSheetHistory, markEquipmentBatch, markPackagingItemNotApplicable, markProfileItemNotApplicable, nameAnalyticalStage, refreshAnalyticalWorkbook, packagingColumnBatch, packagingSupplierChoices, presentEquipmentSheet, profileGridLimits, profileItemNotApplicable, profileSuppliers, readProfileBatch, readProfileHeader, readProfilePackaging, refreshEquipmentWorkbook, refreshIpcWorkbook, refreshPackagingWorkbook, rememberSheetHistory, removeEquipmentBatch, removeEquipmentProfileRow, removeProfileMaterial, removeProfileSupplier, restorePackagingItem, restoreProfileItemCode, saveRawProfileBatch, writeAnalyticalParameter, writeEquipmentName, writePackagingControlNos, writeProfileControlNos, writeProfileHeader, writeProfilePackaging, type IpcRunChart, type ProfileBatchEntry, type ProfileMaterialEntry, type ProfilePackagingEntry, type ProfilePoEntry, type SheetHistoryEntry } from '../../features/cpv/productProfileWorkbook'
 import { appendCpvAudit } from '../../features/cpv/cpvAudit'
 import { ProfilePrintDialog } from './ProfilePrintDialog'
 import { EQUIPMENT_PROCESS_FORMS } from '../../features/cpv/productProfile'
@@ -64,6 +64,7 @@ import {
   visibleIndexes,
   visibleSheets,
   writeAxisSize,
+  fitColumnsToContent,
   axisSize,
   DEFAULT_COL_WIDTH,
   DEFAULT_ROW_HEIGHT,
@@ -102,7 +103,9 @@ function valueStyle(layout: ReturnType<typeof cellContentLayout>): CSSProperties
     textOverflow: layout.textOverflow,
     writingMode: layout.writingMode,
     transform: layout.transform,
-    height: layout.writingMode ? '100%' : undefined,
+    height: layout.writingMode ? 'auto' : undefined,
+    width: layout.writingMode ? '1.25em' : undefined,
+    margin: layout.writingMode ? 'auto' : undefined,
   }
 }
 
@@ -217,7 +220,12 @@ export function EquipmentSpreadsheet({
   const [ipcColumn, setIpcColumn] = useState<number | null>(null)
   const [ipcDraft, setIpcDraft] = useState<string[]>([])
   const [ipcAddAt, setIpcAddAt] = useState<{ top: number; left: number } | null>(null)
-  const [ipcPanelOpen, setIpcPanelOpen] = useState(true)
+  const [ipcPanelOpen, setIpcPanelOpen] = useState(false)
+  const [stageTarget, setStageTarget] = useState<string | null>(null)
+  const [stageChoice, setStageChoice] = useState<(typeof ANALYTICAL_STAGES)[number] | 'Other'>('Bulk')
+  const [stageOther, setStageOther] = useState('')
+  const [stageControl, setStageControl] = useState<'mo' | 'po'>('mo')
+  const [parameterColumn, setParameterColumn] = useState<number | null>(null)
   const [deleteAsk, setDeleteAsk] = useState<{ kind: 'row' | 'column'; index: number } | null>(null)
   const [deleteReason, setDeleteReason] = useState('')
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -248,6 +256,7 @@ export function EquipmentSpreadsheet({
   const packagingLayout = profileReport?.section === 'packaging-material'
   const equipmentLayout = profileReport?.section === 'equipment'
   const ipcLayout = profileReport?.section === 'in-process-control'
+  const analyticalLayout = profileReport?.section === 'analytical-report'
   const rowLimit = profileLimits?.rows ?? sheet.rowCount
   const colLimit = profileLimits?.columns ?? sheet.columnCount
   const rowSizeList = useMemo(
@@ -262,8 +271,8 @@ export function EquipmentSpreadsheet({
     () => sizeMarks(sheet.columnWidths, sheet.colSizes, DEFAULT_COL_WIDTH, colLimit),
     [sheet.columnWidths, sheet.colSizes, colLimit],
   )
-  const gridWidth = offsetAt(colMarks, colLimit, DEFAULT_COL_WIDTH)
-  const gridHeight = offsetAt(rowMarks, rowLimit, DEFAULT_ROW_HEIGHT)
+  const gridWidth = offsetAt(colMarks, colLimit, DEFAULT_COL_WIDTH) + 40
+  const gridHeight = offsetAt(rowMarks, rowLimit, DEFAULT_ROW_HEIGHT) + 40
   gridWidthRef.current = gridWidth
   gridHeightRef.current = gridHeight
   const logicalLeft = scroll.left
@@ -1363,6 +1372,15 @@ export function EquipmentSpreadsheet({
     setBatchOpen(true)
   }
 
+  function openAnalyticalStage(target: { id: string; snippets?: Record<string, string> }) {
+    const stage = target.snippets?.['analytical-stage'] ?? ''
+    const preset = ANALYTICAL_STAGES.find((choice) => choice === stage)
+    setStageChoice(preset ?? (stage ? 'Other' : 'Bulk'))
+    setStageOther(preset || !stage ? '' : stage)
+    setStageControl(target.snippets?.['analytical-control'] === 'po' ? 'po' : 'mo')
+    setStageTarget(target.id)
+  }
+
   function openProfileEntry(row: number, column: number): boolean {
     if (!profileLayout || readOnly) return false
     const productCode = profileReport?.productCode ?? ''
@@ -1433,6 +1451,27 @@ export function EquipmentSpreadsheet({
           expDate: '',
           fgReleasedDate: '',
         } : null), null)
+        return true
+      }
+      return false
+    }
+    if (analyticalLayout) {
+      if (row < 3 && column >= 5) {
+        setEditing(null)
+        setParameterColumn(column)
+        return true
+      }
+      if (row >= 3 && column <= 4) {
+        const unique = String(sheet.cells[`${row}:1`] ?? '').trim().toLowerCase()
+        const found = unique
+          ? equipmentSourceBatches(productCode).find((batch) => batch.uniqueBatchNo.trim().toLowerCase() === unique) ?? null
+          : null
+        openBatch(found ? {
+          ...found,
+          referenceProcedure: (found.referenceProcedure ?? '').trim() || String(sheet.cells[`${row}:2`] ?? ''),
+          batchSize: (found.batchSize ?? '').trim() || String(sheet.cells[`${row}:3`] ?? ''),
+          mfgDate: (found.mfgDate ?? '').trim() || monthInputValue(String(sheet.cells[`${row}:4`] ?? '')) || String(sheet.cells[`${row}:4`] ?? ''),
+        } : null, null)
         return true
       }
       return false
@@ -1706,7 +1745,7 @@ export function EquipmentSpreadsheet({
           key={`${row}:${column}`}
           role="gridcell"
           data-address={import.meta.env.VITE_SPREADSHEET_FIXTURE === 'true' ? `${row}:${column}` : undefined}
-          className={`eq-cell${covers(selection, row, column) ? ' is-selected' : ''}${active ? ' is-active' : ''}${sheet.links?.[`${row}:${column}`] ? ' is-link' : ''}`}
+          className={`eq-cell${covers(selection, row, column) ? ' is-selected' : ''}${active ? ' is-active' : ''}${frozenCol ? ' is-frozen-col' : ''}${sheet.links?.[`${row}:${column}`] ? ' is-link' : ''}`}
           style={{
             left: paintLeft,
             top: paintTop,
@@ -1720,13 +1759,14 @@ export function EquipmentSpreadsheet({
             fontFamily: style?.fontFamily,
             display: 'flex',
             flexDirection: 'column',
+            alignItems: layout.writingMode ? 'center' : undefined,
             justifyContent: layout.justifyContent,
             whiteSpace: layout.whiteSpace,
             overflow: layout.overflow === 'visible' || filterHere ? 'visible' : 'hidden',
             background: paintedFill(style?.fill, covers(selection, row, column)),
             color: style?.color,
             fontSize: style?.fontSize,
-            cursor: (equipmentLayout && (((column === 0 && row >= (equipmentProcessKind(sheet.name).packaging ? 5 : 4) && !isEquipmentBreakerRow(sheet, row)) || (column >= 1 && row >= (equipmentProcessKind(sheet.name).packaging ? 5 : 4) && !isEquipmentBreakerRow(sheet, row) && Boolean(sheet.cells[`${row}:0`]?.trim()))) || (column >= 1 && row < (equipmentProcessKind(sheet.name).packaging ? 3 : 2)))) || (packagingLayout && ((row <= 2 && column >= 1) || row >= 4) && column < (profileLimits?.columns ?? 0)) || (ipcLayout && ((column >= 2 && row < 3) || (row >= 5 && column <= 1))) || (profileLimits && !packagingLayout && !equipmentLayout && !ipcLayout && ((column === 0 && row >= 2) || (row === 0 && column === 1) || (row >= 2 && column >= 1 && column < profileLimits.columns))) ? 'pointer' : undefined,
+            cursor: (equipmentLayout && (((column === 0 && row >= (equipmentProcessKind(sheet.name).packaging ? 5 : 4) && !isEquipmentBreakerRow(sheet, row)) || (column >= 1 && row >= (equipmentProcessKind(sheet.name).packaging ? 5 : 4) && !isEquipmentBreakerRow(sheet, row) && Boolean(sheet.cells[`${row}:0`]?.trim()))) || (column >= 1 && row < (equipmentProcessKind(sheet.name).packaging ? 3 : 2)))) || (packagingLayout && ((row <= 2 && column >= 1) || row >= 4) && column < (profileLimits?.columns ?? 0)) || (ipcLayout && ((column >= 2 && row < 3) || (row >= 5 && column <= 1))) || (profileLimits && !packagingLayout && !equipmentLayout && !ipcLayout && !analyticalLayout && ((column === 0 && row >= 2) || (row === 0 && column === 1) || (row >= 2 && column >= 1 && column < profileLimits.columns))) || (analyticalLayout && ((row < 3 && column >= 5) || (row >= 3 && column <= 4))) ? 'pointer' : undefined,
             borderTop: style?.borderTop ? `1px ${style.borderStyle ?? 'solid'} ${style.borderColor ?? '#202124'}` : undefined,
             borderRight: style?.borderRight ? `1px ${style.borderStyle ?? 'solid'} ${style.borderColor ?? '#202124'}` : undefined,
             borderBottom: style?.borderBottom ? `1px ${style.borderStyle ?? 'solid'} ${style.borderColor ?? '#202124'}` : undefined,
@@ -1899,7 +1939,7 @@ export function EquipmentSpreadsheet({
   }
 
   return (
-    <div className={`eq-sheet${sheet.showGridlines === false ? ' is-plain' : ''}${sheet.showHeadings === false ? ' is-headless' : ''}${ipcLayout && sheet.snippets?.['ipc-run-column'] ? ` has-ipc-panel${ipcPanelOpen ? '' : ' is-ipc-collapsed'}` : ''}`} onMouseUp={() => { drag.current = false }}>
+    <div className={`eq-sheet${sheet.showGridlines === false ? ' is-plain' : ''}${sheet.showHeadings === false ? ' is-headless' : ''}${ipcLayout && sheet.snippets?.['ipc-run-column'] || analyticalLayout ? ` has-ipc-panel${ipcPanelOpen ? '' : ' is-ipc-collapsed'}` : ''}`} onMouseUp={() => { drag.current = false }}>
       <SheetMenuBar
         readOnly={readOnly}
         openMenu={appMenu}
@@ -2205,8 +2245,8 @@ export function EquipmentSpreadsheet({
               <button
                 type="button"
                 key={column}
-                className="eq-col-header"
-                style={{ left: placeX(column, column < (sheet.freezeCols || 0)), width: colSize(column), zIndex: column < (sheet.freezeCols || 0) ? 2 : undefined }}
+                className={`eq-col-header${column < (sheet.freezeCols || 0) ? ' is-frozen' : ''}`}
+                style={{ left: placeX(column, column < (sheet.freezeCols || 0)), width: colSize(column), zIndex: column < (sheet.freezeCols || 0) ? 3 : undefined }}
                 onMouseDown={(event) => setSelection({
                   anchorRow: 0,
                   anchorCol: event.shiftKey ? selection.anchorCol : column,
@@ -2222,13 +2262,7 @@ export function EquipmentSpreadsheet({
                   onPointerDown={(event) => startResize(event, 'col', column)}
                   onDoubleClick={(event) => {
                     event.stopPropagation()
-                    let width = 48
-                    const limit = Math.min(sheet.rowCount, Math.max(sheet.rowHeights.length, usedLastRow() + 1))
-                    for (let row = 0; row < limit; row += 1) width = Math.max(width, Math.min(420, displayCell(sheet, row, column).length * 8 + 16))
-                    guard(() => changeGrouped((item) => {
-                      const written = writeAxisSize(item.columnWidths, item.colSizes, column, width, DEFAULT_COL_WIDTH)
-                      return { ...item, columnWidths: written.dense, colSizes: written.extra }
-                    }, { action: 'CELL_UPDATED', range: columnLabel(column), oldValue: null, newValue: 'Autofit' }))
+                    guard(() => changeGrouped((item) => fitColumnsToContent(item, column), { action: 'CELL_UPDATED', range: columnLabel(column), oldValue: null, newValue: 'Autofit' }))
                   }}
                 />
               </button>
@@ -2243,6 +2277,21 @@ export function EquipmentSpreadsheet({
                 onClick={() => openBatch(null, null)}
               >
                 +
+              </button>
+            ) : null}
+            {profileLayout && !readOnly && analyticalLayout ? (
+              <button
+                type="button"
+                className="eq-profile-add eq-profile-pin"
+                aria-label="Add parameter column"
+                style={{ top: 3, left: placeX(colLimit - 1, false) + colSize(colLimit - 1) + 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={() => guard(() => apply(
+                  { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? addAnalyticalParameterColumn(item) : item)) },
+                  { action: 'CELL_UPDATED', range: null, oldValue: null, newValue: 'Parameter column' },
+                ))}
+              >
+                <Plus size={14} aria-hidden />
               </button>
             ) : null}
             {profileLayout && !readOnly && ipcLayout ? (
@@ -2260,7 +2309,7 @@ export function EquipmentSpreadsheet({
                 +
               </button>
             ) : null}
-            {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout ? (
+            {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout && !analyticalLayout ? (
               <button
                 type="button"
                 className="eq-profile-add eq-profile-pin"
@@ -2324,6 +2373,18 @@ export function EquipmentSpreadsheet({
                 +
               </button>
             ) : null}
+            {profileLayout && !readOnly && analyticalLayout ? (
+              <button
+                type="button"
+                className="eq-profile-add eq-profile-pin"
+                aria-label="Add batch row"
+                style={{ top: placeY(rowLimit - 1, false) + rowSize(rowLimit - 1) + 4, left: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={() => openBatch(null, null)}
+              >
+                <Plus size={14} aria-hidden />
+              </button>
+            ) : null}
             {profileLayout && !readOnly && ipcLayout ? (
               <button
                 type="button"
@@ -2336,7 +2397,7 @@ export function EquipmentSpreadsheet({
                 +
               </button>
             ) : null}
-            {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout ? (
+            {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout && !analyticalLayout ? (
               <button
                 type="button"
                 className="eq-profile-add eq-profile-pin"
@@ -2379,7 +2440,7 @@ export function EquipmentSpreadsheet({
           <div className="eq-canvas">
             {cells}
           </div>
-          {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout ? (
+          {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout && !analyticalLayout ? (
             <>
               {Array.from({ length: (colLimit - 3) / 2 }, (_, index) => {
                 const column = 3 + index * 2
@@ -2443,9 +2504,14 @@ export function EquipmentSpreadsheet({
                 }
                 onChange({ ...workbook, activeSheetId: item.id }, null)
               }}
+              title={analyticalLayout ? 'Choose Bulk, Compressed, Cores, Coated, Afterfill, or Other' : undefined}
               onDoubleClick={() => {
                 if (readOnly || !allowNewSheet || ipcLayout) return
                 setSelectedIds([item.id])
+                if (analyticalLayout) {
+                  openAnalyticalStage(item)
+                  return
+                }
                 setRenaming({ id: item.id, name: item.name })
               }}
               onContextMenu={(event) => {
@@ -2497,7 +2563,18 @@ export function EquipmentSpreadsheet({
           >
             +
           </button>
-        ) : <button type="button" className="eq-tab-add" aria-label="Add worksheet" onClick={() => runWorkbook(() => addSheet(workbook), { action: 'SHEET_CREATED', range: null, oldValue: null, newValue: 'New sheet' })}>+</button>}
+        ) : <button type="button" className="eq-tab-add" aria-label="Add worksheet" onClick={() => {
+            if (!analyticalLayout) {
+              runWorkbook(() => addSheet(workbook), { action: 'SHEET_CREATED', range: null, oldValue: null, newValue: 'New sheet' })
+              return
+            }
+            const productCode = profileReport?.productCode ?? ''
+            const created = addAnalyticalSheet(workbook, productCode)
+            guard(() => apply(created, { action: 'SHEET_CREATED', range: null, oldValue: null, newValue: 'New sheet' }))
+            setStageChoice('Bulk')
+            setStageOther('')
+            setStageTarget(created.activeSheetId)
+          }}>+</button>}
         {selectedIds.length > 1 ? <span className="eq-group-note">{selectedIds.length} sheets grouped. Click a sheet to ungroup.</span> : null}
         {notice ? <span className="eq-group-note">{notice}</span> : null}
         <span className="eq-status">{selectionSummary(sheet, selection)}</span>
@@ -2533,11 +2610,17 @@ export function EquipmentSpreadsheet({
           readOnly={readOnly}
           onClose={() => setSheetMenu(null)}
           onApply={applySheet}
+          renameLabel={analyticalLayout ? 'Sheet stage' : 'Rename'}
           onRename={(sheetId) => {
             setSheetMenu(null)
             if (ipcLayout) return
             const target = workbook.sheets.find((item) => item.id === sheetId)
-            if (target) setRenaming({ id: target.id, name: target.name })
+            if (!target) return
+            if (analyticalLayout) {
+              openAnalyticalStage(target)
+              return
+            }
+            setRenaming({ id: target.id, name: target.name })
           }}
           onSelectAll={() => {
             setSelectedIds(visibleSheets(workbook).map((item) => item.id))
@@ -2771,6 +2854,33 @@ export function EquipmentSpreadsheet({
           }}
         />
       ) : null}
+      {parameterColumn !== null ? (
+        <AnalyticalParameterDialog
+          key={parameterColumn}
+          initial={{
+            parameter: sheet.cells[`0:${parameterColumn}`] ?? '',
+            specification: sheet.cells[`1:${parameterColumn}`] ?? '',
+            unit: sheet.cells[`2:${parameterColumn}`] ?? '',
+            kind: sheet.snippets?.[`analytical-kind:${parameterColumn}`] === 'quantitative' ? 'quantitative' : 'qualitative',
+            usl: sheet.snippets?.[`analytical-usl:${parameterColumn}`] ?? '',
+            lsl: sheet.snippets?.[`analytical-lsl:${parameterColumn}`] ?? '',
+          }}
+          onCancel={() => setParameterColumn(null)}
+          onSave={(values) => {
+            try {
+              const column = parameterColumn
+              const next = writeAnalyticalParameter(sheet, column, values)
+              guard(() => apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? next : item)) },
+                { action: 'CELL_UPDATED', range: values.parameter.trim() || '[Parameter]', oldValue: null, newValue: values.parameter.trim() || '[Parameter]' },
+              ))
+              if (!readOnly) setParameterColumn(null)
+            } catch (err) {
+              onError(err instanceof Error ? err.message : 'The parameter could not be saved.')
+            }
+          }}
+        />
+      ) : null}
       {batchOpen ? (
         <ProfileBatchDialog
           key={batchInitial?.uniqueBatchNo || (batchTarget ?? 'next')}
@@ -2780,14 +2890,17 @@ export function EquipmentSpreadsheet({
             try {
               const productCode = profileReport?.productCode ?? ''
               const previous = batchInitial?.uniqueBatchNo ?? ''
-              if (packagingLayout || equipmentLayout || ipcLayout) saveRawProfileBatch(productCode, entry, previous)
+              const saved = analyticalLayout ? withoutInheritedAnalyticalDefaults(sheet, entry) : entry
+              if (packagingLayout || equipmentLayout || ipcLayout || analyticalLayout) saveRawProfileBatch(productCode, saved, previous)
               const next = packagingLayout
                 ? refreshPackagingWorkbook(workbook, productCode)
                 : equipmentLayout
                   ? refreshEquipmentWorkbook(workbook, productCode)
                   : ipcLayout
                     ? refreshIpcWorkbook(workbook, productCode)
-                    : commitProfileBatch(workbook, entry, batchTarget, previous)
+                    : analyticalLayout
+                      ? refreshAnalyticalWorkbook(workbook, productCode)
+                      : commitProfileBatch(workbook, saved, batchTarget, previous)
               guard(() => apply(
                 next,
                 { action: 'CELL_UPDATED', range: entry.uniqueBatchNo.trim(), oldValue: null, newValue: entry.uniqueBatchNo.trim() },
@@ -2889,6 +3002,63 @@ export function EquipmentSpreadsheet({
           }}
         />
       ) : null}
+      <Modal
+        title="Sheet stage"
+        open={analyticalLayout && stageTarget !== null}
+        okText="Use this stage"
+        okButtonProps={{ disabled: stageChoice === 'Other' && !stageOther.trim() }}
+        onCancel={() => setStageTarget(null)}
+        onOk={() => {
+          if (!stageTarget) return
+          const stage = stageChoice === 'Other' ? stageOther : stageChoice
+          const control = stageChoice === 'Afterfill' || (stageChoice === 'Other' && stageControl === 'po') ? 'po' : 'mo'
+          try {
+            const named = nameAnalyticalStage(workbook, stageTarget, stage, control)
+            const next = refreshAnalyticalWorkbook(named, profileReport?.productCode ?? '')
+            guard(() => apply(next, { action: 'SHEET_RENAMED', range: stage.trim(), oldValue: workbook.sheets.find((item) => item.id === stageTarget)?.name ?? null, newValue: stage.trim() }))
+            setStageTarget(null)
+          } catch (err) {
+            onError(err instanceof Error ? err.message : 'The sheet stage could not be saved.')
+          }
+        }}
+      >
+        <fieldset className="m-0 grid gap-2 border-0 p-0">
+          <legend className="mb-2 text-sm text-slate-700">Choose the stage for this sheet.</legend>
+          {ANALYTICAL_STAGES.map((choice) => (
+            <label key={choice} className="flex items-center gap-2 text-sm">
+              <input type="radio" name="analytical-stage" checked={stageChoice === choice} onChange={() => setStageChoice(choice)} />
+              {choice}
+            </label>
+          ))}
+          <label className="flex items-center gap-2 text-sm">
+            <input type="radio" name="analytical-stage" checked={stageChoice === 'Other'} onChange={() => setStageChoice('Other')} />
+            Other
+          </label>
+          {stageChoice === 'Other' ? (
+            <>
+              <input
+                className="rounded border border-slate-300 px-2 py-1 text-sm"
+                aria-label="Other stage"
+                value={stageOther}
+                placeholder="Specify the stage"
+                onChange={(event) => setStageOther(event.target.value)}
+              />
+              <p className="m-0 mt-1 text-sm text-slate-700">Which control number should this sheet show?</p>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="radio" name="analytical-control" checked={stageControl === 'mo'} onChange={() => setStageControl('mo')} />
+                MO Control No.
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="radio" name="analytical-control" checked={stageControl === 'po'} onChange={() => setStageControl('po')} />
+                PO Control No.
+              </label>
+            </>
+          ) : null}
+        </fieldset>
+      </Modal>
+      {analyticalLayout ? (
+        <AnalyticalTrendPanel sheet={sheet} open={ipcPanelOpen} onToggle={() => setIpcPanelOpen((open) => !open)} />
+      ) : null}
       {ipcLayout && sheet.snippets?.['ipc-run-column'] ? (
         <aside className={`eq-ipc-panel${ipcPanelOpen ? '' : ' is-collapsed'}`} aria-label="Run chart">
           <button
@@ -2985,6 +3155,43 @@ function initialOrders(initial?: ProfileBatchEntry): ProfilePoEntry[] {
   return [blankPo()]
 }
 
+function shownMonth(value: string): string {
+  const trimmed = value.trim()
+  const match = /^(\d{4})-(\d{2})$/.exec(trimmed)
+  if (!match) return trimmed
+  return new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1)))
+}
+
+function withoutInheritedAnalyticalDefaults(sheet: EquipmentSheet, entry: ProfileBatchEntry): ProfileBatchEntry {
+  const rows = Object.entries(sheet.cells).flatMap(([key, value]) => {
+    const [row, column] = key.split(':').map(Number)
+    return column === 1 && row >= 3 && String(value ?? '').trim() ? [row] : []
+  }).sort((left, right) => left - right)
+  const first = rows[0]
+  if (first == null) return entry
+  if (String(sheet.cells[`${first}:1`] ?? '').trim().toLowerCase() === entry.uniqueBatchNo.trim().toLowerCase()) return entry
+  const same = (column: number, value: string) => {
+    const shown = String(sheet.cells[`${first}:${column}`] ?? '').trim()
+    return Boolean(shown) && value.trim() === shown
+  }
+  return {
+    ...entry,
+    referenceProcedure: same(2, entry.referenceProcedure ?? '') ? '' : entry.referenceProcedure,
+    batchSize: same(3, entry.batchSize ?? '') ? '' : entry.batchSize,
+    mfgDate: same(4, shownMonth(entry.mfgDate)) ? '' : entry.mfgDate,
+  }
+}
+
+function monthInputValue(value: string): string {
+  const trimmed = value.trim()
+  if (/^\d{4}-\d{2}$/.test(trimmed)) return trimmed
+  const named = /^(?:\d{1,2}\s+)?([A-Za-z]{3,})\s+(\d{4})$/.exec(trimmed)
+  if (!named) return ''
+  const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+  const index = months.findIndex((item) => named[1].toLowerCase().startsWith(item))
+  return index < 0 ? '' : `${named[2]}-${String(index + 1).padStart(2, '0')}`
+}
+
 function ProfileBatchDialog({ initial, onCancel, onSave }: { initial?: ProfileBatchEntry; onCancel: () => void; onSave: (entry: ProfileBatchEntry) => void }) {
   const [entry, setEntry] = useState<ProfileBatchEntry>(initial ?? {
     uniqueBatchNo: '',
@@ -3019,8 +3226,11 @@ function ProfileBatchDialog({ initial, onCancel, onSave }: { initial?: ProfileBa
     onSave({ ...entry, ...first, orders })
   }
   return (
-    <form className="eq-profile-dialog" role="dialog" aria-label="Add batch" onSubmit={submit} onKeyDown={(event) => { if (event.key === 'Escape') onCancel() }}>
-      <h2>Add batch</h2>
+    <form className="eq-profile-dialog eq-batch-dialog" role="dialog" aria-label="Add batch" onSubmit={submit} onKeyDown={(event) => { if (event.key === 'Escape') onCancel() }}>
+      <header className="flex flex-col gap-1">
+        <h2>Add batch</h2>
+        <p className="m-0 text-sm text-slate-500">Unique batch, control numbers, procedure, and manufacturing dates.</p>
+      </header>
       <label>
         Unique Batch No.
         <input aria-label="Unique Batch No." value={entry.uniqueBatchNo} required onChange={(event) => setEntry({ ...entry, uniqueBatchNo: event.target.value })} />
@@ -3045,14 +3255,24 @@ function ProfileBatchDialog({ initial, onCancel, onSave }: { initial?: ProfileBa
           </label>
         </div>
       ))}
-      <button type="button" onClick={() => setOrders([...orders, blankPo()])}>Add PO</button>
+      <button type="button" className="eq-batch-add" onClick={() => setOrders([...orders, blankPo()])}>
+        <Plus size={16} aria-hidden /> Add PO
+      </button>
+      <label>
+        Reference Control Procedure
+        <textarea aria-label="Reference Control Procedure" value={entry.referenceProcedure ?? ''} onChange={(event) => setEntry({ ...entry, referenceProcedure: event.target.value })} />
+      </label>
+      <label>
+        Batch Size
+        <input aria-label="Batch Size" value={entry.batchSize ?? ''} onChange={(event) => setEntry({ ...entry, batchSize: event.target.value })} />
+      </label>
       <label>
         Mfg. Date (MMM YYYY)
-        <input aria-label="Mfg. Date" type="month" value={entry.mfgDate} onChange={(event) => setEntry({ ...entry, mfgDate: event.target.value })} />
+        <input aria-label="Mfg. Date" type="month" value={monthInputValue(entry.mfgDate)} onChange={(event) => setEntry({ ...entry, mfgDate: event.target.value })} />
       </label>
       <label>
         Exp Date (MMM YYYY)
-        <input aria-label="Exp Date" type="month" value={entry.expDate} onChange={(event) => setEntry({ ...entry, expDate: event.target.value })} />
+        <input aria-label="Exp Date" type="month" value={monthInputValue(entry.expDate)} onChange={(event) => setEntry({ ...entry, expDate: event.target.value })} />
       </label>
       <label>
         FG Released Date (DD MMM YYYY)
@@ -3060,8 +3280,127 @@ function ProfileBatchDialog({ initial, onCancel, onSave }: { initial?: ProfileBa
       </label>
       {error ? <p className="eq-banner">{error}</p> : null}
       <div className="eq-profile-dialog-actions">
-        <button type="submit">Add</button>
-        <button type="button" onClick={onCancel}>Cancel</button>
+        <button type="button" className="eq-batch-cancel" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="eq-batch-save">Add</button>
+      </div>
+    </form>
+  )
+}
+
+function parameterDraft(value: string | undefined, placeholder: string) {
+  const text = String(value ?? '').trim()
+  return text === placeholder ? '' : text
+}
+
+function AnalyticalTrendPanel({ sheet, open, onToggle }: { sheet: EquipmentSheet; open: boolean; onToggle: () => void }) {
+  const parameters = analyticalParameters(sheet).filter((item) => item.kind === 'quantitative')
+  const [column, setColumn] = useState(parameters[0]?.column ?? 0)
+  const current = parameters.find((item) => item.column === column) ?? parameters[0]
+  const chart = current ? analyticalRunChart(sheet, current.column) : null
+  return (
+    <aside className={`eq-ipc-panel${open ? '' : ' is-collapsed'}`} aria-label="Run chart">
+      <button
+        type="button"
+        className="eq-ipc-panel-toggle"
+        aria-expanded={open}
+        aria-label={open ? 'Collapse run chart' : 'Expand run chart'}
+        onClick={onToggle}
+      >
+        {open ? <PanelRightClose size={16} aria-hidden /> : <PanelRightOpen size={16} aria-hidden />}
+      </button>
+      {open ? (
+        current && chart ? (
+          <>
+            {parameters.length > 1 ? (
+              <label className="grid gap-1 px-4 text-sm text-slate-700">
+                Quantitative parameter
+                <select aria-label="Quantitative parameter" value={current.column} onChange={(event) => setColumn(Number(event.target.value))}>
+                  {parameters.map((item) => <option key={item.column} value={item.column}>{item.name || 'Parameter'}</option>)}
+                </select>
+              </label>
+            ) : null}
+            <IpcLineChart prepared={chart} source={null} column={current.column} usl={Number(current.usl)} lsl={Number(current.lsl)} />
+          </>
+        ) : <p className="m-0 px-4 text-sm text-slate-600">Mark a parameter as quantitative and enter its USL and LSL to trend results.</p>
+      ) : null}
+    </aside>
+  )
+}
+
+function AnalyticalParameterDialog({
+  initial,
+  onCancel,
+  onSave,
+}: {
+  initial: { parameter: string; specification: string; unit: string; kind: 'qualitative' | 'quantitative'; usl: string; lsl: string }
+  onCancel: () => void
+  onSave: (values: { parameter: string; specification: string; unit: string; kind: 'qualitative' | 'quantitative'; usl: string; lsl: string }) => void
+}) {
+  const [parameter, setParameter] = useState(parameterDraft(initial.parameter, '[Parameter]'))
+  const [specification, setSpecification] = useState(parameterDraft(initial.specification, '[Specification]'))
+  const [unit, setUnit] = useState(parameterDraft(initial.unit, '[Unit of Measurement]'))
+  const [kind, setKind] = useState(initial.kind)
+  const [usl, setUsl] = useState(initial.usl)
+  const [lsl, setLsl] = useState(initial.lsl)
+  const [error, setError] = useState('')
+  return (
+    <form
+      className="eq-profile-dialog eq-batch-dialog"
+      role="dialog"
+      aria-label="Parameter"
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (kind === 'quantitative' && (!usl.trim() || !lsl.trim() || !Number.isFinite(Number(usl)) || !Number.isFinite(Number(lsl)) || Number(usl) <= Number(lsl))) {
+          setError('Enter a USL above the LSL for a quantitative parameter.')
+          return
+        }
+        onSave({ parameter, specification, unit, kind, usl, lsl })
+      }}
+      onKeyDown={(event) => { if (event.key === 'Escape') onCancel() }}
+    >
+      <header className="flex flex-col gap-1">
+        <h2>Parameter</h2>
+        <p className="m-0 text-sm text-slate-500">These entries replace the placeholders in this column.</p>
+      </header>
+      <label>
+        Parameter
+        <input aria-label="Parameter" maxLength={80} value={parameter} placeholder="Short text" onChange={(event) => setParameter(event.target.value)} />
+      </label>
+      <label>
+        Specification
+        <textarea aria-label="Specification" value={specification} placeholder="Long text" onChange={(event) => setSpecification(event.target.value)} />
+      </label>
+      <label>
+        Unit of Measurement
+        <input aria-label="Unit of Measurement" maxLength={40} value={unit} placeholder="Short text" onChange={(event) => setUnit(event.target.value)} />
+      </label>
+      <fieldset className="m-0 grid gap-2 border-0 p-0">
+        <legend className="text-sm text-slate-700">Result type</legend>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="radio" name="parameter-kind" checked={kind === 'qualitative'} onChange={() => setKind('qualitative')} />
+          Qualitative
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="radio" name="parameter-kind" checked={kind === 'quantitative'} onChange={() => setKind('quantitative')} />
+          Quantitative
+        </label>
+      </fieldset>
+      {kind === 'quantitative' ? (
+        <div className="grid grid-cols-2 gap-3">
+          <label>
+            USL
+            <input aria-label="USL" inputMode="decimal" required value={usl} onChange={(event) => setUsl(event.target.value)} />
+          </label>
+          <label>
+            LSL
+            <input aria-label="LSL" inputMode="decimal" required value={lsl} onChange={(event) => setLsl(event.target.value)} />
+          </label>
+        </div>
+      ) : null}
+      {error ? <p className="eq-banner">{error}</p> : null}
+      <div className="eq-profile-dialog-actions">
+        <button type="button" className="eq-batch-cancel" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="eq-batch-save">Save</button>
       </div>
     </form>
   )
@@ -3361,11 +3700,11 @@ function observationRows(values: number[]): string[][] {
   ]
 }
 
-function IpcLineChart({ source, column, usl, lsl }: { source: EquipmentSheet | null; column: number; usl: number; lsl: number }) {
+function IpcLineChart({ source, column, usl, lsl, prepared }: { source: EquipmentSheet | null; column: number; usl: number; lsl: number; prepared?: IpcRunChart | null }) {
   const [hidden, setHidden] = useState<number[]>([])
-  const full = source ? ipcRunChart(source, column, usl, lsl) : null
+  const full = prepared !== undefined ? prepared : (source ? ipcRunChart(source, column, usl, lsl) : null)
   const visibleColumns = (full?.series ?? []).map((item) => item.column).filter((item) => !hidden.includes(item))
-  const chart = source && full && hidden.length ? ipcRunChart(source, column, usl, lsl, visibleColumns) : full
+  const chart = prepared === undefined && source && full && hidden.length ? ipcRunChart(source, column, usl, lsl, visibleColumns) : full
   const width = 480
   const height = 250
   const pad = { left: 46, right: 16, top: 16, bottom: 36 }
@@ -3397,25 +3736,26 @@ function IpcLineChart({ source, column, usl, lsl }: { source: EquipmentSheet | n
     ] : []),
   ] : []
   return (
-    <div className="eq-ipc-chart flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4">
+    <div className="eq-ipc-chart flex min-h-0 flex-1 flex-col gap-4 px-4 pb-5">
       <div className="flex items-start gap-2 pr-8">
         <LineChart size={18} aria-hidden className="text-sky-700" />
         <div className="min-w-0">
-          <h2 className="m-0 text-sm font-semibold leading-5 text-slate-900">{chart?.title || 'Line graph'}</h2>
+          <h2 className="m-0 text-base font-semibold leading-5 tracking-tight text-slate-900">{chart?.title || 'Line graph'}</h2>
           {chart?.specification ? <p className="m-0 mt-0.5 text-xs leading-4 text-slate-600">{chart.specification}</p> : null}
         </div>
       </div>
       {chart ? (
-        <dl className="m-0 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[11px] leading-4">
+        <dl className="m-0 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {guides.map((guide) => (
-            <div key={guide.name} className="flex items-baseline gap-1">
-              <dt className="font-medium uppercase tracking-wide" style={{ color: guide.color }}>{guide.name}</dt>
-              <dd className="m-0 font-semibold text-slate-900">{chartNumber(guide.value)}</dd>
+            <div key={guide.name} className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5">
+              <dt className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: guide.color }}>{guide.name}</dt>
+              <dd className="m-0 text-sm font-semibold tabular-nums text-slate-900">{chartNumber(guide.value)}</dd>
             </div>
           ))}
         </dl>
       ) : null}
       {chart ? (
+        <div className="rounded-lg border border-slate-200 bg-white px-2 py-3">
         <svg className="h-auto w-full shrink-0" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Run chart of ${chart.title}`}>
           {chart.ticks.map((tick) => (
             <line key={tick} x1={pad.left} y1={yAt(tick)} x2={width - pad.right} y2={yAt(tick)} stroke="#e6ebf0" />
@@ -3434,12 +3774,13 @@ function IpcLineChart({ source, column, usl, lsl }: { source: EquipmentSheet | n
           {shown.flatMap((item) => item.points.map((point) => <circle key={`${item.column}-${point.batch}`} cx={xAt(point.batch)} cy={yAt(point.value)} r="3.5" fill="#fff" stroke={item.color} strokeWidth="2" />))}
           {batches.map((batch) => <text key={batch} x={xAt(batch)} y={height - 14} textAnchor="middle" fontSize="11" fill="#3c4450">{batch}</text>)}
         </svg>
-      ) : <p className="m-0 text-sm text-slate-600">Enter numeric results to plot this line graph.</p>}
+        </div>
+      ) : <p className="m-0 rounded-md border border-dashed border-slate-300 bg-white px-3 py-4 text-sm text-slate-600">Enter numeric results to plot this line graph.</p>}
       {series.length ? (
         <ul className="eq-ipc-legend" aria-label="Chart legend">
           {series.map((item) => (
             <li key={item.column}>
-              <label className={item.shown ? undefined : 'is-off'}>
+              <label className={`rounded-full border border-slate-200 bg-white px-2.5 py-1 transition-colors hover:border-slate-300 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-sky-700 ${item.shown ? '' : 'is-off'}`}>
                 <input
                   type="checkbox"
                   checked={item.shown}
@@ -3458,8 +3799,11 @@ function IpcLineChart({ source, column, usl, lsl }: { source: EquipmentSheet | n
         const rows = observationRows(values)
         const patterns = ipcNelsonSignals(values)
         return (
-          <section key={item.column} aria-label={`Observation for ${item.name}`} className="eq-ipc-observation">
-            <h3 style={{ color: item.color }}>{item.name}</h3>
+          <section key={item.column} aria-label={`Observation for ${item.name}`} className="eq-ipc-observation rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+            <h3 className="flex items-center gap-1.5" style={{ color: item.color }}>
+              <Activity size={14} aria-hidden />
+              {item.name}
+            </h3>
             {item.ucl != null && item.lcl != null ? <p className="eq-ipc-limits">UCL {chartNumber(item.ucl)} · LCL {chartNumber(item.lcl)}</p> : null}
             {rows.length ? rows.flatMap((row) => [0, 1].map((side) => (
               <p key={`${item.column}-${side}-${row[side * 2]}`}>
