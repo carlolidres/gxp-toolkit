@@ -2,7 +2,7 @@ import { addSheet, assertSheetAction, axisSize, copySheet, createWorkbook, DEFAU
 import { equipmentRecordFromSheet, isMainEquipmentSheet, loadEquipmentMasterlist } from '../vmp/equipmentMasterlist'
 import { equipmentProfileLabel } from '../vmp/equipmentReport'
 import { fixtureWorkbook, SPREADSHEET_FIXTURE_CODE, spreadsheetFixtureEnabled } from './spreadsheetTestFixture'
-import { equipmentSheetName } from './productProfile'
+import { equipmentSheetName, PLAIN_PROFILE_SECTIONS } from './productProfile'
 
 const STORAGE_KEY = 'gxp.cpv.product-profile.v1'
 const CENTERED: CellStyle = { align: 'center', valign: 'middle' }
@@ -21,6 +21,7 @@ const PACKAGING_SECTION = 'packaging-material'
 const EQUIPMENT_SECTION = 'equipment'
 const IPC_SECTION = 'in-process-control'
 const ANALYTICAL_SECTION = 'analytical-report'
+const STABILITY_SECTION = 'stability'
 const ANALYTICAL_STAGE = 'analytical-stage'
 const ANALYTICAL_CONTROL = 'analytical-control'
 const ANALYTICAL_KIND = 'analytical-kind:'
@@ -200,6 +201,26 @@ function stampProfileHeader(sheet: EquipmentSheet): EquipmentSheet {
   }
 }
 
+function analyticalUsesPackSize(stage: string, source: string): boolean {
+  const named = stage.trim().toLowerCase()
+  if (named === 'afterfill') return true
+  if (ANALYTICAL_STAGES.some((item) => item.toLowerCase() === named)) return false
+  return source === 'po'
+}
+
+function analyticalSkuText(batch: ProfileBatchEntry): string {
+  const seen = new Set<string>()
+  const skus: string[] = []
+  for (const line of orderLines(batch)) {
+    const sku = line.sku.trim()
+    const key = sku.toLowerCase()
+    if (!sku || seen.has(key)) continue
+    seen.add(key)
+    skus.push(sku)
+  }
+  return skus.join('\n')
+}
+
 function analyticalControlText(batch: ProfileBatchEntry, stage: string, source: string): string {
   const named = stage.trim().toLowerCase()
   if (named === 'afterfill') return batch.poControlNo.trim()
@@ -248,26 +269,57 @@ function analyticalFonts(sheet: EquipmentSheet): Record<string, CellStyle> {
   return styles
 }
 
+function analyticalFontSize(style: CellStyle | undefined): number {
+  const size = style?.fontSize
+  return size != null && size >= 13 ? size : 13
+}
+
+function fittedTextHeight(text: string, size: number, columnWidth: number): number {
+  const innerW = Math.max(24, columnWidth - 12)
+  const chars = Math.max(4, Math.floor(innerW / (size * 0.52)))
+  const lines = text.split('\n').reduce((count, line) => count + Math.max(1, Math.ceil(line.length / chars)), 0)
+  return lines * Math.ceil(size * 1.15) + 6
+}
+
+function analyticalResultStyles(sheet: EquipmentSheet): Record<string, CellStyle> {
+  const styles = { ...(sheet.styles ?? {}) }
+  let lastColumn = 5
+  let lastRow = ANALYTICAL_HEADER_ROWS - 1
+  for (const key of Object.keys(sheet.cells ?? {})) {
+    const [row, column] = key.split(':').map(Number)
+    if (column > lastColumn) lastColumn = column
+    if (row > lastRow) lastRow = row
+  }
+  for (let row = ANALYTICAL_HEADER_ROWS; row <= lastRow; row += 1) {
+    if (!String(sheet.cells?.[`${row}:1`] ?? '').trim()) continue
+    for (let column = 5; column <= lastColumn; column += 1) {
+      styles[`${row}:${column}`] = { ...styles[`${row}:${column}`], ...CENTERED, bold: false, wrap: true }
+    }
+  }
+  return styles
+}
+
 function analyticalBodyHeights(sheet: EquipmentSheet): number[] {
   const heights = sheet.rowHeights.slice()
-  const width = axisSize(sheet.columnWidths, sheet.colSizes, 2, DEFAULT_COL_WIDTH)
-  const innerW = Math.max(24, width - 16)
+  const needed = new Map<number, number>()
   for (const [key, value] of Object.entries(sheet.cells ?? {})) {
     const text = String(value ?? '').trim()
     const [row, column] = key.split(':').map(Number)
-    if (column !== 2 || row < ANALYTICAL_HEADER_ROWS || !text) continue
-    const size = sheet.styles?.[key]?.fontSize ?? 13
-    const unit = Math.max(5.5, size * 0.56)
-    const chars = Math.max(4, Math.floor(innerW / unit))
-    const lines = text.split('\n').reduce((count, line) => count + Math.max(1, Math.ceil(line.length / chars)), 0)
+    if (row < ANALYTICAL_HEADER_ROWS || column < 2 || !text || !sheet.styles?.[key]?.wrap) continue
+    const size = analyticalFontSize(sheet.styles?.[key])
+    const width = axisSize(sheet.columnWidths, sheet.colSizes, column, DEFAULT_COL_WIDTH)
+    needed.set(row, Math.max(needed.get(row) ?? DEFAULT_ROW_HEIGHT, fittedTextHeight(text, size, width)))
+  }
+  for (const [row, height] of needed) {
     while (heights.length <= row) heights.push(DEFAULT_ROW_HEIGHT)
-    heights[row] = Math.max(DEFAULT_ROW_HEIGHT, lines * Math.round(size * 1.15) + 8)
+    heights[row] = height
   }
   return heights
 }
 
 function finishAnalytical(sheet: EquipmentSheet): EquipmentSheet {
-  const fitted = fitColumnsToContent(sheet)
+  const prepared = { ...sheet, styles: analyticalResultStyles(sheet) }
+  const fitted = fitColumnsToContent(prepared)
   const styles = analyticalFonts(fitted)
   const styled = { ...fitted, styles, rowHeights: analyticalBodyHeights({ ...fitted, styles }) }
   return { ...styled, styles: borderProfile(styled, styled.cells, styles) }
@@ -317,6 +369,8 @@ function stampAnalyticalHeader(sheet: EquipmentSheet, batches: ProfileBatchEntry
   }
   const stage = String(sheet.snippets?.[ANALYTICAL_STAGE] ?? '')
   const source = String(sheet.snippets?.[ANALYTICAL_CONTROL] ?? '')
+  const pack = analyticalUsesPackSize(stage, source)
+  cells['0:3'] = pack ? 'Pack Size' : 'Batch Size'
   for (const batch of batches) {
     const unique = batch.uniqueBatchNo.trim()
     if (!unique) continue
@@ -329,12 +383,14 @@ function stampAnalyticalHeader(sheet: EquipmentSheet, batches: ProfileBatchEntry
     cells[`${row}:0`] = analyticalControlText(batch, stage, source)
     cells[`${row}:1`] = unique
     const procedure = (batch.referenceProcedure ?? '').trim()
-    const size = (batch.batchSize ?? '').trim()
+    const size = pack ? analyticalSkuText(batch) : (batch.batchSize ?? '').trim()
     const mfg = analyticalMonth(batch.mfgDate)
     if (procedure) cells[`${row}:2`] = procedure
     if (size) cells[`${row}:3`] = size
+    else delete cells[`${row}:3`]
     if (mfg) cells[`${row}:4`] = mfg
-    for (const column of [0, 1, 3, 4]) styles[`${row}:${column}`] = { ...styles[`${row}:${column}`], ...CENTERED, bold: false }
+    for (const column of [0, 1, 4]) styles[`${row}:${column}`] = { ...styles[`${row}:${column}`], ...CENTERED, bold: false }
+    styles[`${row}:3`] = { ...styles[`${row}:3`], ...CENTERED, bold: false, wrap: pack }
     styles[`${row}:2`] = { ...styles[`${row}:2`], ...CENTERED, bold: false, wrap: true }
   }
   const orderedRows = [...located.values()].sort((left, right) => left - right)
@@ -344,12 +400,20 @@ function stampAnalyticalHeader(sheet: EquipmentSheet, batches: ProfileBatchEntry
     for (const row of orderedRows.slice(1)) {
       defaults.forEach((value, index) => {
         const column = index + 2
+        if (pack && column === 3) return
         if (!value || String(cells[`${row}:${column}`] ?? '').trim()) return
         cells[`${row}:${column}`] = value
         styles[`${row}:${column}`] = column === 2
           ? { ...styles[`${row}:${column}`], ...CENTERED, bold: false, wrap: true }
           : { ...styles[`${row}:${column}`], ...CENTERED, bold: false }
       })
+    }
+    const size = analyticalFontSize(styles[`${firstDataRow}:2`])
+    for (const row of orderedRows) {
+      const key = `${row}:2`
+      if (!String(cells[key] ?? '').trim()) continue
+      const style = { ...styles[key], ...CENTERED, bold: false, wrap: true, fontSize: size }
+      styles[key] = style
     }
   }
   const rowHeights = sheet.rowHeights.slice()
@@ -1240,6 +1304,7 @@ export type IpcRunChart = {
   yMax: number
   ticks: number[]
   batches: number[]
+  labels?: string[]
   points: Array<{ batch: number; value: number }>
   series: IpcChartSeries[]
 }
@@ -1776,11 +1841,237 @@ export function addIpcChartSheet(workbook: EquipmentWorkbook, sourceId: string, 
   }
 }
 
+export const STABILITY_STUDY_FIELDS = [
+  ['genericName', 'Generic Name'],
+  ['brandName', 'Brand Name'],
+  ['dosageStrength', 'Dosage Strength'],
+  ['dosageForm', 'Dosage Form'],
+  ['uniqueBatchNo', 'Unique Batch Number'],
+  ['moControlNo', 'MO Control No.'],
+  ['poControlNo', 'PO Control No.'],
+  ['client', 'Client'],
+  ['batchSize', 'Batch Size'],
+  ['datePutOnStability', 'Date Put on Stability'],
+  ['dateManufactured', 'Date Manufactured'],
+  ['expiryDate', 'Expiry Date'],
+  ['primaryPackage', 'Description of Primary Package'],
+  ['secondaryPackage', 'Description of Secondary Package'],
+  ['storageCondition', 'Storage Condition'],
+  ['referenceProcedure', 'Reference Control Procedure'],
+  ['purpose', 'Purpose of Study'],
+] as const
+
+export type StabilityStudy = Record<(typeof STABILITY_STUDY_FIELDS)[number][0], string>
+
+const STABILITY_STUDY = 'stability-study:'
+const STABILITY_PARAMETER = 'stability-parameter'
+const STABILITY_UNIT = 'stability-unit'
+const STABILITY_USL = 'stability-usl'
+const STABILITY_LSL = 'stability-lsl'
+
+export function emptyStabilityStudy(): StabilityStudy {
+  return Object.fromEntries(STABILITY_STUDY_FIELDS.map(([key]) => [key, ''])) as StabilityStudy
+}
+
+export function stabilityParameterText(parameter: string, unit: string): string {
+  const name = parameter.trim()
+  const unitText = unit.trim()
+  if (!name || !unitText) return 'Parameter'
+  return `${name} (${unitText})`
+}
+
+function stabilityStudyColumns(sheet: EquipmentSheet): number[] {
+  return Object.keys(sheet.snippets ?? {})
+    .map((key) => {
+      const match = new RegExp(`^${STABILITY_STUDY}(\\d+)$`).exec(key)
+      return match ? Number(match[1]) : 0
+    })
+    .filter((column) => column >= 1)
+    .sort((left, right) => left - right)
+}
+
+export function readStabilityStudy(sheet: EquipmentSheet, column: number): StabilityStudy | null {
+  const raw = sheet.snippets?.[`${STABILITY_STUDY}${column}`]
+  if (!raw) return null
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  if (!parsed || typeof parsed !== 'object') return null
+  const study = emptyStabilityStudy()
+  for (const [key] of STABILITY_STUDY_FIELDS) study[key] = String((parsed as Record<string, unknown>)[key] ?? '')
+  return study
+}
+
+function stampStabilityHeader(sheet: EquipmentSheet): EquipmentSheet {
+  const cells = { ...sheet.cells }
+  const styles = { ...(sheet.styles ?? {}) }
+  const snippets = { ...(sheet.snippets ?? {}), [SECTION_SNIPPET]: STABILITY_SECTION }
+  for (const key of Object.keys(snippets)) {
+    if (key.startsWith('stability-batch:')) delete snippets[key]
+  }
+  const draft = { ...sheet, snippets }
+  cells['0:0'] = 'Test Points'
+  cells['0:1'] = stabilityParameterText(snippets[STABILITY_PARAMETER] ?? '', snippets[STABILITY_UNIT] ?? '')
+  delete cells['1:0']
+  for (const key of Object.keys(cells)) {
+    const [row, column] = key.split(':').map(Number)
+    if (row === 0 && column > 1) delete cells[key]
+    if (row === 1 && column >= 1 && !snippets[`${STABILITY_STUDY}${column}`]) delete cells[key]
+  }
+  const columns = stabilityStudyColumns(draft)
+  for (const column of columns) {
+    cells[`1:${column}`] = readStabilityStudy(draft, column)?.poControlNo.trim() ?? ''
+    styles[`1:${column}`] = { ...styles[`1:${column}`], ...BOLD }
+  }
+  if (!String(cells['2:0'] ?? '').trim()) cells['2:0'] = 'Initial'
+  styles['0:0'] = { ...styles['0:0'], ...BOLD, wrap: true }
+  styles['0:1'] = { ...styles['0:1'], ...BOLD, wrap: true }
+  styles['2:0'] = { ...styles['2:0'], ...CENTERED, bold: false }
+  const last = Math.max(1, ...columns)
+  const prepared = {
+    ...sheet,
+    cells,
+    styles,
+    snippets,
+    merges: [
+      ...(sheet.merges ?? []).filter((merge) => merge.r1 > 1),
+      { r1: 0, c1: 0, r2: 1, c2: 0 },
+      { r1: 0, c1: 1, r2: 0, c2: last },
+    ],
+  }
+  return { ...prepared, styles: borderProfile(prepared, cells, styles) }
+}
+
+export function commitStabilityStudy(sheet: EquipmentSheet, column: number | null, study: StabilityStudy): EquipmentSheet {
+  assertSheetAction(sheet, 'edit')
+  const poControlNo = study.poControlNo.trim()
+  if (!poControlNo) throw new Error('Enter the PO Control No.')
+  const target = column ?? (stabilityStudyColumns(sheet).at(-1) ?? 0) + 1
+  if (target < 1) throw new Error('Choose a stability column.')
+  const duplicate = stabilityStudyColumns(sheet).some((item) => item !== target && readStabilityStudy(sheet, item)?.poControlNo.trim().toLowerCase() === poControlNo.toLowerCase())
+  if (duplicate) throw new Error('That PO Control No. is already on the sheet.')
+  const stored = emptyStabilityStudy()
+  for (const [key] of STABILITY_STUDY_FIELDS) stored[key] = study[key].trim()
+  stored.poControlNo = poControlNo
+  return stampStabilityHeader({
+    ...sheet,
+    snippets: { ...(sheet.snippets ?? {}), [`${STABILITY_STUDY}${target}`]: JSON.stringify(stored) },
+  })
+}
+
+function stabilityLimitSnippets(limits?: { usl: string; lsl: string }): Record<string, string> {
+  if (!limits) return {}
+  const usl = limits.usl.trim()
+  const lsl = limits.lsl.trim()
+  if (!Number.isFinite(Number(usl)) || !Number.isFinite(Number(lsl)) || Number(usl) <= Number(lsl)) {
+    throw new Error('Enter a USL above the LSL.')
+  }
+  return { [STABILITY_USL]: usl, [STABILITY_LSL]: lsl }
+}
+
+export function setStabilityParameter(workbook: EquipmentWorkbook, sheetId: string, parameter: string, unit: string, limits?: { usl: string; lsl: string }): EquipmentWorkbook {
+  const name = parameter.trim()
+  const unitText = unit.trim()
+  if (!name || !unitText) throw new Error('Enter the parameter and its unit.')
+  const bounds = stabilityLimitSnippets(limits)
+  const title = uniqueSheetTitle(workbook, sheetId, ipcSheetTitle(stabilityParameterText(name, unitText)))
+  if (!title) throw new Error('A worksheet with that name already exists.')
+  const current = workbook.sheets.find((sheet) => sheet.id === sheetId)
+  if (!current) throw new Error('Choose a worksheet.')
+  const renamed = current.name === title ? workbook : renameSheet(workbook, sheetId, title)
+  return {
+    ...renamed,
+    sheets: renamed.sheets.map((sheet) => sheet.id === sheetId ? stampStabilityHeader({
+      ...sheet,
+      snippets: { ...(sheet.snippets ?? {}), [STABILITY_PARAMETER]: name, [STABILITY_UNIT]: unitText, ...bounds },
+    }) : sheet),
+  }
+}
+
+export function addStabilityParameterSheet(workbook: EquipmentWorkbook, parameter: string, unit: string, limits?: { usl: string; lsl: string }): EquipmentWorkbook {
+  const name = parameter.trim()
+  const unitText = unit.trim()
+  if (!name || !unitText) throw new Error('Enter the parameter and its unit.')
+  const bounds = stabilityLimitSnippets(limits)
+  const title = uniqueSheetTitle(workbook, '', ipcSheetTitle(stabilityParameterText(name, unitText)))
+  if (!title) throw new Error('A worksheet with that name already exists.')
+  const next = addSheet(workbook, title)
+  return {
+    ...next,
+    sheets: next.sheets.map((sheet) => sheet.id === next.activeSheetId ? stampStabilityHeader({
+      ...sheet,
+      snippets: { ...(sheet.snippets ?? {}), [STABILITY_PARAMETER]: name, [STABILITY_UNIT]: unitText, ...bounds },
+    }) : sheet),
+  }
+}
+
+function nameStabilitySheets(workbook: EquipmentWorkbook): EquipmentWorkbook {
+  let next = workbook
+  for (const sheet of workbook.sheets) {
+    const current = next.sheets.find((item) => item.id === sheet.id)
+    const title = uniqueSheetTitle(next, sheet.id, ipcSheetTitle(stabilityParameterText(current?.snippets?.[STABILITY_PARAMETER] ?? '', current?.snippets?.[STABILITY_UNIT] ?? '')))
+    if (!title || current?.name === title) continue
+    next = renameSheet(next, sheet.id, title)
+  }
+  return next
+}
+
+export function addStabilityTimepoint(sheet: EquipmentSheet, months: number): EquipmentSheet {
+  assertSheetAction(sheet, 'edit')
+  if (!Number.isInteger(months) || months < 1) throw new Error('Enter the number of months.')
+  const label = months === 1 ? '1 Month' : `${months} Months`
+  const duplicate = Object.entries(sheet.cells).some(([key, value]) => {
+    const [row, column] = key.split(':').map(Number)
+    return column === 0 && row >= 2 && String(value ?? '').trim().toLowerCase() === label.toLowerCase()
+  })
+  if (duplicate) throw new Error('That timepoint is already on the sheet.')
+  let row = 3
+  while (String(sheet.cells[`${row}:0`] ?? '').trim()) row += 1
+  const next = ensureSize(sheet, row + 1, Math.max(sheet.columnCount, 2))
+  const cells = { ...next.cells, [`${row}:0`]: label }
+  const styles = { ...next.styles, [`${row}:0`]: { ...next.styles[`${row}:0`], ...CENTERED, bold: false } }
+  return { ...next, cells, styles: borderProfile({ ...next, cells }, cells, styles) }
+}
+
+function releasePlainProfileSheet(sheet: EquipmentSheet): EquipmentSheet {
+  const allowed = new Map([
+    ['0:0', 'unique batch no.'],
+    ['0:1', 'description'],
+    ['1:1', 'item code'],
+    ['1:2', 'control no.'],
+  ])
+  let seen = 0
+  for (const [key, value] of Object.entries(sheet.cells)) {
+    const text = String(value ?? '').trim()
+    if (!text) continue
+    if (allowed.get(key) !== text.replace(/\s+/g, ' ').toLowerCase()) return sheet
+    seen += 1
+  }
+  if (!seen) return sheet
+  const cells = { ...sheet.cells }
+  const styles = { ...(sheet.styles ?? {}) }
+  for (const key of allowed.keys()) {
+    delete cells[key]
+    delete styles[key]
+  }
+  return {
+    ...sheet,
+    cells,
+    styles,
+    merges: (sheet.merges ?? []).filter((merge) => merge.r1 > 1),
+  }
+}
+
 function withProfileHeader(workbook: EquipmentWorkbook, section: string, productId = ''): EquipmentWorkbook {
+  if (section === STABILITY_SECTION) return nameStabilitySheets({ ...workbook, sheets: workbook.sheets.map((sheet) => stampStabilityHeader(sheet)) })
   if (section === PACKAGING_SECTION) return refreshPackagingWorkbook(workbook, productId)
   if (section === EQUIPMENT_SECTION) return { ...workbook, sheets: workbook.sheets.map((sheet) => stampEquipmentHeader(sheet, rawMaterialBatches(productId))) }
   if (section === IPC_SECTION) return refreshIpcWorkbook(workbook, productId)
   if (section === ANALYTICAL_SECTION) return refreshAnalyticalWorkbook(workbook, productId)
+  if ((PLAIN_PROFILE_SECTIONS as readonly string[]).includes(section)) return { ...workbook, sheets: workbook.sheets.map((sheet) => releasePlainProfileSheet(sheet)) }
   if (section === 'raw-material') {
     const synced = ensureProfileSkuSheets(workbook, collectWorkbookBatches(workbook))
     return { ...synced, sheets: synced.sheets.map((sheet) => stampProfileHeader(sheet)) }
@@ -1830,6 +2121,20 @@ export function profileGridLimits(sheet: EquipmentSheet): { rows: number; column
       if (!Number.isInteger(row) || !Number.isInteger(column)) continue
       rows = Math.max(rows, row + 1)
       columns = Math.max(columns, column + 1)
+    }
+    return { rows, columns }
+  }
+  if (sheet.snippets?.[SECTION_SNIPPET] === STABILITY_SECTION) {
+    let rows = 3
+    let columns = 2
+    for (const key of Object.keys(sheet.snippets ?? {})) {
+      const match = /^stability-study:(\d+)$/.exec(key)
+      if (match) columns = Math.max(columns, Number(match[1]) + 1)
+    }
+    for (const [key, value] of Object.entries(sheet.cells ?? {})) {
+      if (!String(value ?? '').trim()) continue
+      const [row, column] = key.split(':').map(Number)
+      if (column === 0 && row >= 2) rows = Math.max(rows, row + 1)
     }
     return { rows, columns }
   }

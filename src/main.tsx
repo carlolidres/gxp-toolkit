@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 
 import { App } from './app/App'
+import { installDqieProfileSeed } from './features/cpv/dqieProfileSeed'
 import { AuthProvider } from './hooks/useAuth'
 import { PermissionsProvider } from './hooks/usePermissions'
 import { ThemeProvider } from './hooks/useTheme'
@@ -12,6 +13,8 @@ import './styles/globals.css'
 import './styles/multiform-project.css'
 import './styles/vrms.css'
 import './styles/cpv.css'
+
+installDqieProfileSeed()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

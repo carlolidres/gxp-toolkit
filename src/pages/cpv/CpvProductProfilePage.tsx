@@ -6,7 +6,7 @@ import { listDatabaseRows } from '../../features/apqr/apqrService'
 import { uniqueApqrProducts } from '../../features/cpv/apqrProductCatalog'
 import { CPV_PRODUCT_ARCHIVED } from '../../features/cpv/cpvLinks'
 import { ensureCpvProductFromApqr, listCpvProducts, reloadCpvStoreFromSession, retireCpvProduct } from '../../features/cpv/cpvService'
-import { isProductProfileSection, productProfilePath, type ProductProfileSectionId } from '../../features/cpv/productProfile'
+import { isProductProfileSection, PLAIN_PROFILE_SECTIONS, productProfilePath, type ProductProfileSectionId } from '../../features/cpv/productProfile'
 import { SPREADSHEET_FIXTURE_CODE } from '../../features/cpv/spreadsheetTestFixture'
 import { loadProductSectionWorkbook, productSectionHeld, saveProductSectionWorkbook } from '../../features/cpv/productProfileWorkbook'
 import { useCpvLoad } from '../../features/cpv/useCpvData'
@@ -14,6 +14,7 @@ import type { CpvProduct } from '../../features/cpv/types'
 import { useMenuPermission } from '../../hooks/useMenuPermission'
 import type { EquipmentWorkbook } from '../../features/vmp/equipmentWorkbook'
 import { EquipmentSpreadsheet } from '../vmp/EquipmentSpreadsheet'
+import { ProcessCapabilityView } from './ProcessCapabilityView'
 import '../../styles/equipment-profile.css'
 
 const STORAGE_ERROR = 'This sheet could not be saved. Browser storage is full, so the latest edits stay in this tab until a save succeeds.'
@@ -77,6 +78,13 @@ export function CpvProductProfilePage() {
 
   useEffect(() => {
     if (!section) return
+    if (section === 'process-capability') {
+      setWorkbook(null)
+      pending.current = null
+      setSaveState('Saved')
+      setSheetError(null)
+      return
+    }
     writePending()
     const loaded = loadProductSectionWorkbook(productCode, section)
     setWorkbook(loaded)
@@ -113,7 +121,9 @@ export function CpvProductProfilePage() {
     return <Navigate to={productProfilePath(productCode, 'raw-material')} replace />
   }
 
-  if (product.loading || (product.data && !workbook)) {
+  const capability = section === 'process-capability'
+
+  if (product.loading || (!capability && product.data && !workbook)) {
     return (
       <CpvPage title="Product Profile">
         <CpvLoading />
@@ -121,7 +131,7 @@ export function CpvProductProfilePage() {
     )
   }
 
-  if (!product.data || !workbook) {
+  if (!product.data || (!capability && !workbook)) {
     return (
       <CpvPage title="Product Profile">
         <CpvError message={product.error ?? 'Product not found.'} />
@@ -182,6 +192,7 @@ export function CpvProductProfilePage() {
         </form>
       ) : null}
       {sheetError ? <p className="eq-banner">{sheetError}</p> : null}
+      {capability ? <ProcessCapabilityView productCode={productCode} /> : workbook ? (
       <EquipmentSpreadsheet
         key={`${productCode}:${section}`}
         workbook={workbook}
@@ -197,7 +208,7 @@ export function CpvProductProfilePage() {
           }, 400)
         }}
         onError={setSheetError}
-        profileLayout={productCode.trim().toUpperCase() !== SPREADSHEET_FIXTURE_CODE}
+        profileLayout={productCode.trim().toUpperCase() !== SPREADSHEET_FIXTURE_CODE && !(PLAIN_PROFILE_SECTIONS as readonly string[]).includes(section)}
         profileReport={{
           section,
           client: record.client_owner ?? '',
@@ -205,6 +216,7 @@ export function CpvProductProfilePage() {
           productCode: record.product_code,
         }}
       />
+      ) : null}
     </div>
   )
 }

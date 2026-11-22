@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Modal, Tooltip } from 'antd'
-import { Activity, LineChart, PanelRightClose, PanelRightOpen, Plus } from 'lucide-react'
+import { Activity, Check, CircleHelp, LineChart, PanelRightClose, PanelRightOpen, Plus, Type, X } from 'lucide-react'
 
-import { addAnalyticalParameterColumn, addAnalyticalSheet, analyticalParameters, analyticalRunChart, addEquipmentBreakerRow, addEquipmentEntryRow, addIpcDataSheet, addIpcSeriesColumn, addProfileMaterial, ANALYTICAL_STAGES, applyEquipmentProcess, applyIpcDecimals, commitProfileBatch, equipmentColumnBatch, equipmentProcessKind, equipmentRowInUse, equipmentSourceBatches, forgetSheetHistory, IPC_PARAMETER_LABELS, commitIpcParameter, ipcNelsonSignals, ipcRowHeaderLabel, ipcRunChart, ipcRunObservation, ipcResultText, isEquipmentBreakerRow, listSheetHistory, markEquipmentBatch, markPackagingItemNotApplicable, markProfileItemNotApplicable, nameAnalyticalStage, refreshAnalyticalWorkbook, packagingColumnBatch, packagingSupplierChoices, presentEquipmentSheet, profileGridLimits, profileItemNotApplicable, profileSuppliers, readProfileBatch, readProfileHeader, readProfilePackaging, refreshEquipmentWorkbook, refreshIpcWorkbook, refreshPackagingWorkbook, rememberSheetHistory, removeEquipmentBatch, removeEquipmentProfileRow, removeProfileMaterial, removeProfileSupplier, restorePackagingItem, restoreProfileItemCode, saveRawProfileBatch, writeAnalyticalParameter, writeEquipmentName, writePackagingControlNos, writeProfileControlNos, writeProfileHeader, writeProfilePackaging, type IpcRunChart, type ProfileBatchEntry, type ProfileMaterialEntry, type ProfilePackagingEntry, type ProfilePoEntry, type SheetHistoryEntry } from '../../features/cpv/productProfileWorkbook'
+import { addAnalyticalParameterColumn, addAnalyticalSheet, analyticalParameters, analyticalRunChart, addEquipmentBreakerRow, addEquipmentEntryRow, addIpcDataSheet, addIpcSeriesColumn, addProfileMaterial, addStabilityParameterSheet, addStabilityTimepoint, commitStabilityStudy, emptyStabilityStudy, readStabilityStudy, setStabilityParameter, STABILITY_STUDY_FIELDS, stabilityParameterText, ANALYTICAL_STAGES, applyEquipmentProcess, applyIpcDecimals, commitProfileBatch, equipmentColumnBatch, equipmentProcessKind, equipmentRowInUse, equipmentSourceBatches, forgetSheetHistory, IPC_PARAMETER_LABELS, commitIpcParameter, ipcNelsonSignals, ipcRowHeaderLabel, ipcRunChart, ipcRunObservation, ipcResultText, isEquipmentBreakerRow, listSheetHistory, markEquipmentBatch, markPackagingItemNotApplicable, markProfileItemNotApplicable, nameAnalyticalStage, refreshAnalyticalWorkbook, packagingColumnBatch, packagingSupplierChoices, presentEquipmentSheet, profileGridLimits, profileItemNotApplicable, profileSuppliers, readProfileBatch, readProfileHeader, readProfilePackaging, refreshEquipmentWorkbook, refreshIpcWorkbook, refreshPackagingWorkbook, rememberSheetHistory, removeEquipmentBatch, removeEquipmentProfileRow, removeProfileMaterial, removeProfileSupplier, restorePackagingItem, restoreProfileItemCode, saveRawProfileBatch, writeAnalyticalParameter, writeEquipmentName, writePackagingControlNos, writeProfileControlNos, writeProfileHeader, writeProfilePackaging, type IpcRunChart, type ProfileBatchEntry, type ProfileMaterialEntry, type ProfilePackagingEntry, type ProfilePoEntry, type SheetHistoryEntry, type StabilityStudy } from '../../features/cpv/productProfileWorkbook'
+import { listApqrClientNames } from '../../features/apqr/apqrService'
 import { appendCpvAudit } from '../../features/cpv/cpvAudit'
+import { listCpvProducts, reloadCpvStoreFromSession } from '../../features/cpv/cpvService'
+import { stabilityScale, stabilityTimeTicks, stabilityTrend, type StabilityForecast, type StabilityPoint, type StabilityTrend } from '../../features/cpv/stabilityForecast'
+import type { CpvProduct } from '../../features/cpv/types'
 import { ProfilePrintDialog } from './ProfilePrintDialog'
 import { EQUIPMENT_PROCESS_FORMS } from '../../features/cpv/productProfile'
 import { workbookToXlsx, xlsxToWorkbook } from '../../features/vmp/workbookXlsx'
@@ -211,6 +215,10 @@ export function EquipmentSpreadsheet({
   const paintRef = useRef<{ style: CellStyle; repeat: boolean } | null>(null)
   const [printOpen, setPrintOpen] = useState(false)
   const [batchOpen, setBatchOpen] = useState(false)
+  const [timepointOpen, setTimepointOpen] = useState(false)
+  const [timepointMonths, setTimepointMonths] = useState('')
+  const [stabilityStudy, setStabilityStudy] = useState<number | 'new' | null>(null)
+  const [stabilityParameterTarget, setStabilityParameterTarget] = useState<string | null>(null)
   const [batchInitial, setBatchInitial] = useState<ProfileBatchEntry | null>(null)
   const [packagingRow, setPackagingRow] = useState<number | null>(null)
   const [equipmentPick, setEquipmentPick] = useState<{ row: number; column: number } | null>(null)
@@ -257,6 +265,7 @@ export function EquipmentSpreadsheet({
   const equipmentLayout = profileReport?.section === 'equipment'
   const ipcLayout = profileReport?.section === 'in-process-control'
   const analyticalLayout = profileReport?.section === 'analytical-report'
+  const stabilityLayout = profileReport?.section === 'stability'
   const rowLimit = profileLimits?.rows ?? sheet.rowCount
   const colLimit = profileLimits?.columns ?? sheet.columnCount
   const rowSizeList = useMemo(
@@ -545,6 +554,7 @@ export function EquipmentSpreadsheet({
   }
 
   function denial(row: number, column: number): string | null {
+    if (stabilityLayout && column >= 1 && row <= 1) return 'Open the stability dialog to edit this cell.'
     return editBlock?.(row, column) ?? (sheet.lockedCells?.[`${row}:${column}`] ? 'This cell is protected.' : null)
   }
 
@@ -1455,6 +1465,19 @@ export function EquipmentSpreadsheet({
       }
       return false
     }
+    if (stabilityLayout) {
+      if (row === 0 && column >= 1) {
+        setEditing(null)
+        setStabilityParameterTarget(sheet.id)
+        return true
+      }
+      if (row === 1 && column >= 1) {
+        setEditing(null)
+        setStabilityStudy(readStabilityStudy(sheet, column) ? column : 'new')
+        return true
+      }
+      return false
+    }
     if (analyticalLayout) {
       if (row < 3 && column >= 5) {
         setEditing(null)
@@ -1766,7 +1789,7 @@ export function EquipmentSpreadsheet({
             background: paintedFill(style?.fill, covers(selection, row, column)),
             color: style?.color,
             fontSize: style?.fontSize,
-            cursor: (equipmentLayout && (((column === 0 && row >= (equipmentProcessKind(sheet.name).packaging ? 5 : 4) && !isEquipmentBreakerRow(sheet, row)) || (column >= 1 && row >= (equipmentProcessKind(sheet.name).packaging ? 5 : 4) && !isEquipmentBreakerRow(sheet, row) && Boolean(sheet.cells[`${row}:0`]?.trim()))) || (column >= 1 && row < (equipmentProcessKind(sheet.name).packaging ? 3 : 2)))) || (packagingLayout && ((row <= 2 && column >= 1) || row >= 4) && column < (profileLimits?.columns ?? 0)) || (ipcLayout && ((column >= 2 && row < 3) || (row >= 5 && column <= 1))) || (profileLimits && !packagingLayout && !equipmentLayout && !ipcLayout && !analyticalLayout && ((column === 0 && row >= 2) || (row === 0 && column === 1) || (row >= 2 && column >= 1 && column < profileLimits.columns))) || (analyticalLayout && ((row < 3 && column >= 5) || (row >= 3 && column <= 4))) ? 'pointer' : undefined,
+            cursor: (equipmentLayout && (((column === 0 && row >= (equipmentProcessKind(sheet.name).packaging ? 5 : 4) && !isEquipmentBreakerRow(sheet, row)) || (column >= 1 && row >= (equipmentProcessKind(sheet.name).packaging ? 5 : 4) && !isEquipmentBreakerRow(sheet, row) && Boolean(sheet.cells[`${row}:0`]?.trim()))) || (column >= 1 && row < (equipmentProcessKind(sheet.name).packaging ? 3 : 2)))) || (packagingLayout && ((row <= 2 && column >= 1) || row >= 4) && column < (profileLimits?.columns ?? 0)) || (ipcLayout && ((column >= 2 && row < 3) || (row >= 5 && column <= 1))) || (profileLimits && !packagingLayout && !equipmentLayout && !ipcLayout && !analyticalLayout && !stabilityLayout && ((column === 0 && row >= 2) || (row === 0 && column === 1) || (row >= 2 && column >= 1 && column < profileLimits.columns))) || (analyticalLayout && ((row < 3 && column >= 5) || (row >= 3 && column <= 4))) || (stabilityLayout && column >= 1 && row <= 1) ? 'pointer' : undefined,
             borderTop: style?.borderTop ? `1px ${style.borderStyle ?? 'solid'} ${style.borderColor ?? '#202124'}` : undefined,
             borderRight: style?.borderRight ? `1px ${style.borderStyle ?? 'solid'} ${style.borderColor ?? '#202124'}` : undefined,
             borderBottom: style?.borderBottom ? `1px ${style.borderStyle ?? 'solid'} ${style.borderColor ?? '#202124'}` : undefined,
@@ -1939,7 +1962,7 @@ export function EquipmentSpreadsheet({
   }
 
   return (
-    <div className={`eq-sheet${sheet.showGridlines === false ? ' is-plain' : ''}${sheet.showHeadings === false ? ' is-headless' : ''}${ipcLayout && sheet.snippets?.['ipc-run-column'] || analyticalLayout ? ` has-ipc-panel${ipcPanelOpen ? '' : ' is-ipc-collapsed'}` : ''}`} onMouseUp={() => { drag.current = false }}>
+    <div className={`eq-sheet${sheet.showGridlines === false ? ' is-plain' : ''}${sheet.showHeadings === false ? ' is-headless' : ''}${ipcLayout && sheet.snippets?.['ipc-run-column'] || analyticalLayout || stabilityLayout ? ` has-ipc-panel${ipcPanelOpen ? '' : ' is-ipc-collapsed'}` : ''}`} onMouseUp={() => { drag.current = false }}>
       <SheetMenuBar
         readOnly={readOnly}
         openMenu={appMenu}
@@ -2294,6 +2317,18 @@ export function EquipmentSpreadsheet({
                 <Plus size={14} aria-hidden />
               </button>
             ) : null}
+            {profileLayout && !readOnly && stabilityLayout ? (
+              <button
+                type="button"
+                className="eq-profile-add eq-profile-pin"
+                aria-label="Add stability column"
+                style={{ top: 3, left: placeX(colLimit - 1, false) + colSize(colLimit - 1) + 4 }}
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={() => setStabilityStudy('new')}
+              >
+                +
+              </button>
+            ) : null}
             {profileLayout && !readOnly && ipcLayout ? (
               <button
                 type="button"
@@ -2309,7 +2344,7 @@ export function EquipmentSpreadsheet({
                 +
               </button>
             ) : null}
-            {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout && !analyticalLayout ? (
+            {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout && !analyticalLayout && !stabilityLayout ? (
               <button
                 type="button"
                 className="eq-profile-add eq-profile-pin"
@@ -2397,7 +2432,19 @@ export function EquipmentSpreadsheet({
                 +
               </button>
             ) : null}
-            {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout && !analyticalLayout ? (
+            {profileLayout && !readOnly && stabilityLayout ? (
+              <button
+                type="button"
+                className="eq-profile-add eq-profile-pin"
+                aria-label="Add timepoint"
+                style={{ top: placeY(rowLimit - 1, false) + rowSize(rowLimit - 1) + 4, left: 12 }}
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={() => { setTimepointMonths(''); setTimepointOpen(true) }}
+              >
+                +
+              </button>
+            ) : null}
+            {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout && !analyticalLayout && !stabilityLayout ? (
               <button
                 type="button"
                 className="eq-profile-add eq-profile-pin"
@@ -2440,7 +2487,7 @@ export function EquipmentSpreadsheet({
           <div className="eq-canvas">
             {cells}
           </div>
-          {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout && !analyticalLayout ? (
+          {profileLayout && !readOnly && !packagingLayout && !equipmentLayout && !ipcLayout && !analyticalLayout && !stabilityLayout ? (
             <>
               {Array.from({ length: (colLimit - 3) / 2 }, (_, index) => {
                 const column = 3 + index * 2
@@ -2512,6 +2559,10 @@ export function EquipmentSpreadsheet({
                   openAnalyticalStage(item)
                   return
                 }
+                if (stabilityLayout) {
+                  setStabilityParameterTarget(item.id)
+                  return
+                }
                 setRenaming({ id: item.id, name: item.name })
               }}
               onContextMenu={(event) => {
@@ -2564,6 +2615,10 @@ export function EquipmentSpreadsheet({
             +
           </button>
         ) : <button type="button" className="eq-tab-add" aria-label="Add worksheet" onClick={() => {
+            if (stabilityLayout) {
+              setStabilityParameterTarget('new')
+              return
+            }
             if (!analyticalLayout) {
               runWorkbook(() => addSheet(workbook), { action: 'SHEET_CREATED', range: null, oldValue: null, newValue: 'New sheet' })
               return
@@ -2618,6 +2673,10 @@ export function EquipmentSpreadsheet({
             if (!target) return
             if (analyticalLayout) {
               openAnalyticalStage(target)
+              return
+            }
+            if (stabilityLayout) {
+              setStabilityParameterTarget(target.id)
               return
             }
             setRenaming({ id: target.id, name: target.name })
@@ -2881,6 +2940,77 @@ export function EquipmentSpreadsheet({
           }}
         />
       ) : null}
+      {timepointOpen ? (
+        <form
+          className="eq-profile-dialog eq-batch-dialog"
+          role="dialog"
+          aria-label="Add timepoint"
+          onSubmit={(event) => {
+            event.preventDefault()
+            let saved = false
+            guard(() => {
+              apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? addStabilityTimepoint(item, Number(timepointMonths)) : item)) },
+                { action: 'CELL_UPDATED', range: null, oldValue: null, newValue: 'Timepoint' },
+              )
+              saved = true
+            })
+            if (saved) setTimepointOpen(false)
+          }}
+          onKeyDown={(event) => { if (event.key === 'Escape') setTimepointOpen(false) }}
+        >
+          <label>
+            Months
+            <input aria-label="Months" inputMode="numeric" required value={timepointMonths} onChange={(event) => setTimepointMonths(event.target.value)} />
+          </label>
+          <p>Type the number of months for this test point. Initial is already on the sheet.</p>
+          <button type="submit">Add</button>
+          <button type="button" onClick={() => setTimepointOpen(false)}>Cancel</button>
+        </form>
+      ) : null}
+      {stabilityStudy !== null ? (
+        <StabilityStudyDialog
+          key={stabilityStudy === 'new' ? 'new' : stabilityStudy}
+          initial={stabilityStudy === 'new' ? emptyStabilityStudy() : readStabilityStudy(sheet, stabilityStudy) ?? emptyStabilityStudy()}
+          onCancel={() => setStabilityStudy(null)}
+          onSave={(study) => {
+            const column = stabilityStudy === 'new' ? null : stabilityStudy
+            let saved = false
+            guard(() => {
+              apply(
+                { ...workbook, sheets: workbook.sheets.map((item) => (item.id === sheet.id ? commitStabilityStudy(item, column, study) : item)) },
+                { action: 'CELL_UPDATED', range: study.poControlNo.trim(), oldValue: null, newValue: study.poControlNo.trim() },
+              )
+              saved = true
+            })
+            if (saved) setStabilityStudy(null)
+          }}
+        />
+      ) : null}
+      {stabilityParameterTarget ? (
+        <StabilityParameterDialog
+          key={stabilityParameterTarget}
+          initial={stabilityParameterTarget === 'new' ? { parameter: '', unit: '', usl: '', lsl: '' } : {
+            parameter: workbook.sheets.find((item) => item.id === stabilityParameterTarget)?.snippets?.['stability-parameter'] ?? '',
+            unit: workbook.sheets.find((item) => item.id === stabilityParameterTarget)?.snippets?.['stability-unit'] ?? '',
+            usl: workbook.sheets.find((item) => item.id === stabilityParameterTarget)?.snippets?.['stability-usl'] ?? '',
+            lsl: workbook.sheets.find((item) => item.id === stabilityParameterTarget)?.snippets?.['stability-lsl'] ?? '',
+          }}
+          onCancel={() => setStabilityParameterTarget(null)}
+          onSave={(parameter, unit, usl, lsl) => {
+            const target = stabilityParameterTarget
+            let saved = false
+            guard(() => {
+              const next = target === 'new'
+                ? addStabilityParameterSheet(workbook, parameter, unit, { usl, lsl })
+                : setStabilityParameter(workbook, target, parameter, unit, { usl, lsl })
+              apply(next, { action: target === 'new' ? 'SHEET_CREATED' : 'SHEET_RENAMED', range: stabilityParameterText(parameter, unit), oldValue: null, newValue: stabilityParameterText(parameter, unit) })
+              saved = true
+            })
+            if (saved) setStabilityParameterTarget(null)
+          }}
+        />
+      ) : null}
       {batchOpen ? (
         <ProfileBatchDialog
           key={batchInitial?.uniqueBatchNo || (batchTarget ?? 'next')}
@@ -3059,6 +3189,9 @@ export function EquipmentSpreadsheet({
       {analyticalLayout ? (
         <AnalyticalTrendPanel sheet={sheet} open={ipcPanelOpen} onToggle={() => setIpcPanelOpen((open) => !open)} />
       ) : null}
+      {stabilityLayout ? (
+        <StabilityTrendPanel sheet={sheet} open={ipcPanelOpen} onToggle={() => setIpcPanelOpen((open) => !open)} />
+      ) : null}
       {ipcLayout && sheet.snippets?.['ipc-run-column'] ? (
         <aside className={`eq-ipc-panel${ipcPanelOpen ? '' : ' is-collapsed'}`} aria-label="Run chart">
           <button
@@ -3190,6 +3323,356 @@ function monthInputValue(value: string): string {
   const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
   const index = months.findIndex((item) => named[1].toLowerCase().startsWith(item))
   return index < 0 ? '' : `${named[2]}-${String(index + 1).padStart(2, '0')}`
+}
+
+function DialogHelp({ label, text }: { label: string; text: string }) {
+  return (
+    <Tooltip title={text}>
+      <button type="button" className="eq-help" aria-label={label}>
+        <CircleHelp size={16} aria-hidden />
+      </button>
+    </Tooltip>
+  )
+}
+
+const STABILITY_LONG_TEXT = new Set(['primaryPackage', 'secondaryPackage', 'referenceProcedure', 'purpose'])
+const STABILITY_MONTH_FIELDS = new Set(['dateManufactured', 'expiryDate'])
+const STABILITY_PRODUCT_FIELDS = {
+  genericName: 'generic_name',
+  brandName: 'product_name',
+  dosageStrength: 'strength',
+  dosageForm: 'dosage_form',
+} as const
+
+function stabilityFieldLabel(key: string, label: string): string {
+  if (key === 'dateManufactured') return 'Date Manufactured (MMM YYYY)'
+  if (key === 'expiryDate') return 'Expiry Date (MMM YYYY)'
+  if (key === 'datePutOnStability') return 'Date Put on Stability (DD MMM YYYY)'
+  return label
+}
+
+function StabilityStudyDialog({ initial, onCancel, onSave }: { initial: StabilityStudy; onCancel: () => void; onSave: (study: StabilityStudy) => void }) {
+  const [study, setStudy] = useState(initial)
+  const [error, setError] = useState('')
+  const [clients, setClients] = useState<string[]>([])
+  const [products, setProducts] = useState<CpvProduct[]>([])
+  useEffect(() => {
+    reloadCpvStoreFromSession()
+    setClients(listApqrClientNames())
+    void listCpvProducts().then(setProducts)
+  }, [])
+  function chooseProduct(key: keyof typeof STABILITY_PRODUCT_FIELDS, value: string) {
+    const field = STABILITY_PRODUCT_FIELDS[key]
+    const matches = products.filter((product) => String(product[field] ?? '') === value)
+    const next = { ...study, [key]: value }
+    if (matches.length === 1) {
+      const product = matches[0]
+      next.genericName = product.generic_name ?? ''
+      next.brandName = product.product_name
+      next.dosageStrength = product.strength ?? ''
+      next.dosageForm = product.dosage_form
+    }
+    setStudy(next)
+  }
+  function options(key: keyof typeof STABILITY_PRODUCT_FIELDS): string[] {
+    const field = STABILITY_PRODUCT_FIELDS[key]
+    const values = products.map((product) => String(product[field] ?? '').trim()).filter(Boolean)
+    const current = study[key].trim()
+    return [...new Set(current ? [current, ...values] : values)]
+  }
+  return (
+    <form
+      className="eq-profile-dialog eq-batch-dialog"
+      role="dialog"
+      aria-label="Stability study"
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (!study.poControlNo.trim()) {
+          setError('Enter the PO Control No.')
+          return
+        }
+        onSave(study)
+      }}
+      onKeyDown={(event) => { if (event.key === 'Escape') onCancel() }}
+    >
+      <header className="flex items-center justify-between gap-3">
+        <h2>Stability study</h2>
+        <DialogHelp label="About this stability study" text="The column shows the PO Control No. The other details stay with this column." />
+      </header>
+      {STABILITY_STUDY_FIELDS.map(([key, label]) => {
+        const shown = stabilityFieldLabel(key, label)
+        if (key === 'client') {
+          const clientOptions = [...new Set(study.client.trim() ? [study.client.trim(), ...clients] : clients)]
+          return (
+            <label key={key}>
+              {shown}
+              <select aria-label={shown} value={study.client} onChange={(event) => setStudy({ ...study, client: event.target.value })}>
+                <option value="">Select a client</option>
+                {clientOptions.map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
+            </label>
+          )
+        }
+        if (key in STABILITY_PRODUCT_FIELDS) {
+          const productKey = key as keyof typeof STABILITY_PRODUCT_FIELDS
+          return (
+            <label key={key}>
+              {shown}
+              <select aria-label={shown} value={study[key]} onChange={(event) => chooseProduct(productKey, event.target.value)}>
+                <option value="">Select a product</option>
+                {options(productKey).map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
+            </label>
+          )
+        }
+        if (STABILITY_MONTH_FIELDS.has(key)) {
+          return (
+            <label key={key}>
+              {shown}
+              <input aria-label={shown} type="month" value={monthInputValue(study[key])} onChange={(event) => setStudy({ ...study, [key]: event.target.value })} />
+            </label>
+          )
+        }
+        if (key === 'datePutOnStability') {
+          return (
+            <label key={key}>
+              {shown}
+              <input aria-label={shown} type="date" value={/^\d{4}-\d{2}-\d{2}$/.test(study[key]) ? study[key] : ''} onChange={(event) => setStudy({ ...study, datePutOnStability: event.target.value })} />
+            </label>
+          )
+        }
+        if (STABILITY_LONG_TEXT.has(key)) {
+          return (
+            <label key={key}>
+              {shown}
+              <textarea aria-label={shown} value={study[key]} onChange={(event) => setStudy({ ...study, [key]: event.target.value })} />
+            </label>
+          )
+        }
+        return (
+          <label key={key}>
+            {shown}
+            <input aria-label={shown} required={key === 'poControlNo'} value={study[key]} onChange={(event) => setStudy({ ...study, [key]: event.target.value })} />
+          </label>
+        )
+      })}
+      {error ? <p className="eq-banner">{error}</p> : null}
+      <div className="eq-profile-dialog-actions">
+        <button type="button" className="eq-batch-cancel" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="eq-batch-save">Save</button>
+      </div>
+    </form>
+  )
+}
+
+function StabilityParameterDialog({ initial, onCancel, onSave }: { initial: { parameter: string; unit: string; usl: string; lsl: string }; onCancel: () => void; onSave: (parameter: string, unit: string, usl: string, lsl: string) => void }) {
+  const [parameter, setParameter] = useState(initial.parameter)
+  const [unit, setUnit] = useState(initial.unit)
+  const [usl, setUsl] = useState(initial.usl)
+  const [lsl, setLsl] = useState(initial.lsl)
+  const [error, setError] = useState('')
+  return (
+    <form
+      className="eq-profile-dialog eq-batch-dialog"
+      role="dialog"
+      aria-label="Parameter"
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (!parameter.trim() || !unit.trim()) {
+          setError('Enter the parameter and its unit.')
+          return
+        }
+        if (!usl.trim() || !lsl.trim() || !Number.isFinite(Number(usl)) || !Number.isFinite(Number(lsl)) || Number(usl) <= Number(lsl)) {
+          setError('Enter a USL above the LSL.')
+          return
+        }
+        onSave(parameter, unit, usl, lsl)
+      }}
+      onKeyDown={(event) => { if (event.key === 'Escape') onCancel() }}
+    >
+      <header className="flex items-center justify-between gap-3">
+        <h2>Parameter</h2>
+        <DialogHelp label="About this parameter" text="Quantitative parameters only. The sheet shows the parameter and its unit, such as MOISTURE CONTENT (%)." />
+      </header>
+      <label>
+        Parameter
+        <input aria-label="Parameter" required value={parameter} onChange={(event) => setParameter(event.target.value)} />
+      </label>
+      <label>
+        Unit of measurement
+        <input aria-label="Unit of measurement" required value={unit} onChange={(event) => setUnit(event.target.value)} />
+      </label>
+      <label>
+        USL
+        <input aria-label="USL" inputMode="decimal" required value={usl} onChange={(event) => setUsl(event.target.value)} />
+      </label>
+      <label>
+        LSL
+        <input aria-label="LSL" inputMode="decimal" required value={lsl} onChange={(event) => setLsl(event.target.value)} />
+      </label>
+      {error ? <p className="eq-banner">{error}</p> : null}
+      <div className="eq-profile-dialog-actions">
+        <button type="button" className="eq-batch-cancel" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="eq-batch-save">Save</button>
+      </div>
+    </form>
+  )
+}
+
+const STABILITY_PLOT = { width: 480, height: 250, left: 46, right: 16, top: 16, bottom: 36 }
+const STABILITY_COLORS = ['#1a73e8', '#188038', '#e37400', '#9334e6', '#c5221f', '#007b83']
+
+function stabilityX(month: number, min: number, max: number): number {
+  const plotWidth = STABILITY_PLOT.width - STABILITY_PLOT.left - STABILITY_PLOT.right
+  if (max <= min) return STABILITY_PLOT.left + plotWidth / 2
+  return STABILITY_PLOT.left + ((month - min) / (max - min)) * plotWidth
+}
+
+function stabilityY(value: number, yMin: number, yMax: number): number {
+  const plotHeight = STABILITY_PLOT.height - STABILITY_PLOT.top - STABILITY_PLOT.bottom
+  const span = yMax - yMin || 1
+  return STABILITY_PLOT.top + (1 - (value - yMin) / span) * plotHeight
+}
+
+function StabilityPlotFrame({ label, yMin, yMax, yTicks, xMin, xMax, children }: { label: string; yMin: number; yMax: number; yTicks: number[]; xMin: number; xMax: number; children: ReactNode }) {
+  const { width, height, left, right, top, bottom } = STABILITY_PLOT
+  const plotWidth = width - left - right
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white px-2 py-3">
+      <svg className="h-auto w-full" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label} preserveAspectRatio="xMidYMid meet">
+        {yTicks.map((tick) => <line key={tick} x1={left} y1={stabilityY(tick, yMin, yMax)} x2={width - right} y2={stabilityY(tick, yMin, yMax)} stroke="#e6ebf0" />)}
+        <line x1={left} y1={top} x2={left} y2={height - bottom} stroke="#1d2430" />
+        <line x1={left} y1={height - bottom} x2={width - right} y2={height - bottom} stroke="#1d2430" />
+        {yTicks.map((tick) => <text key={`y-${tick}`} x={left - 8} y={stabilityY(tick, yMin, yMax) + 3} textAnchor="end" fontSize="11" fill="#3c4450">{chartNumber(tick)}</text>)}
+        <line x1={left} y1={height - bottom} x2={left + plotWidth} y2={height - bottom} stroke="none" />
+        {stabilityTimeTicks(xMin, xMax).map((month) => <text key={`x-${month}`} x={stabilityX(month, xMin, xMax)} y={height - 14} textAnchor="middle" fontSize="11" fill="#3c4450">{chartNumber(month)}</text>)}
+        {children}
+      </svg>
+    </div>
+  )
+}
+
+function StabilityObservedChart({ trend }: { trend: StabilityTrend }) {
+  const values = trend.series.flatMap((item) => item.points.map((point) => point.value))
+  const sole = trend.series.length === 1 ? trend.series[0] : null
+  const samples = [...values, trend.median, sole?.ucl, sole?.lcl, trend.usl, trend.lsl].filter((value): value is number => value != null && Number.isFinite(value))
+  const axis = stabilityScale(samples)
+  const months = trend.series.flatMap((item) => item.points.map((point) => point.months))
+  const xMin = Math.min(...months, 0)
+  const xMax = Math.max(...months, 0)
+  const guides = [
+    ...(trend.usl != null ? [{ name: 'USL', value: trend.usl, color: '#c5221f' }] : []),
+    ...(trend.lsl != null ? [{ name: 'LSL', value: trend.lsl, color: '#c5221f' }] : []),
+    { name: 'Median', value: trend.median, color: '#5f6368' },
+    ...(sole ? [{ name: 'UCL', value: sole.ucl, color: '#e37400' }, { name: 'LCL', value: sole.lcl, color: '#e37400' }] : []),
+  ]
+  return (
+    <div className="eq-ipc-chart flex flex-col gap-4 px-4 pb-2">
+      <div className="flex items-start gap-2 pr-8">
+        <LineChart size={18} aria-hidden className="text-sky-700" />
+        <div className="min-w-0">
+          <h2 className="m-0 text-base font-semibold leading-5 tracking-tight text-slate-900">{trend.title}</h2>
+          {trend.usl != null && trend.lsl != null ? <p className="m-0 mt-0.5 text-xs leading-4 text-slate-600">{trend.lsl} - {trend.usl}{trend.unit ? ` ${trend.unit}` : ''}</p> : null}
+        </div>
+      </div>
+      {trend.series.length ? (
+        <>
+          <dl className="m-0 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {guides.map((guide) => (
+              <div key={guide.name} className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5">
+                <dt className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: guide.color }}>{guide.name}</dt>
+                <dd className="m-0 text-sm font-semibold tabular-nums text-slate-900">{chartNumber(guide.value)}</dd>
+              </div>
+            ))}
+          </dl>
+          <StabilityPlotFrame label={`Stability results for ${trend.title}`} yMin={axis.yMin} yMax={axis.yMax} yTicks={axis.ticks} xMin={xMin} xMax={xMax}>
+            {sole ? <rect x={STABILITY_PLOT.left} y={stabilityY(Math.max(sole.ucl, sole.lcl), axis.yMin, axis.yMax)} width={STABILITY_PLOT.width - STABILITY_PLOT.left - STABILITY_PLOT.right} height={Math.abs(stabilityY(sole.lcl, axis.yMin, axis.yMax) - stabilityY(sole.ucl, axis.yMin, axis.yMax))} fill="#e37400" fillOpacity="0.1" /> : null}
+            {guides.filter((guide) => guide.name !== 'UCL' && guide.name !== 'LCL').map((guide) => (
+              <line key={guide.name} x1={STABILITY_PLOT.left} y1={stabilityY(guide.value, axis.yMin, axis.yMax)} x2={STABILITY_PLOT.width - STABILITY_PLOT.right} y2={stabilityY(guide.value, axis.yMin, axis.yMax)} stroke={guide.color} strokeWidth={guide.name === 'Median' ? 1 : 1.5} strokeDasharray={guide.name === 'Median' ? '2 3' : undefined} />
+            ))}
+            {trend.series.map((item, index) => {
+              const color = STABILITY_COLORS[index % STABILITY_COLORS.length]
+              const ordered = item.points.slice().sort((left, right) => left.months - right.months)
+              return (
+                <g key={item.column}>
+                  <path d={ordered.map((point, pointIndex) => `${pointIndex === 0 ? 'M' : 'L'} ${stabilityX(point.months, xMin, xMax)} ${stabilityY(point.value, axis.yMin, axis.yMax)}`).join(' ')} fill="none" stroke={color} strokeWidth="2" />
+                  {ordered.map((point) => <circle key={`${item.column}-${point.months}`} cx={stabilityX(point.months, xMin, xMax)} cy={stabilityY(point.value, axis.yMin, axis.yMax)} r="3.5" fill="#fff" stroke={color} strokeWidth="2" />)}
+                </g>
+              )
+            })}
+          </StabilityPlotFrame>
+        </>
+      ) : <p className="m-0 rounded-md border border-dashed border-slate-300 bg-white px-3 py-4 text-sm text-slate-600">Enter numeric results to plot this line graph.</p>}
+    </div>
+  )
+}
+
+function StabilityForecastChart({ trend, forecast, points }: { trend: StabilityTrend; forecast: StabilityForecast; points: StabilityPoint[] }) {
+  const horizon = forecast.horizon
+  const curve = forecast.curve
+  const samples = [
+    ...points.map((point) => point.value),
+    ...curve.flatMap((point) => forecast.interval === 'mean' ? [point.mean, point.lower, point.upper] : [point.mean]),
+    trend.usl,
+    trend.lsl,
+  ].filter((value): value is number => value != null && Number.isFinite(value))
+  const axis = stabilityScale(samples)
+  const months = [...points.map((point) => point.months), ...curve.map((point) => point.months)]
+  const xMin = Math.min(...months, 0)
+  const xMax = Math.max(...months, horizon)
+  const fitted = curve.filter((point) => point.months <= horizon)
+  const ahead = curve.filter((point) => point.months >= horizon)
+  const line = (rows: typeof curve) => rows.map((point, index) => `${index === 0 ? 'M' : 'L'} ${stabilityX(point.months, xMin, xMax)} ${stabilityY(point.mean, axis.yMin, axis.yMax)}`).join(' ')
+  const band = forecast.interval === 'mean' && curve.length > 1
+    ? `${curve.map((point, index) => `${index === 0 ? 'M' : 'L'} ${stabilityX(point.months, xMin, xMax)} ${stabilityY(point.upper, axis.yMin, axis.yMax)}`).join(' ')} ${[...curve].reverse().map((point) => `L ${stabilityX(point.months, xMin, xMax)} ${stabilityY(point.lower, axis.yMin, axis.yMax)}`).join(' ')} Z`
+    : ''
+  return (
+    <section className="eq-ipc-chart flex flex-col gap-3 px-4 pb-5" aria-label={`Operational forecast for ${forecast.batch}`}>
+      <div className="min-w-0 pr-8">
+        <h2 className="m-0 text-base font-semibold leading-5 tracking-tight text-slate-900">Operational forecast</h2>
+        <p className="m-0 mt-0.5 text-xs leading-4 text-slate-600">{forecast.batch}. This forecast does not change the approved shelf life.</p>
+      </div>
+      {curve.length ? (
+        <>
+          <StabilityPlotFrame label={`Operational forecast of ${trend.title} for ${forecast.batch}`} yMin={axis.yMin} yMax={axis.yMax} yTicks={axis.ticks} xMin={xMin} xMax={xMax}>
+            {band ? <path d={band} fill="#1a73e8" fillOpacity="0.12" stroke="none" /> : null}
+            {trend.usl != null ? <line x1={STABILITY_PLOT.left} y1={stabilityY(trend.usl, axis.yMin, axis.yMax)} x2={STABILITY_PLOT.width - STABILITY_PLOT.right} y2={stabilityY(trend.usl, axis.yMin, axis.yMax)} stroke="#c5221f" strokeWidth="1.5" /> : null}
+            {trend.lsl != null ? <line x1={STABILITY_PLOT.left} y1={stabilityY(trend.lsl, axis.yMin, axis.yMax)} x2={STABILITY_PLOT.width - STABILITY_PLOT.right} y2={stabilityY(trend.lsl, axis.yMin, axis.yMax)} stroke="#c5221f" strokeWidth="1.5" /> : null}
+            {fitted.length > 1 ? <path d={line(fitted)} fill="none" stroke="#1a73e8" strokeWidth="2" /> : null}
+            {ahead.length > 1 ? <path d={line(ahead)} fill="none" stroke="#1a73e8" strokeWidth="2" strokeDasharray="5 4" /> : null}
+            {points.map((point) => <circle key={point.months} cx={stabilityX(point.months, xMin, xMax)} cy={stabilityY(point.value, axis.yMin, axis.yMax)} r="3.5" fill="#fff" stroke="#1a73e8" strokeWidth="2" />)}
+          </StabilityPlotFrame>
+          <p className="m-0 text-xs leading-4 text-slate-500">Solid line is the fitted mean through {chartNumber(horizon)} months. Dashed line is the extrapolated forecast.{forecast.interval === 'mean' ? ' The blue band is the 95% confidence interval for the mean.' : ' The curve is an operational estimate, not an original-scale mean interval.'}</p>
+        </>
+      ) : null}
+      <p className="m-0 text-sm leading-5 text-slate-700">{forecast.inference}</p>
+    </section>
+  )
+}
+
+function StabilityTrendPanel({ sheet, open, onToggle }: { sheet: EquipmentSheet; open: boolean; onToggle: () => void }) {
+  const trend = stabilityTrend(sheet)
+  return (
+    <aside className={`eq-ipc-panel${open ? '' : ' is-collapsed'}`} aria-label="Stability chart">
+      <button
+        type="button"
+        className="eq-ipc-panel-toggle"
+        aria-expanded={open}
+        aria-label={open ? 'Collapse stability chart' : 'Expand stability chart'}
+        onClick={onToggle}
+      >
+        {open ? <PanelRightClose size={16} aria-hidden /> : <PanelRightOpen size={16} aria-hidden />}
+      </button>
+      {open ? (
+        <>
+          <StabilityObservedChart trend={trend} />
+          {trend.forecasts.map((forecast) => (
+            <StabilityForecastChart key={forecast.batch} trend={trend} forecast={forecast} points={trend.series.find((item) => item.name === forecast.batch)?.points ?? []} />
+          ))}
+        </>
+      ) : null}
+    </aside>
+  )
 }
 
 function ProfileBatchDialog({ initial, onCancel, onSave }: { initial?: ProfileBatchEntry; onCancel: () => void; onSave: (entry: ProfileBatchEntry) => void }) {
@@ -3345,7 +3828,7 @@ function AnalyticalParameterDialog({
   const [error, setError] = useState('')
   return (
     <form
-      className="eq-profile-dialog eq-batch-dialog"
+      className="eq-profile-dialog eq-batch-dialog eq-parameter-dialog"
       role="dialog"
       aria-label="Parameter"
       onSubmit={(event) => {
@@ -3358,9 +3841,12 @@ function AnalyticalParameterDialog({
       }}
       onKeyDown={(event) => { if (event.key === 'Escape') onCancel() }}
     >
-      <header className="flex flex-col gap-1">
-        <h2>Parameter</h2>
-        <p className="m-0 text-sm text-slate-500">These entries replace the placeholders in this column.</p>
+      <header className="eq-parameter-head">
+        <span className="eq-parameter-mark" aria-hidden="true"><LineChart /></span>
+        <div>
+          <h2>Parameter</h2>
+          <p>These entries replace the placeholders in this column.</p>
+        </div>
       </header>
       <label>
         Parameter
@@ -3374,33 +3860,46 @@ function AnalyticalParameterDialog({
         Unit of Measurement
         <input aria-label="Unit of Measurement" maxLength={40} value={unit} placeholder="Short text" onChange={(event) => setUnit(event.target.value)} />
       </label>
-      <fieldset className="m-0 grid gap-2 border-0 p-0">
-        <legend className="text-sm text-slate-700">Result type</legend>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="radio" name="parameter-kind" checked={kind === 'qualitative'} onChange={() => setKind('qualitative')} />
-          Qualitative
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="radio" name="parameter-kind" checked={kind === 'quantitative'} onChange={() => setKind('quantitative')} />
-          Quantitative
-        </label>
-      </fieldset>
-      {kind === 'quantitative' ? (
-        <div className="grid grid-cols-2 gap-3">
-          <label>
-            USL
-            <input aria-label="USL" inputMode="decimal" required value={usl} onChange={(event) => setUsl(event.target.value)} />
+      <fieldset className="eq-parameter-kind">
+        <legend>Result type</legend>
+        <div className="eq-parameter-kind-options" role="radiogroup" aria-label="Result type">
+          <label className={kind === 'qualitative' ? 'is-selected' : undefined}>
+            <input type="radio" name="parameter-kind" checked={kind === 'qualitative'} onChange={() => setKind('qualitative')} />
+            <Type aria-hidden="true" />
+            <span className="eq-parameter-kind-copy">
+              <span>Qualitative</span>
+              <small>Text result</small>
+            </span>
           </label>
-          <label>
-            LSL
-            <input aria-label="LSL" inputMode="decimal" required value={lsl} onChange={(event) => setLsl(event.target.value)} />
+          <label className={kind === 'quantitative' ? 'is-selected' : undefined}>
+            <input type="radio" name="parameter-kind" checked={kind === 'quantitative'} onChange={() => setKind('quantitative')} />
+            <LineChart aria-hidden="true" />
+            <span className="eq-parameter-kind-copy">
+              <span>Quantitative</span>
+              <small>Number, USL, and LSL</small>
+            </span>
           </label>
         </div>
+      </fieldset>
+      {kind === 'quantitative' ? (
+        <div className="eq-parameter-limits">
+          <p>Enter the USL and LSL used by the run chart.</p>
+          <div>
+            <label>
+              USL
+              <input aria-label="USL" inputMode="decimal" required value={usl} onChange={(event) => setUsl(event.target.value)} />
+            </label>
+            <label>
+              LSL
+              <input aria-label="LSL" inputMode="decimal" required value={lsl} onChange={(event) => setLsl(event.target.value)} />
+            </label>
+          </div>
+        </div>
       ) : null}
-      {error ? <p className="eq-banner">{error}</p> : null}
+      {error ? <p className="eq-banner" role="alert">{error}</p> : null}
       <div className="eq-profile-dialog-actions">
-        <button type="button" className="eq-batch-cancel" onClick={onCancel}>Cancel</button>
-        <button type="submit" className="eq-batch-save">Save</button>
+        <button type="button" className="eq-batch-cancel" onClick={onCancel}><X aria-hidden="true" /> Cancel</button>
+        <button type="submit" className="eq-batch-save"><Check aria-hidden="true" /> Save</button>
       </div>
     </form>
   )
@@ -3727,8 +4226,8 @@ function IpcLineChart({ source, column, usl, lsl, prepared }: { source: Equipmen
   const shown = series.filter((item) => item.shown)
   const sole = shown.length === 1 ? shown[0] : null
   const guides = chart ? [
-    { name: 'USL', value: usl, color: '#c5221f' },
-    { name: 'LSL', value: lsl, color: '#c5221f' },
+    ...(Number.isFinite(usl) ? [{ name: 'USL', value: usl, color: '#c5221f' }] : []),
+    ...(Number.isFinite(lsl) ? [{ name: 'LSL', value: lsl, color: '#c5221f' }] : []),
     { name: 'Median', value: chart.median, color: '#5f6368' },
     ...(sole?.ucl != null && sole.lcl != null ? [
       { name: 'UCL', value: sole.ucl, color: '#e37400' },
@@ -3765,14 +4264,17 @@ function IpcLineChart({ source, column, usl, lsl, prepared }: { source: Equipmen
           {chart.ticks.map((tick) => (
             <text key={`label-${tick}`} x={pad.left - 8} y={yAt(tick) + 3} textAnchor="end" fontSize="11" fill="#3c4450">{chartNumber(tick)}</text>
           ))}
-          {guides.map((guide) => (
-            <line key={guide.name} x1={pad.left} y1={yAt(guide.value)} x2={width - pad.right} y2={yAt(guide.value)} stroke={guide.color} strokeDasharray={guide.name === 'Median' ? '2 3' : '5 3'} />
+          {sole?.ucl != null && sole.lcl != null ? (
+            <rect x={pad.left} y={yAt(Math.max(sole.ucl, sole.lcl))} width={plotWidth} height={Math.abs(yAt(sole.lcl) - yAt(sole.ucl))} fill="#e37400" fillOpacity="0.1" />
+          ) : null}
+          {guides.filter((guide) => guide.name !== 'UCL' && guide.name !== 'LCL').map((guide) => (
+            <line key={guide.name} x1={pad.left} y1={yAt(guide.value)} x2={width - pad.right} y2={yAt(guide.value)} stroke={guide.color} strokeWidth={guide.name === 'USL' || guide.name === 'LSL' ? 1.5 : 1} strokeDasharray={guide.name === 'USL' || guide.name === 'LSL' ? undefined : '2 3'} />
           ))}
           {shown.map((item) => item.points.length ? (
             <path key={`line-${item.column}`} d={item.points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${xAt(point.batch)} ${yAt(point.value)}`).join(' ')} fill="none" stroke={item.color} strokeWidth="2" />
           ) : null)}
           {shown.flatMap((item) => item.points.map((point) => <circle key={`${item.column}-${point.batch}`} cx={xAt(point.batch)} cy={yAt(point.value)} r="3.5" fill="#fff" stroke={item.color} strokeWidth="2" />))}
-          {batches.map((batch) => <text key={batch} x={xAt(batch)} y={height - 14} textAnchor="middle" fontSize="11" fill="#3c4450">{batch}</text>)}
+          {batches.map((batch) => <text key={batch} x={xAt(batch)} y={height - 14} textAnchor="middle" fontSize="11" fill="#3c4450">{chart.labels?.[batches.indexOf(batch)] ?? batch}</text>)}
         </svg>
         </div>
       ) : <p className="m-0 rounded-md border border-dashed border-slate-300 bg-white px-3 py-4 text-sm text-slate-600">Enter numeric results to plot this line graph.</p>}

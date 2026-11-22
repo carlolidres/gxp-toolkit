@@ -70,6 +70,7 @@ describe('product profile', () => {
       productCode: 'ABES',
       section: 'stability',
     })
+    expect(productProfilePath('DQIE', 'process-capability')).toBe('/cpv/products/DQIE/profile/process-capability')
   })
 
   it('stores each product section separately', () => {
@@ -123,7 +124,9 @@ describe('product profile', () => {
       { r1: 0, c1: 0, r2: 1, c2: 0 },
       { r1: 0, c1: 1, r2: 0, c2: 2 },
     ]))
-    expect(loadProductSectionWorkbook('ABES', 'stability').sheets[0].cells['0:1']).toBe('DESCRIPTION')
+    expect(loadProductSectionWorkbook('ABES', 'stability').sheets[0].cells['0:0']).toBe('Test Points')
+    expect(loadProductSectionWorkbook('ABES', 'stability').sheets[0].cells['0:1']).toBe('Parameter')
+    expect(loadProductSectionWorkbook('ABES', 'stability').sheets[0].cells['2:0']).toBe('Initial')
     const analyticalRaw = commitProfileBatch(loadProductSectionWorkbook('DQIE', 'raw-material'), {
       uniqueBatchNo: '2025DQIE-2',
       moControlNo: '25MDW-209',
@@ -167,8 +170,11 @@ describe('product profile', () => {
     expect(addAnalyticalParameterColumn(written).cells['0:6']).toBe('[Parameter]')
     const afterfill = refreshAnalyticalWorkbook(nameAnalyticalStage({ ...createWorkbook(), sheets: [analytical], activeSheetId: analytical.id }, analytical.id, 'Afterfill'), 'DQIE')
     expect(afterfill.sheets[0].cells['3:0']).toBe('25DQIEP-2')
+    expect(afterfill.sheets[0].cells['0:3']).toBe('Pack Size')
+    expect(afterfill.sheets[0].cells['3:3']).toBeUndefined()
     const other = refreshAnalyticalWorkbook(nameAnalyticalStage(afterfill, analytical.id, 'Blister check', 'po'), 'DQIE')
     expect(other.sheets[0].cells['3:0']).toBe('25DQIEP-2')
+    expect(other.sheets[0].cells['0:3']).toBe('Pack Size')
     const staged = nameAnalyticalStage({ ...createWorkbook(), sheets: [analytical], activeSheetId: analytical.id }, analytical.id, 'Bulk')
     expect(staged.sheets[0].name).toBe('Bulk')
     const specified = nameAnalyticalStage(staged, analytical.id, 'Blister check')
@@ -188,14 +194,14 @@ describe('product profile', () => {
       moControlNo: '25MDW-209',
       poControlNo: '25DQIEP-2',
       productCode: '',
-      sku: '',
+      sku: "100's",
       mfgDate: '2025-06',
       expDate: '',
       fgReleasedDate: '',
       referenceProcedure: 'VV-QUAL-25691',
       batchSize: '800,000 loz',
     }
-    const second = { ...first, uniqueBatchNo: '2025DQIE-3', moControlNo: '25MDW-210', mfgDate: '', referenceProcedure: '', batchSize: '' }
+    const second = { ...first, uniqueBatchNo: '2025DQIE-3', moControlNo: '25MDW-210', mfgDate: '', referenceProcedure: '', batchSize: '', sku: 'Bottle' }
     let raw = commitProfileBatch(loadProductSectionWorkbook('DQIE', 'raw-material'), first, null)
     raw = commitProfileBatch(raw, second, null)
     saveProductSectionWorkbook('DQIE', 'raw-material', raw)
@@ -203,6 +209,11 @@ describe('product profile', () => {
     expect(sheet.cells['4:2']).toBe('VV-QUAL-25691')
     expect(sheet.cells['4:3']).toBe('800,000 loz')
     expect(sheet.cells['4:4']).toBe('Jun 2025')
+    expect(sheet.styles['3:2']?.fontSize).toBe(13)
+    expect(sheet.styles['4:2']?.fontSize).toBe(13)
+    expect(sheet.rowHeights[4]).toBe(sheet.rowHeights[3])
+    expect(sheet.styles['3:5']).toMatchObject({ align: 'center', wrap: true, bold: false })
+    expect(sheet.styles['4:5']).toMatchObject({ align: 'center', wrap: true, bold: false })
     raw = commitProfileBatch(raw, { ...second, batchSize: '10 kg' }, null)
     saveProductSectionWorkbook('DQIE', 'raw-material', raw)
     const own = loadProductSectionWorkbook('DQIE', 'analytical-report').sheets[0]
@@ -219,6 +230,11 @@ describe('product profile', () => {
     measured.cells['3:5'] = '4.07'
     expect(analyticalRunChart(measured, 5)?.points.map((point) => point.value)).toEqual([4.07])
     expect(analyticalRunChart(measured, 5)?.title).toBe('Thickness')
+    const packed = refreshAnalyticalWorkbook(nameAnalyticalStage({ ...createWorkbook(), sheets: [own], activeSheetId: own.id }, own.id, 'Afterfill'), 'DQIE')
+    expect(packed.sheets[0].cells['0:3']).toBe('Pack Size')
+    expect(packed.sheets[0].cells['3:3']).toBe("100's")
+    expect(packed.sheets[0].cells['4:3']).toBe('Bottle')
+    expect(packed.sheets[0].styles['3:3']?.wrap).toBe(true)
   })
 
   it('adds a batch number and a material group without showing the extra fields', () => {

@@ -15,12 +15,15 @@ export const PRODUCT_PROFILE_SECTIONS = [
   { id: 'equipment', label: 'Equipment' },
   { id: 'in-process-control', label: 'In-process Control' },
   { id: 'analytical-report', label: 'Analytical Report' },
+  { id: 'process-capability', label: 'Process Capability' },
   { id: 'stability', label: 'Stability' },
   { id: 'holding-time', label: 'Holding-Time' },
-  { id: 'other-data', label: 'Other Data' },
   { id: 'deviation-report', label: 'Deviation Report' },
   { id: 'product-complaints', label: 'Product Complaints' },
+  { id: 'other-data', label: 'Other Data' },
 ] as const
+
+export const PLAIN_PROFILE_SECTIONS = ['holding-time', 'other-data', 'deviation-report', 'product-complaints'] as const
 
 export type ProductProfileSectionId = (typeof PRODUCT_PROFILE_SECTIONS)[number]['id']
 

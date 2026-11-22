@@ -105,6 +105,10 @@ function recordBySchedulerId(schedulerId: string) {
   return records.find((r) => r.scheduler_entry_id === schedulerId)
 }
 
+export function listApqrClientNames(): string[] {
+  return [...new Set(clients.filter((client) => client.status !== 'archived').map((client) => client.client_name.trim()).filter(Boolean))].sort((left, right) => left.localeCompare(right))
+}
+
 export function buildDatabaseRows(): ApqrDatabaseRow[] {
   const today = new Date().toISOString().slice(0, 10)
 

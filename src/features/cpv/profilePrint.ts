@@ -13,6 +13,7 @@ const SECTIONS: { id: string; appendix: string; group: string }[] = [
   { id: 'equipment', appendix: 'EQUIPMENT TABULATION', group: 'Equipment' },
   { id: 'in-process-control', appendix: 'APPENDIX 3: IN-PROCESS CONTROL TABULATION', group: 'In-process Control' },
   { id: 'analytical-report', appendix: 'APPENDIX 4: ANALYTICAL REPORT TABULATION', group: 'Analytical Report' },
+  { id: 'process-capability', appendix: 'PROCESS CAPABILITY TABULATION', group: 'Process Capability' },
   { id: 'stability', appendix: 'APPENDIX 5: STABILITY TABULATION', group: 'Stability' },
   { id: 'holding-time', appendix: 'APPENDIX 6: HOLDING-TIME TABULATION', group: 'Holding-Time' },
   { id: 'other-data', appendix: 'APPENDIX 7: OTHER DATA TABULATION', group: 'Other Data' },
