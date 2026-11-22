@@ -1908,7 +1908,7 @@ export function readStabilityStudy(sheet: EquipmentSheet, column: number): Stabi
 function stampStabilityHeader(sheet: EquipmentSheet): EquipmentSheet {
   const cells = { ...sheet.cells }
   const styles = { ...(sheet.styles ?? {}) }
-  const snippets = { ...(sheet.snippets ?? {}), [SECTION_SNIPPET]: STABILITY_SECTION }
+  const snippets: Record<string, string> = { ...(sheet.snippets ?? {}), [SECTION_SNIPPET]: STABILITY_SECTION }
   for (const key of Object.keys(snippets)) {
     if (key.startsWith('stability-batch:')) delete snippets[key]
   }

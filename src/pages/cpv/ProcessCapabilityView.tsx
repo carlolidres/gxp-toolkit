@@ -161,6 +161,7 @@ function ProbabilityPlot({ values, stats }: { values: number[]; stats: Capabilit
 function Histogram({ report }: { report: ProcessCapabilityReport }) {
   const stats = report.stats
   if (!stats) return null
+  const current = stats
   const low = Math.min(stats.min, report.lsl)
   const high = Math.max(stats.max, report.usl)
   const bins = Math.max(4, Math.round(Math.sqrt(stats.n)))
@@ -181,9 +182,9 @@ function Histogram({ report }: { report: ProcessCapabilityReport }) {
     if (sigma <= 0) return ''
     return Array.from({ length: 40 }, (_, index) => {
       const value = low + ((high - low) * index) / 39
-      const z = (value - stats.mean) / sigma
+      const z = (value - current.mean) / sigma
       const density = Math.exp(-0.5 * z * z) / (sigma * Math.sqrt(2 * Math.PI))
-      const count = density * stats.n * width
+      const count = density * current.n * width
       const x = PLOT.left + ((value - low) / (high - low || 1)) * plotWidth
       return `${index === 0 ? 'M' : 'L'} ${x} ${scale.yAt(count)}`
     }).join(' ')

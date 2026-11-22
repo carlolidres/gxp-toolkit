@@ -104,7 +104,7 @@ function ticks(low: number, high: number): { yMin: number; yMax: number; ticks: 
   return { yMin, yMax: Math.max(yMax, yMin + step), ticks: marks }
 }
 
-function boundText(limits: { usl: number | null; lsl: number | null }, months: number | null): string {
+function boundText(months: number | null): string {
   if (months == null) return 'The 95% confidence limit for the mean cannot reliably be estimated to intersect a specification.'
   return `The two-sided 95% confidence limit for the mean meets a specification at about ${months.toFixed(1)} months. That crossing is a statistical estimate, not an approved expiry.`
 }
@@ -202,7 +202,7 @@ export function forecastStabilitySeries(batch: string, attribute: string, unit: 
     interval,
     curve,
     rows,
-    inference: `${observed}. ${conformance} ${adequacy} The fitted change is ${rate}. The ${future} month value is an extrapolated operational forecast, not an observation. ${boundText(limits, crossing)} ${status === 'exploratory' ? 'Three time points make this forecast exploratory.' : 'The series is long enough to monitor, and it is still not a formal shelf-life assessment.'} No change to the approved shelf life is implied.`,
+    inference: `${observed}. ${conformance} ${adequacy} The fitted change is ${rate}. The ${future} month value is an extrapolated operational forecast, not an observation. ${boundText(crossing)} ${status === 'exploratory' ? 'Three time points make this forecast exploratory.' : 'The series is long enough to monitor, and it is still not a formal shelf-life assessment.'} No change to the approved shelf life is implied.`,
   }
 }
 
