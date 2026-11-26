@@ -269,3 +269,22 @@ Recommended commit format:
 ```text
 v[VERSION]: [concise summary]
 ```
+
+---
+
+## Cursor Cloud specific instructions
+
+The update script runs `npm install` on startup. Node 22 and Python 3.12 are preinstalled.
+
+### Services
+
+- **Frontend SPA (`gxp-toolkit`, the product):** the only service required to demo/test end-to-end. Standard commands live in `package.json` (`dev`, `build`, `lint`, `type-check`, `test`). Start with `npm run dev` (Vite, http://localhost:5173/).
+- **Python workflow app (`workflow-app/`):** optional internal dev/feedback tool, not the shipped product. Python-stdlib only (no pip deps).
+
+### Non-obvious caveats
+
+- **Mock-mode auth:** with no real Supabase env vars, `src/lib/supabase.ts` returns `null` and the app runs entirely on mock data. At `/#/login` ANY email/password works; use the role selector (e.g. `Admin`) to pick permissions. No backend is needed to exercise the UI.
+- **Dev server base path:** Vite reads `VITE_BASE_PATH` from `.env*` (not from the committed `.env.example`). With no `.env.local`, base is `/`, so the app is at `http://localhost:5173/`. If you create `.env.local` from `.env.example`, it sets base `/gxp-toolkit/` and the app moves to `http://localhost:5173/gxp-toolkit/`.
+- **Workflow app scripts hardcode `python`:** the `workflow:dev`/`workflow:validate`/`workflow:smoke` npm scripts call `python`, which is not on PATH here (only `python3`). Run them directly, e.g. `python3 workflow-app/server.py` / `python3 workflow-app/scripts/smoke_test.py`, or the npm scripts fail with `python: not found`.
+- **One pre-existing failing unit test:** `src/features/edoc/fileValidation.test.ts` fails under jsdom because Node's `crypto.subtle.digest` rejects the buffer type produced in the test environment (`SubtleCrypto ... not instance of ArrayBuffer`). This is an environment/test quirk, unrelated to app runtime; the other 139 unit tests pass.
+- **Supabase local stack** (`supabase start`, ports 54321-54323) and Edge Functions are optional and only needed for real-backend integration; they require Docker + the Supabase CLI and server-side secrets.
